@@ -15,11 +15,12 @@ type ruleType struct {
 
 var ruleTypes = map[ruleType]ruleCheck{
 	{name: "required", numParams: 0}: nil,
-	{name: "required", numParams: 1}: checkRuleContext,
+	{name: "required", numParams: 1}: checkRuleRequired,
+	{name: "required", numParams: 2}: checkRuleRequired,
 	{name: "email", numParams: 0}:    checkTypeString,
 	{name: "url", numParams: 0}:      checkTypeString,
 	{name: "uri", numParams: 0}:      checkTypeString,
-	{name: "cc", numParams: 0}:       checkTypeString,
+	{name: "pan", numParams: 0}:      checkTypeString,
 	{name: "cvv", numParams: 0}:      checkTypeString,
 	{name: "ssn", numParams: 0}:      checkTypeString,
 	{name: "ein", numParams: 0}:      checkTypeString,
@@ -53,8 +54,9 @@ var ruleTypes = map[ruleType]ruleCheck{
 	{name: "min", numParams: 1}:      checkMulti(checkTypeNumeric, checkParamCanCompare),
 	{name: "max", numParams: 1}:      checkMulti(checkTypeNumeric, checkParamCanCompare),
 	{name: "rng", numParams: 2}:      checkMulti(checkTypeNumeric, checkParamCanCompare),
-	{name: "len", numParams: 1}:      checkMulti(checkTypeHasLength, checkParamUint),
-	{name: "len", numParams: 2}:      checkMulti(checkTypeHasLength, checkParamUint),
+
+	{name: "len", numParams: 1}: checkMulti(checkTypeHasLength, checkParamLen),
+	{name: "len", numParams: 2}: checkMulti(checkTypeHasLength, checkParamLen),
 }
 
 func checkMulti(cc ...ruleCheck) ruleCheck {
@@ -68,15 +70,19 @@ func checkMulti(cc ...ruleCheck) ruleCheck {
 	}
 }
 
-// checks that the rule's param value is a valid context.
-func checkRuleContext(f *StructField, r *Rule) error {
+// preform check specific to the "required" rule.
+func checkRuleRequired(f *StructField, r *Rule) error {
+	// checks that each param kind is either context or group key.
 	for _, p := range r.Params {
-		if p.Kind != ParamKindContext {
+		if p.Kind != ParamKindContext && p.Kind != ParamKindGroupKey {
 			return &anError{Code: errRuleParamKind, RuleParam: p}
 		}
+	}
 
-		if p.Value != "create" && p.Value != "update" {
-			return &anError{Code: errRuleContext, RuleParam: p}
+	if len(r.Params) == 2 {
+		// if two params were provided ensure that they're not of the same kind.
+		if r.Params[0].Kind == r.Params[1].Kind {
+			return &anError{Code: errRuleParamKindConflict, RuleParam: r.Params[1]}
 		}
 	}
 	return nil
@@ -267,6 +273,27 @@ func checkParamUint(f *StructField, r *Rule) error {
 			return &anError{Code: errRuleParamTypeUint, RuleParam: p}
 		}
 	}
+	return nil
+}
+
+// checks that the rule's params are of the uint type, if present.
+func checkParamLen(f *StructField, r *Rule) error {
+	for _, p := range r.Params {
+		if p.Kind != ParamKindReference && p.Kind != ParamKindLiteral {
+			return &anError{Code: errRuleParamKind, RuleParam: p}
+		}
+
+		if p.Kind == ParamKindLiteral && p.Type != ParamTypeUint && len(p.Value) > 0 {
+			return &anError{Code: errRuleParamTypeUint, RuleParam: p}
+		}
+	}
+
+	if len(r.Params) == 2 {
+		if r.Params[0].Value == "" && r.Params[1].Value == "" {
+			return &anError{Code: errRuleParamValueLen, RuleParam: r.Params[1]}
+		}
+	}
+
 	return nil
 }
 

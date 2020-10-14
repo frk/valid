@@ -85,11 +85,14 @@ type (
 		Value string
 	}
 
-	// ParamReferenceInfo for ...
+	// ParamReferenceInfo holds information on a RuleParam of kind ParamKindReference.
 	ParamReferenceInfo struct {
-		Rule        *Rule
+		// The Rule to which the RuleParam belongs.
+		Rule *Rule
+		// The StructField to which the RuleParam belongs.
 		StructField *StructField
-		Selector    []*StructField
+		// Selector of the StructField referenced by the RuleParam.
+		Selector []*StructField
 	}
 
 	// FieldVar holds the types.Var represenation and the raw tag of a struct field.

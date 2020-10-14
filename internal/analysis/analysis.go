@@ -1,6 +1,7 @@
 package analysis
 
 import (
+	"fmt"
 	"go/token"
 	"go/types"
 	"regexp"
@@ -9,34 +10,7 @@ import (
 	"github.com/frk/tagutil"
 )
 
-// analysis holds the state of the analyzer.
-type analysis struct {
-	fset *token.FileSet
-	// The named type under analysis.
-	named *types.Named
-	// The package path of the type under analysis.
-	pkgPath string
-	// This field will hold the result of the analysis.
-	validator *ValidatorStruct
-	keys      map[string]struct{}
-	//
-	info *Info
-}
-
-func (a *analysis) anError(e interface{}, f *StructField, r *Rule) error {
-	var err *anError
-
-	switch v := e.(type) {
-	case errorCode:
-		err = &anError{Code: v}
-	case *anError:
-		err = v
-	}
-
-	// ...
-
-	return err
-}
+var _ = fmt.Println
 
 // Info holds information related to an analyzed ValidatorStruct. If the analysis
 // returns an error, the collected information will be incomplete.
@@ -52,8 +26,45 @@ type Info struct {
 	// FieldMap maintains a map of StructField pointers to the fields'
 	// related go/types specific information. Intended for error reporting.
 	FieldMap map[*StructField]FieldVar
-	// ...
+	// Maps RuleParams of kind ParamKindReference to information
+	// that's used by the analysis and by the generator.
 	ParamReferenceMap map[*RuleParam]*ParamReferenceInfo
+}
+
+// analysis holds the state of the analyzer.
+type analysis struct {
+	fset *token.FileSet
+	// The named type under analysis.
+	named *types.Named
+	// The package path of the type under analysis.
+	pkgPath string
+	// This field will hold the result of the analysis.
+	validator *ValidatorStruct
+	// Tracks already encountered keys to ensures uniqueness.
+	keys map[string]struct{}
+	// Holds useful information aggregated during analysis.
+	info *Info
+}
+
+func (a *analysis) anError(e interface{}, f *StructField, r *Rule) error {
+	var err *anError
+
+	switch v := e.(type) {
+	case errorCode:
+		err = &anError{Code: v}
+	case *anError:
+		err = v
+	}
+
+	err.StructField = f
+	err.Rule = r
+
+	if fv, ok := a.info.FieldMap[f]; ok {
+		pos := a.fset.Position(fv.Var.Pos())
+		err.FileName = pos.Filename
+		err.FileLine = pos.Line
+	}
+	return err
 }
 
 func Run(fset *token.FileSet, named *types.Named, pos token.Pos, info *Info) (*ValidatorStruct, error) {
@@ -115,7 +126,12 @@ func analyzeStructFields(a *analysis, structType *types.Struct, root bool, local
 		ftag := structType.Tag(i)
 		tag := tagutil.New(ftag)
 		istag := tag.First("is")
-		if istag == "-" || (!root && len(tag["is"]) == 0) {
+		//fmt.Println(tag)
+
+		// Skip only fields that were explicitly flagged; fields with
+		// no `is` tag may still be useful if they are referenced by
+		// a separate field's rule with a reference parameter.
+		if istag == "-" {
 			continue
 		}
 
@@ -300,11 +316,15 @@ func parseRule(str string) *Rule {
 		params = str[i+1:]
 	}
 
-	r := &Rule{Name: name}
+	// if the params string ends with ':' (e.g. `len:4:`) then append
+	// an empty RuleParam to the end of the Rule.Params slice.
+	var appendEmpty bool
 
+	r := &Rule{Name: name}
 	for len(params) > 0 {
 		p := &RuleParam{}
 		if i := strings.IndexByte(params, ':'); i > -1 {
+			appendEmpty = (i == len(params)-1) // is ':' the last char?
 			p.Value = params[:i]
 			params = params[i+1:]
 		} else {
@@ -348,6 +368,10 @@ func parseRule(str string) *Rule {
 		}
 
 		r.Params = append(r.Params, p)
+	}
+
+	if appendEmpty {
+		r.Params = append(r.Params, &RuleParam{})
 	}
 	return r
 }
