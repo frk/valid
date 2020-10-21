@@ -2,6 +2,7 @@ package analysis
 
 import (
 	"go/types"
+	"strconv"
 
 	"github.com/frk/tagutil"
 )
@@ -74,24 +75,27 @@ type (
 	Rule struct {
 		// Name of the rule
 		Name string
-		// The parameters of the rule
-		Params []*RuleParam
+		// The args of the rule
+		Args []*RuleArg
 	}
 
-	// RuleParam
-	RuleParam struct {
-		Kind  ParamKind
-		Type  ParamType
+	// RuleArg
+	RuleArg struct {
+		// The kind of the arg.
+		Kind ArgKind
+		// The type of the arg value.
+		Type ArgType
+		// The arg value, may be empty string.
 		Value string
 	}
 
-	// ParamReferenceInfo holds information on a RuleParam of kind ParamKindReference.
-	ParamReferenceInfo struct {
-		// The Rule to which the RuleParam belongs.
+	// ArgReferenceInfo holds information on a RuleArg of kind ArgKindReference.
+	ArgReferenceInfo struct {
+		// The Rule to which the reference RuleArg belongs.
 		Rule *Rule
-		// The StructField to which the RuleParam belongs.
+		// The StructField to which the reference RuleArg belongs.
 		StructField *StructField
-		// Selector of the StructField referenced by the RuleParam.
+		// Selector of the StructField referenced by the RuleArg.
 		Selector []*StructField
 	}
 
@@ -104,25 +108,68 @@ type (
 	}
 )
 
-// ParamKind indicates the specific kind of a rule parameter.
-type ParamKind uint
+func (t Type) String() string {
+	if len(t.Name) > 0 {
+		if t.IsImported {
+			return t.PkgName + "." + t.Name
+		}
+		return t.Name
+	}
+
+	if t.IsByte {
+		return "byte"
+	} else if t.IsRune {
+		return "rune"
+	} else if t.Kind.IsBasic() {
+		return typeKinds[t.Kind]
+	}
+
+	switch t.Kind {
+	case TypeKindArray:
+		return "[" + strconv.FormatInt(t.ArrayLen, 10) + "]" + t.Elem.String()
+	case TypeKindInterface:
+		if !t.IsEmptyInterface {
+			return "interface{ ... }"
+		}
+		return "interface{}"
+	case TypeKindMap:
+		return "map[" + t.Key.String() + "]" + t.Elem.String()
+	case TypeKindPtr:
+		return "*" + t.Elem.String()
+	case TypeKindSlice:
+		return "[]" + t.Elem.String()
+	case TypeKindStruct:
+		if len(t.Fields) > 0 {
+			return "struct{ ... }"
+		}
+		return "struct{}"
+	case TypeKindChan:
+		return "<chan>"
+	case TypeKindFunc:
+		return "<func>"
+	}
+	return "<unknown>"
+}
+
+// ArgKind indicates the specific kind of a rule arg.
+type ArgKind uint
 
 const (
-	ParamKindLiteral ParamKind = iota // default
-	ParamKindGroupKey
-	ParamKindReference
-	ParamKindContext
+	ArgKindLiteral ArgKind = iota // default
+	ArgKindGroupKey
+	ArgKindReference
+	ArgKindContext
 )
 
-// ParamType indicates the type of a rule param value.
-type ParamType uint
+// ArgType indicates the type of a rule arg value.
+type ArgType uint
 
 const (
-	ParamTypeNone ParamType = iota
-	ParamTypeNint           // negative integer
-	ParamTypeUint           // unsigned integer
-	ParamTypeFloat
-	ParamTypeString
+	ArgTypeNone ArgType = iota
+	ArgTypeNint         // negative integer
+	ArgTypeUint         // unsigned integer
+	ArgTypeFloat
+	ArgTypeString
 )
 
 // TypeKind indicates the specific kind of a Go type.

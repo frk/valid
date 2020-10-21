@@ -2,87 +2,103 @@ package analysis
 
 import (
 	"regexp"
+	"strings"
 )
 
-type ruleCheck func(f *StructField, r *Rule) error
+type ruleCheckFuncs []func(f *StructField, r *Rule) error
 
-type ruleType struct {
-	// name of the rule
-	name string
-	// the number of parameters that this specific rule type can take
-	numParams int
+func (cc ruleCheckFuncs) check(f *StructField, r *Rule) error {
+	for _, c := range cc {
+		if err := c(f, r); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-var ruleTypes = map[ruleType]ruleCheck{
-	{name: "required", numParams: 0}: nil,
-	{name: "required", numParams: 1}: checkRuleRequired,
-	{name: "required", numParams: 2}: checkRuleRequired,
-	{name: "email", numParams: 0}:    checkTypeString,
-	{name: "url", numParams: 0}:      checkTypeString,
-	{name: "uri", numParams: 0}:      checkTypeString,
-	{name: "pan", numParams: 0}:      checkTypeString,
-	{name: "cvv", numParams: 0}:      checkTypeString,
-	{name: "ssn", numParams: 0}:      checkTypeString,
-	{name: "ein", numParams: 0}:      checkTypeString,
-	{name: "numeric", numParams: 0}:  checkTypeString,
-	{name: "hex", numParams: 0}:      checkTypeString,
-	{name: "hexcolor", numParams: 0}: checkTypeString,
-	{name: "alphanum", numParams: 0}: checkTypeString,
-	{name: "cidr", numParams: 0}:     checkTypeString,
-	{name: "phone", numParams: 0}:    checkTypeString,
-	{name: "phone", numParams: 1}:    checkMulti(checkTypeString, checkParamCountryCode),
-	{name: "zip", numParams: 0}:      checkTypeString,
-	{name: "zip", numParams: 1}:      checkMulti(checkTypeString, checkParamCountryCode),
-	{name: "uuid", numParams: 0}:     checkTypeString,
-	{name: "uuid", numParams: 1}:     checkMulti(checkTypeString, checkParamUUID),
-	{name: "ip", numParams: 0}:       checkTypeString,
-	{name: "ip", numParams: 1}:       checkMulti(checkTypeString, checkParamIP),
-	{name: "mac", numParams: 0}:      checkTypeString,
-	{name: "mac", numParams: 1}:      checkMulti(checkTypeString, checkParamMAC),
-	{name: "iso", numParams: 1}:      checkMulti(checkTypeString, checkParamISO),
-	{name: "rfc", numParams: 1}:      checkMulti(checkTypeString, checkParamRFC),
-	{name: "re", numParams: 1}:       checkMulti(checkTypeString, checkParamRegexp),
-	{name: "contains", numParams: 1}: checkMulti(checkTypeString, checkParamValue),
-	{name: "prefix", numParams: 1}:   checkMulti(checkTypeString, checkParamValue),
-	{name: "suffix", numParams: 1}:   checkMulti(checkTypeString, checkParamValue),
-	{name: "eq", numParams: 1}:       checkParamCanCompare,
-	{name: "ne", numParams: 1}:       checkParamCanCompare,
-	{name: "gt", numParams: 1}:       checkMulti(checkTypeNumeric, checkParamCanCompare),
-	{name: "lt", numParams: 1}:       checkMulti(checkTypeNumeric, checkParamCanCompare),
-	{name: "gte", numParams: 1}:      checkMulti(checkTypeNumeric, checkParamCanCompare),
-	{name: "lte", numParams: 1}:      checkMulti(checkTypeNumeric, checkParamCanCompare),
-	{name: "min", numParams: 1}:      checkMulti(checkTypeNumeric, checkParamCanCompare),
-	{name: "max", numParams: 1}:      checkMulti(checkTypeNumeric, checkParamCanCompare),
-	{name: "rng", numParams: 2}:      checkMulti(checkTypeNumeric, checkParamCanCompare),
+type ruleTypeMap map[string]map[int]ruleCheckFuncs
 
-	{name: "len", numParams: 1}: checkMulti(checkTypeHasLength, checkParamLen),
-	{name: "len", numParams: 2}: checkMulti(checkTypeHasLength, checkParamLen),
-}
+func (m ruleTypeMap) find(r *Rule) (ruleCheckFuncs, error) {
+	if pm, ok := m[strings.ToLower(r.Name)]; ok {
+		var variadic ruleCheckFuncs
+		for num, rc := range pm {
+			if num == len(r.Args) {
+				return rc, nil
+			}
 
-func checkMulti(cc ...ruleCheck) ruleCheck {
-	return func(f *StructField, r *Rule) error {
-		for _, c := range cc {
-			if err := c(f, r); err != nil {
-				return err
+			// -1 indicates variadic rule
+			if num == -1 {
+				variadic = rc
 			}
 		}
-		return nil
+		if variadic != nil {
+			return variadic, nil
+		}
+
+		return nil, &anError{Code: errRuleArgNum}
 	}
+	return nil, &anError{Code: errRuleUnknown}
+}
+
+func (m ruleTypeMap) check(a *analysis, f *StructField, r *Rule) error {
+	c, err := m.find(r)
+	if err != nil {
+		return err
+	}
+	return c.check(f, r)
+}
+
+var ruleTypes = ruleTypeMap{
+	"required": {0: {}, 1: {checkRuleRequired}, 2: {checkRuleRequired}},
+	"email":    {0: {checkTypeKindString}},
+	"url":      {0: {checkTypeKindString}},
+	"uri":      {0: {checkTypeKindString}},
+	"pan":      {0: {checkTypeKindString}},
+	"cvv":      {0: {checkTypeKindString}},
+	"ssn":      {0: {checkTypeKindString}},
+	"ein":      {0: {checkTypeKindString}},
+	"numeric":  {0: {checkTypeKindString}},
+	"hex":      {0: {checkTypeKindString}},
+	"hexcolor": {0: {checkTypeKindString}},
+	"alphanum": {0: {checkTypeKindString}},
+	"cidr":     {0: {checkTypeKindString}},
+	"phone":    {-1: {checkTypeKindString, checkArgCountryCode}},
+	"zip":      {-1: {checkTypeKindString, checkArgCountryCode}},
+	"uuid":     {-1: {checkTypeKindString, checkArgUUID}},
+	"ip":       {0: {checkTypeKindString}, 1: {checkTypeKindString, checkArgIP}},
+	"mac":      {0: {checkTypeKindString}, 1: {checkTypeKindString, checkArgMAC}},
+	"iso":      {1: {checkTypeKindString, checkArgISO}},
+	"rfc":      {1: {checkTypeKindString, checkArgRFC}},
+
+	"re":       {1: {checkTypeKindString, checkArgRegexp}},
+	"contains": {1: {checkTypeKindString, checkArgValue}},
+	"prefix":   {1: {checkTypeKindString, checkArgValue}},
+	"suffix":   {1: {checkTypeKindString, checkArgValue}},
+	"eq":       {1: {checkArgCanCompare}},
+	"ne":       {1: {checkArgCanCompare}},
+	"gt":       {1: {checkTypeNumeric, checkArgCanCompare}},
+	"lt":       {1: {checkTypeNumeric, checkArgCanCompare}},
+	"gte":      {1: {checkTypeNumeric, checkArgCanCompare}},
+	"lte":      {1: {checkTypeNumeric, checkArgCanCompare}},
+	"min":      {1: {checkTypeNumeric, checkArgCanCompare}},
+	"max":      {1: {checkTypeNumeric, checkArgCanCompare}},
+	"rng":      {2: {checkTypeNumeric, checkArgCanCompare}},
+	"len":      {1: {checkTypeHasLength, checkArgLen}, 2: {checkTypeHasLength, checkArgLen}},
 }
 
 // preform check specific to the "required" rule.
 func checkRuleRequired(f *StructField, r *Rule) error {
-	// checks that each param kind is either context or group key.
-	for _, p := range r.Params {
-		if p.Kind != ParamKindContext && p.Kind != ParamKindGroupKey {
-			return &anError{Code: errRuleParamKind, RuleParam: p}
+	// checks that each arg kind is either context or group key.
+	for _, a := range r.Args {
+		if a.Kind != ArgKindContext && a.Kind != ArgKindGroupKey {
+			return &anError{Code: errRuleArgKind, RuleArg: a}
 		}
 	}
 
-	if len(r.Params) == 2 {
-		// if two params were provided ensure that they're not of the same kind.
-		if r.Params[0].Kind == r.Params[1].Kind {
-			return &anError{Code: errRuleParamKindConflict, RuleParam: r.Params[1]}
+	if len(r.Args) == 2 {
+		// if two args were provided ensure that they're not of the same kind.
+		if r.Args[0].Kind == r.Args[1].Kind {
+			return &anError{Code: errRuleArgKindConflict, RuleArg: r.Args[1]}
 		}
 	}
 	return nil
@@ -144,17 +160,17 @@ var rxCountryCode3 = regexp.MustCompile(`^(?i:` +
 	`z(?:af|mb|we)|` +
 	`)$`)
 
-// checks that the rule's param value is a valid country code.
-func checkParamCountryCode(f *StructField, r *Rule) error {
-	for _, p := range r.Params {
-		if p.Kind != ParamKindReference && p.Kind != ParamKindLiteral {
-			return &anError{Code: errRuleParamKind, RuleParam: p}
+// checks that the rule's arg value is a valid country code.
+func checkArgCountryCode(f *StructField, r *Rule) error {
+	for _, p := range r.Args {
+		if p.Kind != ArgKindReference && p.Kind != ArgKindLiteral {
+			return &anError{Code: errRuleArgKind, RuleArg: p}
 		}
 
-		if p.Kind == ParamKindLiteral {
+		if p.Kind == ArgKindLiteral {
 			if !(len(p.Value) == 2 && rxCountryCode2.MatchString(p.Value)) &&
 				!(len(p.Value) == 3 && rxCountryCode3.MatchString(p.Value)) {
-				return &anError{Code: errRuleParamValueCountryCode, RuleParam: p}
+				return &anError{Code: errRuleArgValueCountryCode, RuleArg: p}
 			}
 		}
 	}
@@ -163,15 +179,15 @@ func checkParamCountryCode(f *StructField, r *Rule) error {
 
 var rxUUIDVer = regexp.MustCompile(`^(?:v?[1-5])$`)
 
-// checks that the rule's params values are valid UUID versions.
-func checkParamUUID(f *StructField, r *Rule) error {
-	for _, p := range r.Params {
-		if p.Kind != ParamKindReference && p.Kind != ParamKindLiteral {
-			return &anError{Code: errRuleParamKind, RuleParam: p}
+// checks that the rule's args values are valid UUID versions.
+func checkArgUUID(f *StructField, r *Rule) error {
+	for _, p := range r.Args {
+		if p.Kind != ArgKindReference && p.Kind != ArgKindLiteral {
+			return &anError{Code: errRuleArgKind, RuleArg: p}
 		}
 
-		if p.Kind == ParamKindLiteral && !rxUUIDVer.MatchString(p.Value) {
-			return &anError{Code: errRuleParamValueUUID, RuleParam: p}
+		if p.Kind == ArgKindLiteral && !rxUUIDVer.MatchString(p.Value) {
+			return &anError{Code: errRuleArgValueUUIDVer, RuleArg: p}
 		}
 	}
 	return nil
@@ -179,15 +195,15 @@ func checkParamUUID(f *StructField, r *Rule) error {
 
 var rxIPVer = regexp.MustCompile(`^(?:v?(?:4|6))$`)
 
-// checks that the rule's params values are valid IP versions.
-func checkParamIP(f *StructField, r *Rule) error {
-	for _, p := range r.Params {
-		if p.Kind != ParamKindReference && p.Kind != ParamKindLiteral {
-			return &anError{Code: errRuleParamKind, RuleParam: p}
+// checks that the rule's args values are valid IP versions.
+func checkArgIP(f *StructField, r *Rule) error {
+	for _, p := range r.Args {
+		if p.Kind != ArgKindReference && p.Kind != ArgKindLiteral {
+			return &anError{Code: errRuleArgKind, RuleArg: p}
 		}
 
-		if p.Kind == ParamKindLiteral && !rxIPVer.MatchString(p.Value) {
-			return &anError{Code: errRuleParamValueIP, RuleParam: p}
+		if p.Kind == ArgKindLiteral && !rxIPVer.MatchString(p.Value) {
+			return &anError{Code: errRuleArgValueIPVer, RuleArg: p}
 		}
 	}
 	return nil
@@ -195,132 +211,140 @@ func checkParamIP(f *StructField, r *Rule) error {
 
 var rxMACVer = regexp.MustCompile(`^(?:v?(?:6|8))$`)
 
-// checks that the rule's params values are valid MAC versions.
-func checkParamMAC(f *StructField, r *Rule) error {
-	for _, p := range r.Params {
-		if p.Kind != ParamKindReference && p.Kind != ParamKindLiteral {
-			return &anError{Code: errRuleParamKind, RuleParam: p}
+// checks that the rule's args values are valid MAC versions.
+func checkArgMAC(f *StructField, r *Rule) error {
+	for _, p := range r.Args {
+		if p.Kind != ArgKindReference && p.Kind != ArgKindLiteral {
+			return &anError{Code: errRuleArgKind, RuleArg: p}
 		}
 
-		if p.Kind == ParamKindLiteral && !rxMACVer.MatchString(p.Value) {
-			return &anError{Code: errRuleParamValueMAC, RuleParam: p}
-		}
-	}
-	return nil
-}
-
-// checks that the rule's param value is a supported ISO standard identifier.
-func checkParamISO(f *StructField, r *Rule) error {
-	for _, p := range r.Params {
-		if p.Kind != ParamKindReference && p.Kind != ParamKindLiteral {
-			return &anError{Code: errRuleParamKind, RuleParam: p}
-		}
-
-		// TODO if literal match value against a list of supported ISO standards
-	}
-	return nil
-}
-
-// checks that the rule's param value is a supported RFC standard identifier.
-func checkParamRFC(f *StructField, r *Rule) error {
-	for _, p := range r.Params {
-		if p.Kind != ParamKindReference && p.Kind != ParamKindLiteral {
-			return &anError{Code: errRuleParamKind, RuleParam: p}
-		}
-
-		// TODO if literal match value against a list of supported RFC standards
-	}
-	return nil
-}
-
-// checks that the rule's param values are either of the literal or reference kind.
-func checkParamValue(f *StructField, r *Rule) error {
-	for _, p := range r.Params {
-		if p.Kind != ParamKindReference && p.Kind != ParamKindLiteral {
-			return &anError{Code: errRuleParamKind, RuleParam: p}
+		if p.Kind == ArgKindLiteral && !rxMACVer.MatchString(p.Value) {
+			return &anError{Code: errRuleArgValueMACVer, RuleArg: p}
 		}
 	}
 	return nil
 }
 
-// checks that the rule's params are strings containing compilable regular expressions.
-func checkParamRegexp(f *StructField, r *Rule) error {
-	for _, p := range r.Params {
-		if p.Kind != ParamKindReference && p.Kind != ParamKindLiteral {
-			return &anError{Code: errRuleParamKind, RuleParam: p}
+var rxISOStd = regexp.MustCompile(`^(?:[1-9][0-9]*)$`) // non-zero unsigned int
+
+// checks that the rule's arg value is a supported ISO standard identifier.
+func checkArgISO(f *StructField, r *Rule) error {
+	for _, p := range r.Args {
+		if p.Kind != ArgKindReference && p.Kind != ArgKindLiteral {
+			return &anError{Code: errRuleArgKind, RuleArg: p}
 		}
 
-		if p.Kind == ParamKindLiteral {
-			if p.Type != ParamTypeString {
-				return &anError{Code: errRuleParamTypeString, RuleParam: p}
+		if p.Kind == ArgKindLiteral && !rxISOStd.MatchString(p.Value) {
+			return &anError{Code: errRuleArgValueISOStd, RuleArg: p}
+		}
+	}
+	return nil
+}
+
+var rxRFCStd = regexp.MustCompile(`^(?:[1-9][0-9]*)$`) // non-zero unsigned int
+
+// checks that the rule's arg value is a supported RFC standard identifier.
+func checkArgRFC(f *StructField, r *Rule) error {
+	for _, p := range r.Args {
+		if p.Kind != ArgKindReference && p.Kind != ArgKindLiteral {
+			return &anError{Code: errRuleArgKind, RuleArg: p}
+		}
+
+		if p.Kind == ArgKindLiteral && !rxRFCStd.MatchString(p.Value) {
+			return &anError{Code: errRuleArgValueRFCStd, RuleArg: p}
+		}
+	}
+	return nil
+}
+
+// checks that the rule's arg values are either of the literal or reference kind.
+func checkArgValue(f *StructField, r *Rule) error {
+	for _, p := range r.Args {
+		if p.Kind != ArgKindReference && p.Kind != ArgKindLiteral {
+			return &anError{Code: errRuleArgKind, RuleArg: p}
+		}
+	}
+	return nil
+}
+
+// checks that the rule's args are strings containing compilable regular expressions.
+func checkArgRegexp(f *StructField, r *Rule) error {
+	for _, p := range r.Args {
+		if p.Kind != ArgKindReference && p.Kind != ArgKindLiteral {
+			return &anError{Code: errRuleArgKind, RuleArg: p}
+		}
+
+		if p.Kind == ArgKindLiteral {
+			if p.Type != ArgTypeString {
+				return &anError{Code: errRuleArgTypeString, RuleArg: p}
 			}
 			if _, err := regexp.Compile(p.Value); err != nil {
-				return &anError{Code: errRuleParamValueRegexp, RuleParam: p, Err: err}
+				return &anError{Code: errRuleArgValueRegexp, RuleArg: p, Err: err}
 			}
 		}
 	}
 	return nil
 }
 
-// checks that the rule's params are of the uint type.
-func checkParamUint(f *StructField, r *Rule) error {
-	for _, p := range r.Params {
-		if p.Kind != ParamKindReference && p.Kind != ParamKindLiteral {
-			return &anError{Code: errRuleParamKind, RuleParam: p}
+// checks that the rule's args are of the uint type.
+func checkArgUint(f *StructField, r *Rule) error {
+	for _, p := range r.Args {
+		if p.Kind != ArgKindReference && p.Kind != ArgKindLiteral {
+			return &anError{Code: errRuleArgKind, RuleArg: p}
 		}
 
-		if p.Kind == ParamKindLiteral && p.Type != ParamTypeUint {
-			return &anError{Code: errRuleParamTypeUint, RuleParam: p}
+		if p.Kind == ArgKindLiteral && p.Type != ArgTypeUint {
+			return &anError{Code: errRuleArgTypeUint, RuleArg: p}
 		}
 	}
 	return nil
 }
 
-// checks that the rule's params are of the uint type, if present.
-func checkParamLen(f *StructField, r *Rule) error {
-	for _, p := range r.Params {
-		if p.Kind != ParamKindReference && p.Kind != ParamKindLiteral {
-			return &anError{Code: errRuleParamKind, RuleParam: p}
+// checks that the rule's args are of the uint type, if present.
+func checkArgLen(f *StructField, r *Rule) error {
+	for _, p := range r.Args {
+		if p.Kind != ArgKindReference && p.Kind != ArgKindLiteral {
+			return &anError{Code: errRuleArgKind, RuleArg: p}
 		}
 
-		if p.Kind == ParamKindLiteral && p.Type != ParamTypeUint && len(p.Value) > 0 {
-			return &anError{Code: errRuleParamTypeUint, RuleParam: p}
+		if p.Kind == ArgKindLiteral && p.Type != ArgTypeUint && len(p.Value) > 0 {
+			return &anError{Code: errRuleArgTypeUint, RuleArg: p}
 		}
 	}
 
-	if len(r.Params) == 2 {
-		if r.Params[0].Value == "" && r.Params[1].Value == "" {
-			return &anError{Code: errRuleParamValueLen, RuleParam: r.Params[1]}
+	if len(r.Args) == 2 {
+		if r.Args[0].Value == "" && r.Args[1].Value == "" {
+			return &anError{Code: errRuleArgValueLen, RuleArg: r.Args[1]}
 		}
 	}
 
 	return nil
 }
 
-// checks that the rule's params' values can be compared to the field's value.
-func checkParamCanCompare(f *StructField, r *Rule) error {
-	for _, p := range r.Params {
-		if p.Kind != ParamKindReference && p.Kind != ParamKindLiteral {
-			return &anError{Code: errRuleParamKind, RuleParam: p}
+// checks that the rule's args' values can be compared to the field's value.
+func checkArgCanCompare(f *StructField, r *Rule) error {
+	for _, p := range r.Args {
+		if p.Kind != ArgKindReference && p.Kind != ArgKindLiteral {
+			return &anError{Code: errRuleArgKind, RuleArg: p}
 		}
 
-		if p.Kind == ParamKindLiteral {
-			if p.Type == ParamTypeNint && !hasTypeKind(f, TypeKindInt,
+		if p.Kind == ArgKindLiteral {
+			if p.Type == ArgTypeNint && !hasTypeKind(f, TypeKindInt,
 				TypeKindInt8, TypeKindInt16, TypeKindInt32, TypeKindInt64,
 				TypeKindFloat32, TypeKindFloat64) {
-				return &anError{Code: errRuleParamTypeNint, RuleParam: p}
+				return &anError{Code: errRuleArgTypeNint, RuleArg: p}
 			}
-			if p.Type == ParamTypeUint && !hasTypeKind(f, TypeKindInt,
+			if p.Type == ArgTypeUint && !hasTypeKind(f, TypeKindInt,
 				TypeKindInt8, TypeKindInt16, TypeKindInt32, TypeKindInt64,
 				TypeKindUint, TypeKindUint8, TypeKindUint16, TypeKindUint32,
 				TypeKindUint64, TypeKindFloat32, TypeKindFloat64) {
-				return &anError{Code: errRuleParamTypeUint, RuleParam: p}
+				return &anError{Code: errRuleArgTypeUint, RuleArg: p}
 			}
-			if p.Type == ParamTypeFloat && !hasTypeKind(f, TypeKindFloat32, TypeKindFloat64) {
-				return &anError{Code: errRuleParamTypeFloat, RuleParam: p}
+			if p.Type == ArgTypeFloat && !hasTypeKind(f, TypeKindFloat32, TypeKindFloat64) {
+				return &anError{Code: errRuleArgTypeFloat, RuleArg: p}
 			}
-			if p.Type == ParamTypeString && !hasTypeKind(f, TypeKindString) {
-				return &anError{Code: errRuleParamTypeFloat, RuleParam: p}
+			if p.Type == ArgTypeString && !hasTypeKind(f, TypeKindString) {
+				return &anError{Code: errRuleArgTypeFloat, RuleArg: p}
 			}
 		}
 	}
@@ -328,9 +352,9 @@ func checkParamCanCompare(f *StructField, r *Rule) error {
 }
 
 // checks that the field's type is of the string kind.
-func checkTypeString(f *StructField, r *Rule) error {
+func checkTypeKindString(f *StructField, r *Rule) error {
 	if !hasTypeKind(f, TypeKindString) {
-		return &anError{Code: errTypeString}
+		return &anError{Code: errTypeKindString}
 	}
 	return nil
 }

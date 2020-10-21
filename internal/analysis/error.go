@@ -5,16 +5,34 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+
+	"github.com/frk/tagutil"
 )
 
 type anError struct {
-	Code        errorCode
-	StructField *StructField
-	Rule        *Rule
-	RuleParam   *RuleParam
-	FileName    string
-	FileLine    int
-	Err         error
+	Code errorCode
+	// Name of the validator that caused the error.
+	VtorName string
+	// The file in which the validator that caused the error is declared.
+	VtorFileName string
+	// The line at which the validator that caused the error is declared.
+	VtorFileLine int
+	// The name of the field which caused the error, may be empty.
+	FieldName string
+	// The type of the field which caused the error.
+	FieldType string
+	// The tag of the field which caused the error.
+	FieldTag tagutil.Tag
+	// The file in which the field that caused the error is defined.
+	FieldFileName string
+	// The line at which the field that caused the error is defined.
+	FieldFileLine int
+	// The rule that caused the error.
+	RuleName string
+	// The rule arg that caused the error.
+	RuleArg *RuleArg
+	// The original error
+	Err error
 }
 
 func (e *anError) Error() string {
@@ -26,11 +44,11 @@ func (e *anError) Error() string {
 }
 
 func (e *anError) FileAndLine() string {
-	return e.FileName + ":" + strconv.Itoa(e.FileLine)
+	return e.FieldFileName + ":" + strconv.Itoa(e.FieldFileLine)
 }
 
-func (e *anError) FieldName() string {
-	return e.StructField.Name
+func (e *anError) VtorFileAndLine() string {
+	return e.VtorFileName + ":" + strconv.Itoa(e.VtorFileLine)
 }
 
 type errorCode uint8
@@ -39,28 +57,43 @@ func (e errorCode) name() string { return fmt.Sprintf("error_template_%d", e) }
 
 const (
 	_ errorCode = iota
+	_errCode_
+	errEmptyValidator
 	errRuleUnknown
 	errRuleContextUnknown
-	errRuleParamKind
-	errRuleParamKindConflict
-	errRuleParamTypeUint
-	errRuleParamTypeNint
-	errRuleParamTypeFloat
-	errRuleParamTypeString
-	errRuleParamValueRegexp
-	errRuleParamValueUUID
-	errRuleParamValueIP
-	errRuleParamValueMAC
-	errRuleParamValueCountryCode
-	errRuleParamValueLen
+	errRuleArgNum
+	errRuleArgKind
+	errRuleArgKindConflict
+	errRuleArgTypeUint
+	errRuleArgTypeNint
+	errRuleArgTypeFloat
+	errRuleArgTypeString
+	errRuleArgValueRegexp
+	errRuleArgValueUUIDVer
+	errRuleArgValueIPVer
+	errRuleArgValueMACVer
+	errRuleArgValueCountryCode
+	errRuleArgValueLen
+	errRuleArgValueISOStd
+	errRuleArgValueRFCStd
 	errTypeLength
 	errTypeNumeric
-	errTypeString
+	errTypeKindString
 	errFieldKeyUnknown
 	errFieldKeyConflict
 )
 
 var error_template_string = `
+{{ define "` + _errCode_.name() + `" -}}
+{{.VtorFileAndLine}}: {{Y "empty validator"}}
+  > {{wu .VtorName}} must have at least one field to validate.
+{{ end }}
+
+{{ define "` + errEmptyValidator.name() + `" -}}
+{{.VtorFileAndLine}}: {{R .VtorName}}
+  > must have at least one field to validate.
+{{ end }}
+
 {{ define "` + errRuleUnknown.name() + `" -}}
 {{Wb .FileAndLine}}: {{Y "Unknown rule."}}
 	TODO {{R .FieldName}}
@@ -71,58 +104,78 @@ var error_template_string = `
 	TODO {{R .FieldName}}
 {{ end }}
 
-{{ define "` + errRuleParamKind.name() + `" -}}
-{{Wb .FileAndLine}}: {{Y "Bad rule paramater kind."}}
+{{ define "` + errRuleArgNum.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Bad number of rule args."}}
 	TODO {{R .FieldName}}
 {{ end }}
 
-{{ define "` + errRuleParamKindConflict.name() + `" -}}
-{{Wb .FileAndLine}}: {{Y "Conflicting rule parameter kind."}}
+{{ define "` + errRuleArgKind.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Bad rule arg kind."}}
 	TODO {{R .FieldName}}
 {{ end }}
 
-{{ define "` + errRuleParamTypeUint.name() + `" -}}
-{{Wb .FileAndLine}}: {{Y "Bad rule parameter type (uint)."}}
+{{ define "` + errRuleArgKindConflict.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Conflicting rule arg kind."}}
 	TODO {{R .FieldName}}
 {{ end }}
 
-{{ define "` + errRuleParamTypeNint.name() + `" -}}
-{{Wb .FileAndLine}}: {{Y "Bad rule parameter type (nint)."}}
+{{ define "` + errRuleArgTypeUint.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Bad rule arg type (uint)."}}
 	TODO {{R .FieldName}}
 {{ end }}
 
-{{ define "` + errRuleParamTypeFloat.name() + `" -}}
-{{Wb .FileAndLine}}: {{Y "Bad rule parameter type (float)."}}
+{{ define "` + errRuleArgTypeNint.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Bad rule arg type (nint)."}}
 	TODO {{R .FieldName}}
 {{ end }}
 
-{{ define "` + errRuleParamTypeString.name() + `" -}}
-{{Wb .FileAndLine}}: {{Y "Bad rule parameter type (string)."}}
+{{ define "` + errRuleArgTypeFloat.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Bad rule arg type (float)."}}
 	TODO {{R .FieldName}}
 {{ end }}
 
-{{ define "` + errRuleParamValueRegexp.name() + `" -}}
-{{Wb .FileAndLine}}: {{Y "Bad rule paramter value (regexp)."}}
+{{ define "` + errRuleArgTypeString.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Bad rule arg type (string)."}}
 	TODO {{R .FieldName}}
 {{ end }}
 
-{{ define "` + errRuleParamValueUUID.name() + `" -}}
-{{Wb .FileAndLine}}: {{Y "Bad rule paramter value (uuid)."}}
+{{ define "` + errRuleArgValueRegexp.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Bad rule arg value (regexp)."}}
 	TODO {{R .FieldName}}
 {{ end }}
 
-{{ define "` + errRuleParamValueIP.name() + `" -}}
-{{Wb .FileAndLine}}: {{Y "Bad rule paramter value (ip)."}}
+{{ define "` + errRuleArgValueUUIDVer.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Bad rule arg value (uuid)."}}
 	TODO {{R .FieldName}}
 {{ end }}
 
-{{ define "` + errRuleParamValueMAC.name() + `" -}}
-{{Wb .FileAndLine}}: {{Y "Bad rule paramter value (mac)."}}
+{{ define "` + errRuleArgValueIPVer.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Bad rule arg value (ip)."}}
 	TODO {{R .FieldName}}
 {{ end }}
 
-{{ define "` + errRuleParamValueCountryCode.name() + `" -}}
-{{Wb .FileAndLine}}: {{Y "Bad rule paramter value (country code)."}}
+{{ define "` + errRuleArgValueMACVer.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Bad rule arg value (mac)."}}
+	TODO {{R .FieldName}}
+{{ end }}
+
+{{ define "` + errRuleArgValueCountryCode.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Bad rule arg value (country code)."}}
+	TODO {{R .FieldName}}
+{{ end }}
+
+{{ define "` + errRuleArgValueLen.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Bad rule arg value (len)."}}
+	TODO {{R .FieldName}}
+{{ end }}
+
+{{ define "` + errRuleArgValueISOStd.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Bad rule arg value (ISO)."}}
+	TODO {{R .FieldName}}
+{{ end }}
+
+{{ define "` + errRuleArgValueRFCStd.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Bad rule arg value (RFC)."}}
 	TODO {{R .FieldName}}
 {{ end }}
 
@@ -136,7 +189,7 @@ var error_template_string = `
 	TODO {{R .FieldName}}
 {{ end }}
 
-{{ define "` + errTypeString.name() + `" -}}
+{{ define "` + errTypeKindString.name() + `" -}}
 {{Wb .FileAndLine}}: {{Y "Field type is not string"}}
 	TODO {{R .FieldName}}
 {{ end }}

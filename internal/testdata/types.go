@@ -24,11 +24,11 @@ type UserInput struct {
 	F16 string `is:"cidr"`
 
 	F17 string `is:"phone"`
-	F18 string `is:"phone:us"`
+	F18 string `is:"phone:us:ca"`
 	F19 string `is:"phone:&CountryCode"`
 
 	F20 string `is:"zip"`
-	F21 string `is:"zip:deu"`
+	F21 string `is:"zip:deu:fin"`
 	F22 string `is:"zip:&CountryCode"`
 
 	F23 string `is:"uuid"`

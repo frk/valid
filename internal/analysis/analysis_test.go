@@ -29,14 +29,865 @@ func testRunAnalysis(name string, t *testing.T) (*ValidatorStruct, error) {
 func TestAnalysisRun(t *testing.T) {
 	// ...
 	tests := []struct {
-		Name     string
+		name     string
 		want     *ValidatorStruct
 		err      error
 		printerr bool
 	}{{
-		Name: "AnalysisTestOK1_Validator",
+		name: "AnalysisTestBAD_EmptyValidator",
+		err: &anError{Code: errEmptyValidator,
+			VtorName:     "AnalysisTestBAD_EmptyValidator",
+			VtorFileName: "../testdata/analysis.go",
+			VtorFileLine: 7,
+		},
+	}, {
+		name: "AnalysisTestBAD_Empty2Validator",
+		err: &anError{Code: errEmptyValidator,
+			VtorName:     "AnalysisTestBAD_Empty2Validator",
+			VtorFileName: "../testdata/analysis.go",
+			VtorFileLine: 11,
+		},
+	}, {
+		name: "AnalysisTestBAD_Empty3Validator",
+		err: &anError{Code: errEmptyValidator,
+			VtorName:     "AnalysisTestBAD_Empty3Validator",
+			VtorFileName: "../testdata/analysis.go",
+			VtorFileLine: 15,
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgNumRequiredValidator",
+		err: &anError{Code: errRuleArgNum,
+			VtorName:      "AnalysisTestBAD_RuleArgNumRequiredValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  21,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"required:@create:#group-key:#foobar"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 22,
+			RuleName:      "required",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgKindRequiredValidator",
+		err: &anError{Code: errRuleArgKind,
+			VtorName:      "AnalysisTestBAD_RuleArgKindRequiredValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  25,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"required:@create:foobar"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 26,
+			RuleName:      "required",
+			RuleArg:       &RuleArg{Value: "foobar", Kind: ArgKindLiteral, Type: ArgTypeString},
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgKindConflictRequiredValidator",
+		err: &anError{Code: errRuleArgKindConflict,
+			VtorName:      "AnalysisTestBAD_RuleArgKindConflictRequiredValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  29,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"required:@create:@update"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 30,
+			RuleName:      "required",
+			RuleArg:       &RuleArg{Value: "update", Kind: ArgKindContext},
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgKindConflict2RequiredValidator",
+		err: &anError{Code: errRuleArgKindConflict,
+			VtorName:      "AnalysisTestBAD_RuleArgKindConflict2RequiredValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  33,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"required:#key1:#key2"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 34,
+			RuleName:      "required",
+			RuleArg:       &RuleArg{Value: "key2", Kind: ArgKindGroupKey},
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgNumEmailValidator",
+		err: &anError{Code: errRuleArgNum,
+			VtorName:      "AnalysisTestBAD_RuleArgNumEmailValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  37,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"email:foo"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 38,
+			RuleName:      "email",
+		},
+	}, {
+		name: "AnalysisTestBAD_TypeKindStringEmailValidator",
+		err: &anError{Code: errTypeKindString,
+			VtorName:      "AnalysisTestBAD_TypeKindStringEmailValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  41,
+			FieldName:     "F",
+			FieldType:     "int",
+			FieldTag:      tagutil.Tag{"is": {"email"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 42,
+			RuleName:      "email",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgNumURLValidator",
+		err: &anError{Code: errRuleArgNum,
+			VtorName:      "AnalysisTestBAD_RuleArgNumURLValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  45,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"url:foo"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 46,
+			RuleName:      "url",
+		},
+	}, {
+		name: "AnalysisTestBAD_TypeKindStringURLValidator",
+		err: &anError{Code: errTypeKindString,
+			VtorName:      "AnalysisTestBAD_TypeKindStringURLValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  49,
+			FieldName:     "F",
+			FieldType:     "int",
+			FieldTag:      tagutil.Tag{"is": {"url"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 50,
+			RuleName:      "url",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgNumURIValidator",
+		err: &anError{Code: errRuleArgNum,
+			VtorName:      "AnalysisTestBAD_RuleArgNumURIValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  53,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"uri:foo"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 54,
+			RuleName:      "uri",
+		},
+	}, {
+		name: "AnalysisTestBAD_TypeKindStringURIValidator",
+		err: &anError{Code: errTypeKindString,
+			VtorName:      "AnalysisTestBAD_TypeKindStringURIValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  57,
+			FieldName:     "F",
+			FieldType:     "int",
+			FieldTag:      tagutil.Tag{"is": {"uri"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 58,
+			RuleName:      "uri",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgNumPANValidator",
+		err: &anError{Code: errRuleArgNum,
+			VtorName:      "AnalysisTestBAD_RuleArgNumPANValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  61,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"pan:foo"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 62,
+			RuleName:      "pan",
+		},
+	}, {
+		name: "AnalysisTestBAD_TypeKindStringPANValidator",
+		err: &anError{Code: errTypeKindString,
+			VtorName:      "AnalysisTestBAD_TypeKindStringPANValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  65,
+			FieldName:     "F",
+			FieldType:     "bool",
+			FieldTag:      tagutil.Tag{"is": {"pan"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 66,
+			RuleName:      "pan",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgNumCVVValidator",
+		err: &anError{Code: errRuleArgNum,
+			VtorName:      "AnalysisTestBAD_RuleArgNumCVVValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  69,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"cvv:foo"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 70,
+			RuleName:      "cvv",
+		},
+	}, {
+		name: "AnalysisTestBAD_TypeKindStringCVVValidator",
+		err: &anError{Code: errTypeKindString,
+			VtorName:      "AnalysisTestBAD_TypeKindStringCVVValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  73,
+			FieldName:     "F",
+			FieldType:     "bool",
+			FieldTag:      tagutil.Tag{"is": {"cvv"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 74,
+			RuleName:      "cvv",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgNumSSNValidator",
+		err: &anError{Code: errRuleArgNum,
+			VtorName:      "AnalysisTestBAD_RuleArgNumSSNValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  77,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"ssn:foo"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 78,
+			RuleName:      "ssn",
+		},
+	}, {
+		name: "AnalysisTestBAD_TypeKindStringSSNValidator",
+		err: &anError{Code: errTypeKindString,
+			VtorName:      "AnalysisTestBAD_TypeKindStringSSNValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  81,
+			FieldName:     "F",
+			FieldType:     "bool",
+			FieldTag:      tagutil.Tag{"is": {"ssn"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 82,
+			RuleName:      "ssn",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgNumEINValidator",
+		err: &anError{Code: errRuleArgNum,
+			VtorName:      "AnalysisTestBAD_RuleArgNumEINValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  85,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"ein:foo"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 86,
+			RuleName:      "ein",
+		},
+	}, {
+		name: "AnalysisTestBAD_TypeKindStringEINValidator",
+		err: &anError{Code: errTypeKindString,
+			VtorName:      "AnalysisTestBAD_TypeKindStringEINValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  89,
+			FieldName:     "F",
+			FieldType:     "bool",
+			FieldTag:      tagutil.Tag{"is": {"ein"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 90,
+			RuleName:      "ein",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgNumNumericValidator",
+		err: &anError{Code: errRuleArgNum,
+			VtorName:      "AnalysisTestBAD_RuleArgNumNumericValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  93,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"numeric:foo"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 94,
+			RuleName:      "numeric",
+		},
+	}, {
+		name: "AnalysisTestBAD_TypeKindStringNumericValidator",
+		err: &anError{Code: errTypeKindString,
+			VtorName:      "AnalysisTestBAD_TypeKindStringNumericValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  97,
+			FieldName:     "F",
+			FieldType:     "uint64",
+			FieldTag:      tagutil.Tag{"is": {"numeric"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 98,
+			RuleName:      "numeric",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgNumHexValidator",
+		err: &anError{Code: errRuleArgNum,
+			VtorName:      "AnalysisTestBAD_RuleArgNumHexValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  101,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"hex:foo"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 102,
+			RuleName:      "hex",
+		},
+	}, {
+		name: "AnalysisTestBAD_TypeKindStringHexValidator",
+		err: &anError{Code: errTypeKindString,
+			VtorName:      "AnalysisTestBAD_TypeKindStringHexValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  105,
+			FieldName:     "F",
+			FieldType:     "uint64",
+			FieldTag:      tagutil.Tag{"is": {"hex"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 106,
+			RuleName:      "hex",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgNumHexcolorValidator",
+		err: &anError{Code: errRuleArgNum,
+			VtorName:      "AnalysisTestBAD_RuleArgNumHexcolorValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  109,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"hexcolor:foo"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 110,
+			RuleName:      "hexcolor",
+		},
+	}, {
+		name: "AnalysisTestBAD_TypeKindStringHexcolorValidator",
+		err: &anError{Code: errTypeKindString,
+			VtorName:      "AnalysisTestBAD_TypeKindStringHexcolorValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  113,
+			FieldName:     "F",
+			FieldType:     "uint64",
+			FieldTag:      tagutil.Tag{"is": {"hexcolor"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 114,
+			RuleName:      "hexcolor",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgNumAlphanumValidator",
+		err: &anError{Code: errRuleArgNum,
+			VtorName:      "AnalysisTestBAD_RuleArgNumAlphanumValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  117,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"alphanum:foo"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 118,
+			RuleName:      "alphanum",
+		},
+	}, {
+		name: "AnalysisTestBAD_TypeKindStringAlphanumValidator",
+		err: &anError{Code: errTypeKindString,
+			VtorName:      "AnalysisTestBAD_TypeKindStringAlphanumValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  121,
+			FieldName:     "F",
+			FieldType:     "uint64",
+			FieldTag:      tagutil.Tag{"is": {"alphanum"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 122,
+			RuleName:      "alphanum",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgNumCIDRValidator",
+		err: &anError{Code: errRuleArgNum,
+			VtorName:      "AnalysisTestBAD_RuleArgNumCIDRValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  125,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"cidr:foo"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 126,
+			RuleName:      "cidr",
+		},
+	}, {
+		name: "AnalysisTestBAD_TypeKindStringCIDRValidator",
+		err: &anError{Code: errTypeKindString,
+			VtorName:      "AnalysisTestBAD_TypeKindStringCIDRValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  129,
+			FieldName:     "F",
+			FieldType:     "uint64",
+			FieldTag:      tagutil.Tag{"is": {"cidr"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 130,
+			RuleName:      "cidr",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgKindPhoneValidator",
+		err: &anError{Code: errRuleArgKind,
+			VtorName:      "AnalysisTestBAD_RuleArgKindPhoneValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  133,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"phone:@ctx"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 134,
+			RuleName:      "phone",
+			RuleArg:       &RuleArg{Value: "ctx", Kind: ArgKindContext},
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgKind2PhoneValidator",
+		err: &anError{Code: errRuleArgKind,
+			VtorName:      "AnalysisTestBAD_RuleArgKind2PhoneValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  137,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"phone:#key"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 138,
+			RuleName:      "phone",
+			RuleArg:       &RuleArg{Value: "key", Kind: ArgKindGroupKey},
+		},
+	}, {
+		name: "AnalysisTestBAD_TypeKindStringPhoneValidator",
+		err: &anError{Code: errTypeKindString,
+			VtorName:      "AnalysisTestBAD_TypeKindStringPhoneValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  141,
+			FieldName:     "F",
+			FieldType:     "[]byte",
+			FieldTag:      tagutil.Tag{"is": {"phone"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 142,
+			RuleName:      "phone",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgValueCountryCodePhoneValidator",
+		err: &anError{Code: errRuleArgValueCountryCode,
+			VtorName:      "AnalysisTestBAD_RuleArgValueCountryCodePhoneValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  145,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"phone:foo"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 146,
+			RuleName:      "phone",
+			RuleArg:       &RuleArg{Value: "foo", Kind: ArgKindLiteral, Type: ArgTypeString},
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgKindZipValidator",
+		err: &anError{Code: errRuleArgKind,
+			VtorName:      "AnalysisTestBAD_RuleArgKindZipValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  149,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"zip:@ctx"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 150,
+			RuleName:      "zip",
+			RuleArg:       &RuleArg{Value: "ctx", Kind: ArgKindContext},
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgKind2ZipValidator",
+		err: &anError{Code: errRuleArgKind,
+			VtorName:      "AnalysisTestBAD_RuleArgKind2ZipValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  153,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"zip:#key"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 154,
+			RuleName:      "zip",
+			RuleArg:       &RuleArg{Value: "key", Kind: ArgKindGroupKey},
+		},
+	}, {
+		name: "AnalysisTestBAD_TypeKindStringZipValidator",
+		err: &anError{Code: errTypeKindString,
+			VtorName:      "AnalysisTestBAD_TypeKindStringZipValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  157,
+			FieldName:     "F",
+			FieldType:     "[]byte",
+			FieldTag:      tagutil.Tag{"is": {"zip"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 158,
+			RuleName:      "zip",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgValueCountryCodeZipValidator",
+		err: &anError{Code: errRuleArgValueCountryCode,
+			VtorName:      "AnalysisTestBAD_RuleArgValueCountryCodeZipValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  161,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"zip:foo"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 162,
+			RuleName:      "zip",
+			RuleArg:       &RuleArg{Value: "foo", Kind: ArgKindLiteral, Type: ArgTypeString},
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgKindUUIDValidator",
+		err: &anError{Code: errRuleArgKind,
+			VtorName:      "AnalysisTestBAD_RuleArgKindUUIDValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  165,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"uuid:@ctx"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 166,
+			RuleName:      "uuid",
+			RuleArg:       &RuleArg{Value: "ctx", Kind: ArgKindContext},
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgKind2UUIDValidator",
+		err: &anError{Code: errRuleArgKind,
+			VtorName:      "AnalysisTestBAD_RuleArgKind2UUIDValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  169,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"uuid:#key"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 170,
+			RuleName:      "uuid",
+			RuleArg:       &RuleArg{Value: "key", Kind: ArgKindGroupKey},
+		},
+	}, {
+		name: "AnalysisTestBAD_TypeKindStringUUIDValidator",
+		err: &anError{Code: errTypeKindString,
+			VtorName:      "AnalysisTestBAD_TypeKindStringUUIDValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  173,
+			FieldName:     "F",
+			FieldType:     "[]byte",
+			FieldTag:      tagutil.Tag{"is": {"uuid"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 174,
+			RuleName:      "uuid",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgValueUUIDVerUUIDValidator",
+		err: &anError{Code: errRuleArgValueUUIDVer,
+			VtorName:      "AnalysisTestBAD_RuleArgValueUUIDVerUUIDValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  177,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"uuid:foo"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 178,
+			RuleName:      "uuid",
+			RuleArg:       &RuleArg{Value: "foo", Kind: ArgKindLiteral, Type: ArgTypeString},
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgKindIPValidator",
+		err: &anError{Code: errRuleArgKind,
+			VtorName:      "AnalysisTestBAD_RuleArgKindIPValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  181,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"ip:@ctx"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 182,
+			RuleName:      "ip",
+			RuleArg:       &RuleArg{Value: "ctx", Kind: ArgKindContext},
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgKind2IPValidator",
+		err: &anError{Code: errRuleArgKind,
+			VtorName:      "AnalysisTestBAD_RuleArgKind2IPValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  185,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"ip:#key"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 186,
+			RuleName:      "ip",
+			RuleArg:       &RuleArg{Value: "key", Kind: ArgKindGroupKey},
+		},
+	}, {
+		name: "AnalysisTestBAD_TypeKindStringIPValidator",
+		err: &anError{Code: errTypeKindString,
+			VtorName:      "AnalysisTestBAD_TypeKindStringIPValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  189,
+			FieldName:     "F",
+			FieldType:     "[]byte",
+			FieldTag:      tagutil.Tag{"is": {"ip"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 190,
+			RuleName:      "ip",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgValueIPVerIPValidator",
+		err: &anError{Code: errRuleArgValueIPVer,
+			VtorName:      "AnalysisTestBAD_RuleArgValueIPVerIPValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  193,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"ip:foo"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 194,
+			RuleName:      "ip",
+			RuleArg:       &RuleArg{Value: "foo", Kind: ArgKindLiteral, Type: ArgTypeString},
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgNumIPValidator",
+		err: &anError{Code: errRuleArgNum,
+			VtorName:      "AnalysisTestBAD_RuleArgNumIPValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  197,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"ip:v4:v6"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 198,
+			RuleName:      "ip",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgKindMACValidator",
+		err: &anError{Code: errRuleArgKind,
+			VtorName:      "AnalysisTestBAD_RuleArgKindMACValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  201,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"mac:@ctx"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 202,
+			RuleName:      "mac",
+			RuleArg:       &RuleArg{Value: "ctx", Kind: ArgKindContext},
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgKind2MACValidator",
+		err: &anError{Code: errRuleArgKind,
+			VtorName:      "AnalysisTestBAD_RuleArgKind2MACValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  205,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"mac:#key"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 206,
+			RuleName:      "mac",
+			RuleArg:       &RuleArg{Value: "key", Kind: ArgKindGroupKey},
+		},
+	}, {
+		name: "AnalysisTestBAD_TypeKindStringMACValidator",
+		err: &anError{Code: errTypeKindString,
+			VtorName:      "AnalysisTestBAD_TypeKindStringMACValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  209,
+			FieldName:     "F",
+			FieldType:     "[]byte",
+			FieldTag:      tagutil.Tag{"is": {"mac"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 210,
+			RuleName:      "mac",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgValueMACVerMACValidator",
+		err: &anError{Code: errRuleArgValueMACVer,
+			VtorName:      "AnalysisTestBAD_RuleArgValueMACVerMACValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  213,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"mac:foo"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 214,
+			RuleName:      "mac",
+			RuleArg:       &RuleArg{Value: "foo", Kind: ArgKindLiteral, Type: ArgTypeString},
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgNumMACValidator",
+		err: &anError{Code: errRuleArgNum,
+			VtorName:      "AnalysisTestBAD_RuleArgNumMACValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  217,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"mac:6:8"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 218,
+			RuleName:      "mac",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgKindISOValidator",
+		err: &anError{Code: errRuleArgKind,
+			VtorName:      "AnalysisTestBAD_RuleArgKindISOValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  221,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"iso:@ctx"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 222,
+			RuleName:      "iso",
+			RuleArg:       &RuleArg{Value: "ctx", Kind: ArgKindContext},
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgKind2ISOValidator",
+		err: &anError{Code: errRuleArgKind,
+			VtorName:      "AnalysisTestBAD_RuleArgKind2ISOValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  225,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"iso:#key"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 226,
+			RuleName:      "iso",
+			RuleArg:       &RuleArg{Value: "key", Kind: ArgKindGroupKey},
+		},
+	}, {
+		name: "AnalysisTestBAD_TypeKindStringISOValidator",
+		err: &anError{Code: errTypeKindString,
+			VtorName:      "AnalysisTestBAD_TypeKindStringISOValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  229,
+			FieldName:     "F",
+			FieldType:     "[]byte",
+			FieldTag:      tagutil.Tag{"is": {"iso:1234"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 230,
+			RuleName:      "iso",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgValueISOStdISOValidator",
+		err: &anError{Code: errRuleArgValueISOStd,
+			VtorName:      "AnalysisTestBAD_RuleArgValueISOStdISOValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  233,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"iso:foo"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 234,
+			RuleName:      "iso",
+			RuleArg:       &RuleArg{Value: "foo", Kind: ArgKindLiteral, Type: ArgTypeString},
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgNumISOValidator",
+		err: &anError{Code: errRuleArgNum,
+			VtorName:      "AnalysisTestBAD_RuleArgNumISOValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  237,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"iso"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 238,
+			RuleName:      "iso",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgNum2ISOValidator",
+		err: &anError{Code: errRuleArgNum,
+			VtorName:      "AnalysisTestBAD_RuleArgNum2ISOValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  241,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"iso:6:8"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 242,
+			RuleName:      "iso",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgKindRFCValidator",
+		err: &anError{Code: errRuleArgKind,
+			VtorName:      "AnalysisTestBAD_RuleArgKindRFCValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  245,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"rfc:@ctx"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 246,
+			RuleName:      "rfc",
+			RuleArg:       &RuleArg{Value: "ctx", Kind: ArgKindContext},
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgKind2RFCValidator",
+		err: &anError{Code: errRuleArgKind,
+			VtorName:      "AnalysisTestBAD_RuleArgKind2RFCValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  249,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"rfc:#key"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 250,
+			RuleName:      "rfc",
+			RuleArg:       &RuleArg{Value: "key", Kind: ArgKindGroupKey},
+		},
+	}, {
+		name: "AnalysisTestBAD_TypeKindStringRFCValidator",
+		err: &anError{Code: errTypeKindString,
+			VtorName:      "AnalysisTestBAD_TypeKindStringRFCValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  253,
+			FieldName:     "F",
+			FieldType:     "[]byte",
+			FieldTag:      tagutil.Tag{"is": {"rfc:1234"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 254,
+			RuleName:      "rfc",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgValueRFCStdRFCValidator",
+		err: &anError{Code: errRuleArgValueRFCStd,
+			VtorName:      "AnalysisTestBAD_RuleArgValueRFCStdRFCValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  257,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"rfc:foo"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 258,
+			RuleName:      "rfc",
+			RuleArg:       &RuleArg{Value: "foo", Kind: ArgKindLiteral, Type: ArgTypeString},
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgNumRFCValidator",
+		err: &anError{Code: errRuleArgNum,
+			VtorName:      "AnalysisTestBAD_RuleArgNumRFCValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  261,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"rfc"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 262,
+			RuleName:      "rfc",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleArgNum2RFCValidator",
+		err: &anError{Code: errRuleArgNum,
+			VtorName:      "AnalysisTestBAD_RuleArgNum2RFCValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  265,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"rfc:6:8"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 266,
+			RuleName:      "rfc",
+		},
+	}, {
+		name: "AnalysisTestOK_Validator",
 		want: &ValidatorStruct{
-			TypeName: "AnalysisTestOK1_Validator",
+			TypeName: "AnalysisTestOK_Validator",
 			Fields: []*StructField{{
 				Name: "UserInput",
 				Key:  "UserInput",
@@ -67,23 +918,23 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "f2", Key: "f2",
 							Tag:  tagutil.Tag{"is": []string{"required:@create"}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "required", Params: []*RuleParam{
-								{Value: "create", Kind: ParamKindContext},
+							Rules: []*Rule{{Name: "required", Args: []*RuleArg{
+								{Value: "create", Kind: ArgKindContext},
 							}}},
 						}, {
 							Name: "f3", Key: "f3",
 							Tag:  tagutil.Tag{"is": []string{"required:#key"}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "required", Params: []*RuleParam{
-								{Value: "key", Kind: ParamKindGroupKey},
+							Rules: []*Rule{{Name: "required", Args: []*RuleArg{
+								{Value: "key", Kind: ArgKindGroupKey},
 							}}},
 						}, {
 							Name: "f4", Key: "f4",
 							Tag:  tagutil.Tag{"is": []string{"required:@create:#key"}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "required", Params: []*RuleParam{
-								{Value: "create", Kind: ParamKindContext},
-								{Value: "key", Kind: ParamKindGroupKey},
+							Rules: []*Rule{{Name: "required", Args: []*RuleArg{
+								{Value: "create", Kind: ArgKindContext},
+								{Value: "key", Kind: ArgKindGroupKey},
 							}}},
 						}, {
 							Name: "f5", Key: "f5",
@@ -152,17 +1003,18 @@ func TestAnalysisRun(t *testing.T) {
 							Rules: []*Rule{{Name: "phone"}},
 						}, {
 							Name: "F18", Key: "F18",
-							Tag:  tagutil.Tag{"is": []string{"phone:us"}},
+							Tag:  tagutil.Tag{"is": []string{"phone:us:ca"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "phone", Params: []*RuleParam{
-								{Value: "us", Kind: ParamKindLiteral, Type: ParamTypeString},
+							Rules: []*Rule{{Name: "phone", Args: []*RuleArg{
+								{Value: "us", Kind: ArgKindLiteral, Type: ArgTypeString},
+								{Value: "ca", Kind: ArgKindLiteral, Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "F19", Key: "F19",
 							Tag:  tagutil.Tag{"is": []string{"phone:&CountryCode"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "phone", Params: []*RuleParam{
-								{Value: "CountryCode", Kind: ParamKindReference},
+							Rules: []*Rule{{Name: "phone", Args: []*RuleArg{
+								{Value: "CountryCode", Kind: ArgKindReference},
 							}}},
 						}, {
 							Name: "F20", Key: "F20",
@@ -171,17 +1023,18 @@ func TestAnalysisRun(t *testing.T) {
 							Rules: []*Rule{{Name: "zip"}},
 						}, {
 							Name: "F21", Key: "F21",
-							Tag:  tagutil.Tag{"is": []string{"zip:deu"}},
+							Tag:  tagutil.Tag{"is": []string{"zip:deu:fin"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "zip", Params: []*RuleParam{
-								{Value: "deu", Kind: ParamKindLiteral, Type: ParamTypeString},
+							Rules: []*Rule{{Name: "zip", Args: []*RuleArg{
+								{Value: "deu", Kind: ArgKindLiteral, Type: ArgTypeString},
+								{Value: "fin", Kind: ArgKindLiteral, Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "F22", Key: "F22",
 							Tag:  tagutil.Tag{"is": []string{"zip:&CountryCode"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "zip", Params: []*RuleParam{
-								{Value: "CountryCode", Kind: ParamKindReference},
+							Rules: []*Rule{{Name: "zip", Args: []*RuleArg{
+								{Value: "CountryCode", Kind: ArgKindReference},
 							}}},
 						}, {
 							Name: "F23", Key: "F23",
@@ -192,22 +1045,22 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "F24", Key: "F24",
 							Tag:  tagutil.Tag{"is": []string{"uuid:3"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "uuid", Params: []*RuleParam{
-								{Value: "3", Kind: ParamKindLiteral, Type: ParamTypeUint},
+							Rules: []*Rule{{Name: "uuid", Args: []*RuleArg{
+								{Value: "3", Kind: ArgKindLiteral, Type: ArgTypeUint},
 							}}},
 						}, {
 							Name: "F25", Key: "F25",
 							Tag:  tagutil.Tag{"is": []string{"uuid:v4"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "uuid", Params: []*RuleParam{
-								{Value: "v4", Kind: ParamKindLiteral, Type: ParamTypeString},
+							Rules: []*Rule{{Name: "uuid", Args: []*RuleArg{
+								{Value: "v4", Kind: ArgKindLiteral, Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "F26", Key: "F26",
 							Tag:  tagutil.Tag{"is": []string{"uuid:&SomeVersion"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "uuid", Params: []*RuleParam{
-								{Value: "SomeVersion", Kind: ParamKindReference},
+							Rules: []*Rule{{Name: "uuid", Args: []*RuleArg{
+								{Value: "SomeVersion", Kind: ArgKindReference},
 							}}},
 						}, {
 							Name: "F27", Key: "F27",
@@ -218,22 +1071,22 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "F28", Key: "F28",
 							Tag:  tagutil.Tag{"is": []string{"ip:4"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "ip", Params: []*RuleParam{
-								{Value: "4", Kind: ParamKindLiteral, Type: ParamTypeUint},
+							Rules: []*Rule{{Name: "ip", Args: []*RuleArg{
+								{Value: "4", Kind: ArgKindLiteral, Type: ArgTypeUint},
 							}}},
 						}, {
 							Name: "F29", Key: "F29",
 							Tag:  tagutil.Tag{"is": []string{"ip:v6"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "ip", Params: []*RuleParam{
-								{Value: "v6", Kind: ParamKindLiteral, Type: ParamTypeString},
+							Rules: []*Rule{{Name: "ip", Args: []*RuleArg{
+								{Value: "v6", Kind: ArgKindLiteral, Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "F30", Key: "F30",
 							Tag:  tagutil.Tag{"is": []string{"ip:&SomeVersion"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "ip", Params: []*RuleParam{
-								{Value: "SomeVersion", Kind: ParamKindReference},
+							Rules: []*Rule{{Name: "ip", Args: []*RuleArg{
+								{Value: "SomeVersion", Kind: ArgKindReference},
 							}}},
 						}, {
 							Name: "F31", Key: "F31",
@@ -244,322 +1097,322 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "F32", Key: "F32",
 							Tag:  tagutil.Tag{"is": []string{"mac:6"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "mac", Params: []*RuleParam{
-								{Value: "6", Kind: ParamKindLiteral, Type: ParamTypeUint},
+							Rules: []*Rule{{Name: "mac", Args: []*RuleArg{
+								{Value: "6", Kind: ArgKindLiteral, Type: ArgTypeUint},
 							}}},
 						}, {
 							Name: "F33", Key: "F33",
 							Tag:  tagutil.Tag{"is": []string{"mac:v8"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "mac", Params: []*RuleParam{
-								{Value: "v8", Kind: ParamKindLiteral, Type: ParamTypeString},
+							Rules: []*Rule{{Name: "mac", Args: []*RuleArg{
+								{Value: "v8", Kind: ArgKindLiteral, Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "F34", Key: "F34",
 							Tag:  tagutil.Tag{"is": []string{"mac:&SomeVersion"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "mac", Params: []*RuleParam{
-								{Value: "SomeVersion", Kind: ParamKindReference},
+							Rules: []*Rule{{Name: "mac", Args: []*RuleArg{
+								{Value: "SomeVersion", Kind: ArgKindReference},
 							}}},
 						}, {
 							Name: "F35", Key: "F35",
 							Tag:  tagutil.Tag{"is": []string{"iso:1234"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "iso", Params: []*RuleParam{
-								{Value: "1234", Kind: ParamKindLiteral, Type: ParamTypeUint},
+							Rules: []*Rule{{Name: "iso", Args: []*RuleArg{
+								{Value: "1234", Kind: ArgKindLiteral, Type: ArgTypeUint},
 							}}},
 						}, {
 							Name: "F36", Key: "F36",
 							Tag:  tagutil.Tag{"is": []string{"rfc:1234"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "rfc", Params: []*RuleParam{
-								{Value: "1234", Kind: ParamKindLiteral, Type: ParamTypeUint},
+							Rules: []*Rule{{Name: "rfc", Args: []*RuleArg{
+								{Value: "1234", Kind: ArgKindLiteral, Type: ArgTypeUint},
 							}}},
 						}, {
 							Name: "F37", Key: "F37",
 							Tag:  tagutil.Tag{"is": []string{`re:"^[a-z]+\[[0-9]+\]$"`}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "re", Params: []*RuleParam{
-								{Value: `^[a-z]+\[[0-9]+\]$`, Kind: ParamKindLiteral, Type: ParamTypeString},
+							Rules: []*Rule{{Name: "re", Args: []*RuleArg{
+								{Value: `^[a-z]+\[[0-9]+\]$`, Kind: ArgKindLiteral, Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "F38", Key: "F38",
 							Tag:  tagutil.Tag{"is": []string{`re:"\w+"`}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "re", Params: []*RuleParam{
-								{Value: `\w+`, Kind: ParamKindLiteral, Type: ParamTypeString},
+							Rules: []*Rule{{Name: "re", Args: []*RuleArg{
+								{Value: `\w+`, Kind: ArgKindLiteral, Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "F39", Key: "F39",
 							Tag:  tagutil.Tag{"is": []string{`contains:foo bar`}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "contains", Params: []*RuleParam{
-								{Value: "foo bar", Kind: ParamKindLiteral, Type: ParamTypeString},
+							Rules: []*Rule{{Name: "contains", Args: []*RuleArg{
+								{Value: "foo bar", Kind: ArgKindLiteral, Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "F40", Key: "F40",
 							Tag:  tagutil.Tag{"is": []string{`contains:&SomeValue`}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "contains", Params: []*RuleParam{
-								{Value: "SomeValue", Kind: ParamKindReference},
+							Rules: []*Rule{{Name: "contains", Args: []*RuleArg{
+								{Value: "SomeValue", Kind: ArgKindReference},
 							}}},
 						}, {
 							Name: "f41", Key: "f41",
 							Tag:  tagutil.Tag{"is": []string{`prefix:foo bar`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "prefix", Params: []*RuleParam{
-								{Value: "foo bar", Kind: ParamKindLiteral, Type: ParamTypeString},
+							Rules: []*Rule{{Name: "prefix", Args: []*RuleArg{
+								{Value: "foo bar", Kind: ArgKindLiteral, Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "f42", Key: "f42",
 							Tag:  tagutil.Tag{"is": []string{`prefix:&SomeValue`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "prefix", Params: []*RuleParam{
-								{Value: "SomeValue", Kind: ParamKindReference},
+							Rules: []*Rule{{Name: "prefix", Args: []*RuleArg{
+								{Value: "SomeValue", Kind: ArgKindReference},
 							}}},
 						}, {
 							Name: "f43", Key: "f43",
 							Tag:  tagutil.Tag{"is": []string{`suffix:foo bar`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "suffix", Params: []*RuleParam{
-								{Value: "foo bar", Kind: ParamKindLiteral, Type: ParamTypeString},
+							Rules: []*Rule{{Name: "suffix", Args: []*RuleArg{
+								{Value: "foo bar", Kind: ArgKindLiteral, Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "f44", Key: "f44",
 							Tag:  tagutil.Tag{"is": []string{`suffix:&SomeValue`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "suffix", Params: []*RuleParam{
-								{Value: "SomeValue", Kind: ParamKindReference},
+							Rules: []*Rule{{Name: "suffix", Args: []*RuleArg{
+								{Value: "SomeValue", Kind: ArgKindReference},
 							}}},
 						}, {
 							Name: "f45", Key: "f45",
 							Tag:  tagutil.Tag{"is": []string{`eq:foo bar`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "eq", Params: []*RuleParam{
-								{Value: "foo bar", Kind: ParamKindLiteral, Type: ParamTypeString},
+							Rules: []*Rule{{Name: "eq", Args: []*RuleArg{
+								{Value: "foo bar", Kind: ArgKindLiteral, Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "f46", Key: "f46",
 							Tag:  tagutil.Tag{"is": []string{`eq:-123`}},
 							Type: Type{Kind: TypeKindInt}, IsExported: false,
-							Rules: []*Rule{{Name: "eq", Params: []*RuleParam{
-								{Value: "-123", Kind: ParamKindLiteral, Type: ParamTypeNint},
+							Rules: []*Rule{{Name: "eq", Args: []*RuleArg{
+								{Value: "-123", Kind: ArgKindLiteral, Type: ArgTypeNint},
 							}}},
 						}, {
 							Name: "f47", Key: "f47",
 							Tag:  tagutil.Tag{"is": []string{`eq:123.987`}},
 							Type: Type{Kind: TypeKindFloat64}, IsExported: false,
-							Rules: []*Rule{{Name: "eq", Params: []*RuleParam{
-								{Value: "123.987", Kind: ParamKindLiteral, Type: ParamTypeFloat},
+							Rules: []*Rule{{Name: "eq", Args: []*RuleArg{
+								{Value: "123.987", Kind: ArgKindLiteral, Type: ArgTypeFloat},
 							}}},
 						}, {
 							Name: "f48", Key: "f48",
 							Tag:  tagutil.Tag{"is": []string{`eq:&SomeValue`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "eq", Params: []*RuleParam{
-								{Value: "SomeValue", Kind: ParamKindReference},
+							Rules: []*Rule{{Name: "eq", Args: []*RuleArg{
+								{Value: "SomeValue", Kind: ArgKindReference},
 							}}},
 						}, {
 							Name: "f49", Key: "f49",
 							Tag:  tagutil.Tag{"is": []string{`ne:foo bar`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "ne", Params: []*RuleParam{
-								{Value: "foo bar", Kind: ParamKindLiteral, Type: ParamTypeString},
+							Rules: []*Rule{{Name: "ne", Args: []*RuleArg{
+								{Value: "foo bar", Kind: ArgKindLiteral, Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "f50", Key: "f50",
 							Tag:  tagutil.Tag{"is": []string{`ne:-123`}},
 							Type: Type{Kind: TypeKindInt}, IsExported: false,
-							Rules: []*Rule{{Name: "ne", Params: []*RuleParam{
-								{Value: "-123", Kind: ParamKindLiteral, Type: ParamTypeNint},
+							Rules: []*Rule{{Name: "ne", Args: []*RuleArg{
+								{Value: "-123", Kind: ArgKindLiteral, Type: ArgTypeNint},
 							}}},
 						}, {
 							Name: "f51", Key: "f51",
 							Tag:  tagutil.Tag{"is": []string{`ne:123.987`}},
 							Type: Type{Kind: TypeKindFloat64}, IsExported: false,
-							Rules: []*Rule{{Name: "ne", Params: []*RuleParam{
-								{Value: "123.987", Kind: ParamKindLiteral, Type: ParamTypeFloat},
+							Rules: []*Rule{{Name: "ne", Args: []*RuleArg{
+								{Value: "123.987", Kind: ArgKindLiteral, Type: ArgTypeFloat},
 							}}},
 						}, {
 							Name: "f52", Key: "f52",
 							Tag:  tagutil.Tag{"is": []string{`ne:&SomeValue`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "ne", Params: []*RuleParam{
-								{Value: "SomeValue", Kind: ParamKindReference}}}},
+							Rules: []*Rule{{Name: "ne", Args: []*RuleArg{
+								{Value: "SomeValue", Kind: ArgKindReference}}}},
 						}, {
 							Name: "f53", Key: "f53",
 							Tag:  tagutil.Tag{"is": []string{`gt:24`, `lt:128`}},
 							Type: Type{Kind: TypeKindUint8}, IsExported: false,
 							Rules: []*Rule{
-								{Name: "gt", Params: []*RuleParam{
-									{Value: "24", Kind: ParamKindLiteral, Type: ParamTypeUint}}},
-								{Name: "lt", Params: []*RuleParam{
-									{Value: "128", Kind: ParamKindLiteral, Type: ParamTypeUint}}},
+								{Name: "gt", Args: []*RuleArg{
+									{Value: "24", Kind: ArgKindLiteral, Type: ArgTypeUint}}},
+								{Name: "lt", Args: []*RuleArg{
+									{Value: "128", Kind: ArgKindLiteral, Type: ArgTypeUint}}},
 							},
 						}, {
 							Name: "f54", Key: "f54",
 							Tag:  tagutil.Tag{"is": []string{`gt:-128`, `lt:-24`}},
 							Type: Type{Kind: TypeKindInt16}, IsExported: false,
 							Rules: []*Rule{
-								{Name: "gt", Params: []*RuleParam{
-									{Value: "-128", Kind: ParamKindLiteral, Type: ParamTypeNint}}},
-								{Name: "lt", Params: []*RuleParam{
-									{Value: "-24", Kind: ParamKindLiteral, Type: ParamTypeNint}}},
+								{Name: "gt", Args: []*RuleArg{
+									{Value: "-128", Kind: ArgKindLiteral, Type: ArgTypeNint}}},
+								{Name: "lt", Args: []*RuleArg{
+									{Value: "-24", Kind: ArgKindLiteral, Type: ArgTypeNint}}},
 							},
 						}, {
 							Name: "f55", Key: "f55",
 							Tag:  tagutil.Tag{"is": []string{`gt:0.24`, `lt:1.28`}},
 							Type: Type{Kind: TypeKindFloat32}, IsExported: false,
 							Rules: []*Rule{
-								{Name: "gt", Params: []*RuleParam{
-									{Value: "0.24", Kind: ParamKindLiteral, Type: ParamTypeFloat}}},
-								{Name: "lt", Params: []*RuleParam{
-									{Value: "1.28", Kind: ParamKindLiteral, Type: ParamTypeFloat}}},
+								{Name: "gt", Args: []*RuleArg{
+									{Value: "0.24", Kind: ArgKindLiteral, Type: ArgTypeFloat}}},
+								{Name: "lt", Args: []*RuleArg{
+									{Value: "1.28", Kind: ArgKindLiteral, Type: ArgTypeFloat}}},
 							},
 						}, {
 							Name: "f56", Key: "f56",
 							Tag:  tagutil.Tag{"is": []string{`gte:24`, `lte:128`}},
 							Type: Type{Kind: TypeKindUint8}, IsExported: false,
 							Rules: []*Rule{
-								{Name: "gte", Params: []*RuleParam{
-									{Value: "24", Kind: ParamKindLiteral, Type: ParamTypeUint}}},
-								{Name: "lte", Params: []*RuleParam{
-									{Value: "128", Kind: ParamKindLiteral, Type: ParamTypeUint}}},
+								{Name: "gte", Args: []*RuleArg{
+									{Value: "24", Kind: ArgKindLiteral, Type: ArgTypeUint}}},
+								{Name: "lte", Args: []*RuleArg{
+									{Value: "128", Kind: ArgKindLiteral, Type: ArgTypeUint}}},
 							},
 						}, {
 							Name: "f57", Key: "f57",
 							Tag:  tagutil.Tag{"is": []string{`gte:-128`, `lte:-24`}},
 							Type: Type{Kind: TypeKindInt16}, IsExported: false,
 							Rules: []*Rule{
-								{Name: "gte", Params: []*RuleParam{
-									{Value: "-128", Kind: ParamKindLiteral, Type: ParamTypeNint}}},
-								{Name: "lte", Params: []*RuleParam{
-									{Value: "-24", Kind: ParamKindLiteral, Type: ParamTypeNint}}},
+								{Name: "gte", Args: []*RuleArg{
+									{Value: "-128", Kind: ArgKindLiteral, Type: ArgTypeNint}}},
+								{Name: "lte", Args: []*RuleArg{
+									{Value: "-24", Kind: ArgKindLiteral, Type: ArgTypeNint}}},
 							},
 						}, {
 							Name: "f58", Key: "f58",
 							Tag:  tagutil.Tag{"is": []string{`gte:0.24`, `lte:1.28`}},
 							Type: Type{Kind: TypeKindFloat32}, IsExported: false,
 							Rules: []*Rule{
-								{Name: "gte", Params: []*RuleParam{
-									{Value: "0.24", Kind: ParamKindLiteral, Type: ParamTypeFloat}}},
-								{Name: "lte", Params: []*RuleParam{
-									{Value: "1.28", Kind: ParamKindLiteral, Type: ParamTypeFloat}}},
+								{Name: "gte", Args: []*RuleArg{
+									{Value: "0.24", Kind: ArgKindLiteral, Type: ArgTypeFloat}}},
+								{Name: "lte", Args: []*RuleArg{
+									{Value: "1.28", Kind: ArgKindLiteral, Type: ArgTypeFloat}}},
 							},
 						}, {
 							Name: "f59", Key: "f59",
 							Tag:  tagutil.Tag{"is": []string{`min:24`, `max:128`}},
 							Type: Type{Kind: TypeKindUint8}, IsExported: false,
 							Rules: []*Rule{
-								{Name: "min", Params: []*RuleParam{
-									{Value: "24", Kind: ParamKindLiteral, Type: ParamTypeUint}}},
-								{Name: "max", Params: []*RuleParam{
-									{Value: "128", Kind: ParamKindLiteral, Type: ParamTypeUint}}},
+								{Name: "min", Args: []*RuleArg{
+									{Value: "24", Kind: ArgKindLiteral, Type: ArgTypeUint}}},
+								{Name: "max", Args: []*RuleArg{
+									{Value: "128", Kind: ArgKindLiteral, Type: ArgTypeUint}}},
 							},
 						}, {
 							Name: "f60", Key: "f60",
 							Tag:  tagutil.Tag{"is": []string{`min:-128`, `max:-24`}},
 							Type: Type{Kind: TypeKindInt16}, IsExported: false,
 							Rules: []*Rule{
-								{Name: "min", Params: []*RuleParam{
-									{Value: "-128", Kind: ParamKindLiteral, Type: ParamTypeNint}}},
-								{Name: "max", Params: []*RuleParam{
-									{Value: "-24", Kind: ParamKindLiteral, Type: ParamTypeNint}}},
+								{Name: "min", Args: []*RuleArg{
+									{Value: "-128", Kind: ArgKindLiteral, Type: ArgTypeNint}}},
+								{Name: "max", Args: []*RuleArg{
+									{Value: "-24", Kind: ArgKindLiteral, Type: ArgTypeNint}}},
 							},
 						}, {
 							Name: "f61", Key: "f61",
 							Tag:  tagutil.Tag{"is": []string{`min:0.24`, `max:1.28`}},
 							Type: Type{Kind: TypeKindFloat32}, IsExported: false,
 							Rules: []*Rule{
-								{Name: "min", Params: []*RuleParam{
-									{Value: "0.24", Kind: ParamKindLiteral, Type: ParamTypeFloat}}},
-								{Name: "max", Params: []*RuleParam{
-									{Value: "1.28", Kind: ParamKindLiteral, Type: ParamTypeFloat}}},
+								{Name: "min", Args: []*RuleArg{
+									{Value: "0.24", Kind: ArgKindLiteral, Type: ArgTypeFloat}}},
+								{Name: "max", Args: []*RuleArg{
+									{Value: "1.28", Kind: ArgKindLiteral, Type: ArgTypeFloat}}},
 							},
 						}, {
 							Name: "f62", Key: "f62",
 							Tag:  tagutil.Tag{"is": []string{`rng:24:128`}},
 							Type: Type{Kind: TypeKindUint8}, IsExported: false,
-							Rules: []*Rule{{Name: "rng", Params: []*RuleParam{
-								{Value: "24", Kind: ParamKindLiteral, Type: ParamTypeUint},
-								{Value: "128", Kind: ParamKindLiteral, Type: ParamTypeUint}}},
+							Rules: []*Rule{{Name: "rng", Args: []*RuleArg{
+								{Value: "24", Kind: ArgKindLiteral, Type: ArgTypeUint},
+								{Value: "128", Kind: ArgKindLiteral, Type: ArgTypeUint}}},
 							},
 						}, {
 							Name: "f63", Key: "f63",
 							Tag:  tagutil.Tag{"is": []string{`rng:-128:-24`}},
 							Type: Type{Kind: TypeKindInt16}, IsExported: false,
-							Rules: []*Rule{{Name: "rng", Params: []*RuleParam{
-								{Value: "-128", Kind: ParamKindLiteral, Type: ParamTypeNint},
-								{Value: "-24", Kind: ParamKindLiteral, Type: ParamTypeNint}}},
+							Rules: []*Rule{{Name: "rng", Args: []*RuleArg{
+								{Value: "-128", Kind: ArgKindLiteral, Type: ArgTypeNint},
+								{Value: "-24", Kind: ArgKindLiteral, Type: ArgTypeNint}}},
 							},
 						}, {
 							Name: "f64", Key: "f64",
 							Tag:  tagutil.Tag{"is": []string{`rng:0.24:1.28`}},
 							Type: Type{Kind: TypeKindFloat32}, IsExported: false,
-							Rules: []*Rule{{Name: "rng", Params: []*RuleParam{
-								{Value: "0.24", Kind: ParamKindLiteral, Type: ParamTypeFloat},
-								{Value: "1.28", Kind: ParamKindLiteral, Type: ParamTypeFloat}}},
+							Rules: []*Rule{{Name: "rng", Args: []*RuleArg{
+								{Value: "0.24", Kind: ArgKindLiteral, Type: ArgTypeFloat},
+								{Value: "1.28", Kind: ArgKindLiteral, Type: ArgTypeFloat}}},
 							},
 						}, {
 							Name: "f65", Key: "f65",
 							Tag:  tagutil.Tag{"is": []string{`len:28`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "len", Params: []*RuleParam{
-								{Value: "28", Kind: ParamKindLiteral, Type: ParamTypeUint}}},
+							Rules: []*Rule{{Name: "len", Args: []*RuleArg{
+								{Value: "28", Kind: ArgKindLiteral, Type: ArgTypeUint}}},
 							},
 						}, {
 							Name: "f66", Key: "f66",
 							Tag:  tagutil.Tag{"is": []string{`len:28`}},
 							Type: Type{Kind: TypeKindSlice, Elem: &Type{Kind: TypeKindInt}}, IsExported: false,
-							Rules: []*Rule{{Name: "len", Params: []*RuleParam{
-								{Value: "28", Kind: ParamKindLiteral, Type: ParamTypeUint}}},
+							Rules: []*Rule{{Name: "len", Args: []*RuleArg{
+								{Value: "28", Kind: ArgKindLiteral, Type: ArgTypeUint}}},
 							},
 						}, {
 							Name: "f67", Key: "f67",
 							Tag:  tagutil.Tag{"is": []string{`len:28`}},
 							Type: Type{Kind: TypeKindMap, Key: &Type{Kind: TypeKindString}, Elem: &Type{Kind: TypeKindInt}}, IsExported: false,
-							Rules: []*Rule{{Name: "len", Params: []*RuleParam{
-								{Value: "28", Kind: ParamKindLiteral, Type: ParamTypeUint}}},
+							Rules: []*Rule{{Name: "len", Args: []*RuleArg{
+								{Value: "28", Kind: ArgKindLiteral, Type: ArgTypeUint}}},
 							},
 						}, {
 							Name: "f68", Key: "f68",
 							Tag:  tagutil.Tag{"is": []string{`len:4:28`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "len", Params: []*RuleParam{
-								{Value: "4", Kind: ParamKindLiteral, Type: ParamTypeUint},
-								{Value: "28", Kind: ParamKindLiteral, Type: ParamTypeUint}}},
+							Rules: []*Rule{{Name: "len", Args: []*RuleArg{
+								{Value: "4", Kind: ArgKindLiteral, Type: ArgTypeUint},
+								{Value: "28", Kind: ArgKindLiteral, Type: ArgTypeUint}}},
 							},
 						}, {
 							Name: "f69", Key: "f69",
 							Tag:  tagutil.Tag{"is": []string{`len:4:28`}},
 							Type: Type{Kind: TypeKindSlice, Elem: &Type{Kind: TypeKindInt}}, IsExported: false,
-							Rules: []*Rule{{Name: "len", Params: []*RuleParam{
-								{Value: "4", Kind: ParamKindLiteral, Type: ParamTypeUint},
-								{Value: "28", Kind: ParamKindLiteral, Type: ParamTypeUint}}},
+							Rules: []*Rule{{Name: "len", Args: []*RuleArg{
+								{Value: "4", Kind: ArgKindLiteral, Type: ArgTypeUint},
+								{Value: "28", Kind: ArgKindLiteral, Type: ArgTypeUint}}},
 							},
 						}, {
 							Name: "f70", Key: "f70",
 							Tag:  tagutil.Tag{"is": []string{`len:4:28`}},
 							Type: Type{Kind: TypeKindMap, Key: &Type{Kind: TypeKindString}, Elem: &Type{Kind: TypeKindInt}}, IsExported: false,
-							Rules: []*Rule{{Name: "len", Params: []*RuleParam{
-								{Value: "4", Kind: ParamKindLiteral, Type: ParamTypeUint},
-								{Value: "28", Kind: ParamKindLiteral, Type: ParamTypeUint}}},
+							Rules: []*Rule{{Name: "len", Args: []*RuleArg{
+								{Value: "4", Kind: ArgKindLiteral, Type: ArgTypeUint},
+								{Value: "28", Kind: ArgKindLiteral, Type: ArgTypeUint}}},
 							},
 						}, {
 							Name: "f71", Key: "f71",
 							Tag:  tagutil.Tag{"is": []string{`len::28`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "len", Params: []*RuleParam{
-								{Value: "", Kind: ParamKindLiteral},
-								{Value: "28", Kind: ParamKindLiteral, Type: ParamTypeUint}}},
+							Rules: []*Rule{{Name: "len", Args: []*RuleArg{
+								{Value: "", Kind: ArgKindLiteral},
+								{Value: "28", Kind: ArgKindLiteral, Type: ArgTypeUint}}},
 							},
 						}, {
 							Name: "f72", Key: "f72",
 							Tag:  tagutil.Tag{"is": []string{`len:4:`}},
 							Type: Type{Kind: TypeKindSlice, Elem: &Type{Kind: TypeKindInt}}, IsExported: false,
-							Rules: []*Rule{{Name: "len", Params: []*RuleParam{
-								{Value: "4", Kind: ParamKindLiteral, Type: ParamTypeUint},
-								{Value: "", Kind: ParamKindLiteral}}},
+							Rules: []*Rule{{Name: "len", Args: []*RuleArg{
+								{Value: "4", Kind: ArgKindLiteral, Type: ArgTypeUint},
+								{Value: "", Kind: ArgKindLiteral}}},
 							},
 						}},
 					},
@@ -570,8 +1423,8 @@ func TestAnalysisRun(t *testing.T) {
 	}}
 
 	for _, tt := range tests {
-		t.Run(tt.Name, func(t *testing.T) {
-			got, err := testRunAnalysis(tt.Name, t)
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := testRunAnalysis(tt.name, t)
 			if e := compare.Compare(err, tt.err); e != nil {
 				t.Errorf("Error: %v", e)
 			}
@@ -579,7 +1432,6 @@ func TestAnalysisRun(t *testing.T) {
 				t.Error(e)
 			}
 
-			tt.printerr = true
 			if tt.printerr && err != nil {
 				fmt.Println(err)
 			}
