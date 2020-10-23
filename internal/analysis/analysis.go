@@ -27,7 +27,7 @@ type Info struct {
 	// FieldMap maintains a map of StructField pointers to the fields'
 	// related go/types specific information. Intended for error reporting.
 	FieldMap map[*StructField]FieldVar
-	// Maps RuleArgs of kind ArgKindReference to information
+	// Maps RuleArgs of kind ArgTypeReference to information
 	// that's used by the analysis and by the generator.
 	ArgReferenceMap map[*RuleArg]*ArgReferenceInfo
 }
@@ -274,9 +274,9 @@ var rxFloat = regexp.MustCompile(`^(?:(?:-?0|[1-9][0-9]*)?\.[0-9]+)$`)
 func analyzeRules(a *analysis, f *StructField) error {
 	for _, s := range f.Tag["is"] {
 		r := parseRule(s)
-		for _, p := range r.Args {
-			if p.Kind == ArgKindReference {
-				a.info.ArgReferenceMap[p] = &ArgReferenceInfo{
+		for _, arg := range r.Args {
+			if arg.Type == ArgTypeReference {
+				a.info.ArgReferenceMap[arg] = &ArgReferenceInfo{
 					Rule:        r,
 					StructField: f,
 				}
@@ -343,69 +343,72 @@ func isImportedType(a *analysis, named *types.Named) bool {
 }
 
 // expected format
-// rule_name{ :rule_arg }
+// rule_name{ :rule_opt }
 func parseRule(str string) *Rule {
 	str = strings.TrimSpace(str)
 	name := str
-	args := ""
+	opts := ""
 
 	if i := strings.IndexByte(str, ':'); i > -1 {
 		name = str[:i]
-		args = str[i+1:]
+		opts = str[i+1:]
 	}
 
-	// if the args string ends with ':' (e.g. `len:4:`) then append
+	// if the opts string ends with ':' (e.g. `len:4:`) then append
 	// an empty RuleArg to the end of the Rule.Args slice.
 	var appendEmpty bool
 
 	r := &Rule{Name: name}
-	for len(args) > 0 {
-		a := &RuleArg{}
-		if i := strings.IndexByte(args, ':'); i > -1 {
-			appendEmpty = (i == len(args)-1) // is ':' the last char?
-			a.Value = args[:i]
-			args = args[i+1:]
+	for len(opts) > 0 {
+
+		var opt string
+		if i := strings.IndexByte(opts, ':'); i > -1 {
+			appendEmpty = (i == len(opts)-1) // is ':' the last char?
+			opt = opts[:i]
+			opts = opts[i+1:]
 		} else {
-			a.Value = args
-			args = ""
+			opt = opts
+			opts = ""
 		}
 
-		if len(a.Value) > 0 {
-			switch a.Value[0] {
-			case '&':
-				a.Kind = ArgKindReference
-				a.Value = a.Value[1:]
+		var arg *RuleArg
+		if len(opt) > 0 {
+			switch opt[0] {
 			case '#':
-				a.Kind = ArgKindGroupKey
-				a.Value = a.Value[1:]
+				r.SetKey = opt[1:]
 			case '@':
-				a.Kind = ArgKindContext
-				a.Value = a.Value[1:]
+				r.Context = opt[1:]
+			case '&':
+				arg = &RuleArg{Type: ArgTypeReference}
+				arg.Value = opt[1:]
 			default:
-				a.Kind = ArgKindLiteral
+				arg = &RuleArg{}
+				arg.Value = opt
 
 				// if value is surrounded by double quotes, remove both of them
-				if n := len(a.Value); n > 1 && a.Value[0] == '"' && a.Value[n-1] == '"' {
-					a.Value = a.Value[1 : n-1]
-					a.Type = ArgTypeString
+				if n := len(arg.Value); n > 1 && arg.Value[0] == '"' && arg.Value[n-1] == '"' {
+					arg.Value = arg.Value[1 : n-1]
+					arg.Type = ArgTypeString
+				} else {
+					switch {
+					case rxNint.MatchString(arg.Value):
+						arg.Type = ArgTypeNint
+					case rxUint.MatchString(arg.Value):
+						arg.Type = ArgTypeUint
+					case rxFloat.MatchString(arg.Value):
+						arg.Type = ArgTypeFloat
+					default:
+						arg.Type = ArgTypeString
+					}
 				}
 			}
-
-			if a.Kind == ArgKindLiteral && a.Type == 0 {
-				switch {
-				case rxNint.MatchString(a.Value):
-					a.Type = ArgTypeNint
-				case rxUint.MatchString(a.Value):
-					a.Type = ArgTypeUint
-				case rxFloat.MatchString(a.Value):
-					a.Type = ArgTypeFloat
-				default:
-					a.Type = ArgTypeString
-				}
-			}
+		} else {
+			arg = &RuleArg{Type: ArgTypeString} // empty string
 		}
 
-		r.Args = append(r.Args, a)
+		if arg != nil {
+			r.Args = append(r.Args, arg)
+		}
 	}
 
 	if appendEmpty {

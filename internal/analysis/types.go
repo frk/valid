@@ -77,19 +77,20 @@ type (
 		Name string
 		// The args of the rule
 		Args []*RuleArg
+		// The context in which the rule should be applied.
+		Context string
+		SetKey  string
 	}
 
 	// RuleArg
 	RuleArg struct {
-		// The kind of the arg.
-		Kind ArgKind
 		// The type of the arg value.
 		Type ArgType
 		// The arg value, may be empty string.
 		Value string
 	}
 
-	// ArgReferenceInfo holds information on a RuleArg of kind ArgKindReference.
+	// ArgReferenceInfo holds information on a RuleArg of kind ArgTypeReference.
 	ArgReferenceInfo struct {
 		// The Rule to which the reference RuleArg belongs.
 		Rule *Rule
@@ -151,25 +152,19 @@ func (t Type) String() string {
 	return "<unknown>"
 }
 
-// ArgKind indicates the specific kind of a rule arg.
-type ArgKind uint
-
-const (
-	ArgKindLiteral ArgKind = iota // default
-	ArgKindGroupKey
-	ArgKindReference
-	ArgKindContext
-)
+func (i ArgReferenceInfo) SelectorLast() *StructField {
+	return i.Selector[len(i.Selector)-1]
+}
 
 // ArgType indicates the type of a rule arg value.
 type ArgType uint
 
 const (
-	ArgTypeNone ArgType = iota
-	ArgTypeNint         // negative integer
-	ArgTypeUint         // unsigned integer
+	ArgTypeString ArgType = iota // default is string, i.e. r.Value == "" (empty string)
+	ArgTypeNint                  // negative integer
+	ArgTypeUint                  // unsigned integer
 	ArgTypeFloat
-	ArgTypeString
+	ArgTypeReference
 )
 
 // TypeKind indicates the specific kind of a Go type.

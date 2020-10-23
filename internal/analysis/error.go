@@ -16,7 +16,7 @@ type anError struct {
 	// The file in which the validator that caused the error is declared.
 	VtorFileName string
 	// The line at which the validator that caused the error is declared.
-	VtorFileLine int
+	VtorFileLine int `cmp:"-"`
 	// The name of the field which caused the error, may be empty.
 	FieldName string
 	// The type of the field which caused the error.
@@ -26,13 +26,13 @@ type anError struct {
 	// The file in which the field that caused the error is defined.
 	FieldFileName string
 	// The line at which the field that caused the error is defined.
-	FieldFileLine int
+	FieldFileLine int `cmp:"-"`
 	// The rule that caused the error.
 	RuleName string
 	// The rule arg that caused the error.
 	RuleArg *RuleArg
 	// The original error
-	Err error
+	Err error `cmp:"-"`
 }
 
 func (e *anError) Error() string {
@@ -62,12 +62,13 @@ const (
 	errRuleUnknown
 	errRuleContextUnknown
 	errRuleArgNum
-	errRuleArgKind
-	errRuleArgKindConflict
+	errRuleArgType
 	errRuleArgTypeUint
 	errRuleArgTypeNint
 	errRuleArgTypeFloat
 	errRuleArgTypeString
+	errRuleArgTypeReference
+	errRuleArgTypeReferenceKind
 	errRuleArgValueRegexp
 	errRuleArgValueUUIDVer
 	errRuleArgValueIPVer
@@ -76,6 +77,10 @@ const (
 	errRuleArgValueLen
 	errRuleArgValueISOStd
 	errRuleArgValueRFCStd
+	errRuleArgValueConflict
+	errRuleArgValueParseFloat
+	errRuleArgValueParseUint
+	errRuleArgValueBounds
 	errTypeLength
 	errTypeNumeric
 	errTypeKindString
@@ -109,13 +114,8 @@ var error_template_string = `
 	TODO {{R .FieldName}}
 {{ end }}
 
-{{ define "` + errRuleArgKind.name() + `" -}}
-{{Wb .FileAndLine}}: {{Y "Bad rule arg kind."}}
-	TODO {{R .FieldName}}
-{{ end }}
-
-{{ define "` + errRuleArgKindConflict.name() + `" -}}
-{{Wb .FileAndLine}}: {{Y "Conflicting rule arg kind."}}
+{{ define "` + errRuleArgType.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Bad rule arg type."}}
 	TODO {{R .FieldName}}
 {{ end }}
 
@@ -136,6 +136,16 @@ var error_template_string = `
 
 {{ define "` + errRuleArgTypeString.name() + `" -}}
 {{Wb .FileAndLine}}: {{Y "Bad rule arg type (string)."}}
+	TODO {{R .FieldName}}
+{{ end }}
+
+{{ define "` + errRuleArgTypeReference.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Bad rule arg type (reference)."}}
+	TODO {{R .FieldName}}
+{{ end }}
+
+{{ define "` + errRuleArgTypeReferenceKind.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Bad rule arg type (reference)."}}
 	TODO {{R .FieldName}}
 {{ end }}
 
@@ -176,6 +186,26 @@ var error_template_string = `
 
 {{ define "` + errRuleArgValueRFCStd.name() + `" -}}
 {{Wb .FileAndLine}}: {{Y "Bad rule arg value (RFC)."}}
+	TODO {{R .FieldName}}
+{{ end }}
+
+{{ define "` + errRuleArgValueConflict.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Conflicting rule arg values."}}
+	TODO {{R .FieldName}}
+{{ end }}
+
+{{ define "` + errRuleArgValueParseFloat.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Parsing rule arg value as float failed."}}
+	TODO {{R .FieldName}}
+{{ end }}
+
+{{ define "` + errRuleArgValueParseUint.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Parsing rule arg value as uint failed."}}
+	TODO {{R .FieldName}}
+{{ end }}
+
+{{ define "` + errRuleArgValueBounds.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Bad rule arg value bounds."}}
 	TODO {{R .FieldName}}
 {{ end }}
 
