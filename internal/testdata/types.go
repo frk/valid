@@ -97,4 +97,8 @@ type UserInput struct {
 
 	f71 string `is:"len::28"`
 	f72 []int  `is:"len:4:"`
+
+	g1 struct {
+		f1 string `is:"required"`
+	}
 }

@@ -69,6 +69,7 @@ func (m ruleTypeMap) check(a *analysis, f *StructField, r *Rule) error {
 
 var ruleTypes = ruleTypeMap{
 	"required": {{num: 0}: {}},
+	"notnil":   {{num: 0}: {checkTypeIsNilable}},
 	"email":    {{num: 0}: {checkTypeKindString}},
 	"url":      {{num: 0}: {checkTypeKindString}},
 	"uri":      {{num: 0}: {checkTypeKindString}},
@@ -94,17 +95,14 @@ var ruleTypes = ruleTypeMap{
 	"contains": {{min: 1, max: -1}: {checkTypeKindString, checkArgValueString}},
 	"eq":       {{min: 1, max: -1}: {checkArgCanCompare}},
 	"ne":       {{min: 1, max: -1}: {checkArgCanCompare}},
-
-	"gt":  {{num: 1}: {checkTypeNumeric, checkArgCanCompare}},
-	"lt":  {{num: 1}: {checkTypeNumeric, checkArgCanCompare}},
-	"gte": {{num: 1}: {checkTypeNumeric, checkArgCanCompare}},
-	"lte": {{num: 1}: {checkTypeNumeric, checkArgCanCompare}},
-	"min": {{num: 1}: {checkTypeNumeric, checkArgCanCompare}},
-	"max": {{num: 1}: {checkTypeNumeric, checkArgCanCompare}},
-
-	"rng": {{num: 2}: {checkTypeNumeric, checkArgCanCompare, checkArgRange}},
-
-	"len": {{min: 1, max: 2}: {checkTypeHasLength, checkArgLen}},
+	"gt":       {{num: 1}: {checkTypeNumeric, checkArgCanCompare}},
+	"lt":       {{num: 1}: {checkTypeNumeric, checkArgCanCompare}},
+	"gte":      {{num: 1}: {checkTypeNumeric, checkArgCanCompare}},
+	"lte":      {{num: 1}: {checkTypeNumeric, checkArgCanCompare}},
+	"min":      {{num: 1}: {checkTypeNumeric, checkArgCanCompare}},
+	"max":      {{num: 1}: {checkTypeNumeric, checkArgCanCompare}},
+	"rng":      {{num: 2}: {checkTypeNumeric, checkArgCanCompare, checkArgRange}},
+	"len":      {{min: 1, max: 2}: {checkTypeHasLength, checkArgLen}},
 }
 
 var rxCountryCode2 = regexp.MustCompile(`^(?i:` +
@@ -530,6 +528,15 @@ func checkTypeHasLength(a *analysis, f *StructField, r *Rule) error {
 	ok := hasTypeKind(f, TypeKindString, TypeKindArray, TypeKindSlice, TypeKindMap)
 	if !ok {
 		return &anError{Code: errTypeLength}
+	}
+	return nil
+}
+
+// checks that the field's type can be nil.
+func checkTypeIsNilable(a *analysis, f *StructField, r *Rule) error {
+	ok := hasTypeKind(f, TypeKindPtr, TypeKindSlice, TypeKindMap, TypeKindInterface)
+	if !ok {
+		return &anError{Code: errTypeNil}
 	}
 	return nil
 }

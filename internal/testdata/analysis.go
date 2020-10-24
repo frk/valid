@@ -22,6 +22,14 @@ type AnalysisTestBAD_RuleArgNumRequiredValidator struct {
 	F string `is:"required:foobar"`
 }
 
+type AnalysisTestBAD_RuleArgNumNotNilValidator struct {
+	F []string `is:"notnil:foobar"`
+}
+
+type AnalysisTestBAD_TypeNilNotNilValidator struct {
+	F [4]string `is:"notnil"`
+}
+
 type AnalysisTestBAD_RuleArgNumEmailValidator struct {
 	F string `is:"email:foo"`
 }

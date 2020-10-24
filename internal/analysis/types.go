@@ -152,6 +152,35 @@ func (t Type) String() string {
 	return "<unknown>"
 }
 
+func (f *StructField) SubFields() []*StructField {
+	typ := f.Type
+	for typ.Kind == TypeKindPtr {
+		typ = *typ.Elem // deref pointer
+	}
+	if typ.Kind == TypeKindStruct {
+		return typ.Fields
+	}
+	return nil
+}
+
+func (f *StructField) HasRuleRequired() bool {
+	for _, r := range f.Rules {
+		if r.Name == "required" {
+			return true
+		}
+	}
+	return false
+}
+
+func (f *StructField) HasRuleNotnil() bool {
+	for _, r := range f.Rules {
+		if r.Name == "notnil" {
+			return true
+		}
+	}
+	return false
+}
+
 func (i ArgReferenceInfo) SelectorLast() *StructField {
 	return i.Selector[len(i.Selector)-1]
 }

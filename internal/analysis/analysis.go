@@ -329,8 +329,8 @@ func makeFieldKey(a *analysis, fvar *types.Var, ftag string) string {
 	// default strategy
 	k := fvar.Name()
 	if num, ok := a.keys[k]; ok {
-		k += "-" + strconv.FormatUint(uint64(num), 10)
 		a.keys[k] = num + 1
+		k += "-" + strconv.FormatUint(uint64(num), 10)
 
 	}
 	return k

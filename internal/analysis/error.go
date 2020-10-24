@@ -81,6 +81,7 @@ const (
 	errRuleArgValueParseFloat
 	errRuleArgValueParseUint
 	errRuleArgValueBounds
+	errTypeNil
 	errTypeLength
 	errTypeNumeric
 	errTypeKindString
