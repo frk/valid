@@ -267,6 +267,7 @@ func analyzeType(a *analysis, t types.Type) (typ Type, err error) {
 var rxNint = regexp.MustCompile(`^(?:-[1-9][0-9]*)$`) // negative integer
 var rxUint = regexp.MustCompile(`^(?:0|[1-9][0-9]*)$`)
 var rxFloat = regexp.MustCompile(`^(?:(?:-?0|[1-9][0-9]*)?\.[0-9]+)$`)
+var rxBool = regexp.MustCompile(`^(?:false|true)$`)
 
 func analyzeRules(a *analysis, f *StructField) error {
 	for _, s := range f.Tag["is"] {
@@ -394,6 +395,8 @@ func parseRule(str string) *Rule {
 						arg.Type = ArgTypeUint
 					case rxFloat.MatchString(arg.Value):
 						arg.Type = ArgTypeFloat
+					case rxBool.MatchString(arg.Value):
+						arg.Type = ArgTypeBool
 					default:
 						arg.Type = ArgTypeString
 					}

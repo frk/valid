@@ -32,6 +32,7 @@ func Write(f io.Writer, pkgName string, targets []*TargetInfo, conf Config) erro
 		file          = new(GO.File)
 		imports       = new(GO.ImportDecl)
 		importIsvalid bool
+		importStrings bool
 	)
 	for _, t := range targets {
 		g := new(generator)
@@ -45,12 +46,18 @@ func Write(f io.Writer, pkgName string, targets []*TargetInfo, conf Config) erro
 		if g.importIsvalid {
 			importIsvalid = true
 		}
+		if g.importStrings {
+			importStrings = true
+		}
 	}
 
 	imports.Specs = append(imports.Specs, GO.ImportSpec{Path: "errors"})
 
 	if importIsvalid {
 		imports.Specs = append(imports.Specs, GO.ImportSpec{Path: isvalidPkgPath})
+	}
+	if importStrings {
+		imports.Specs = append(imports.Specs, GO.ImportSpec{Path: "strings"})
 	}
 	sortImports(imports)
 
@@ -65,11 +72,13 @@ type generator struct {
 	conf Config
 	info *analysis.Info
 	vs   *analysis.ValidatorStruct
+	init []GO.StmtNode
 	// The target file to be build by the generator.
 	file *GO.File
 	// The associated file's import declaration.
 	imports       *GO.ImportDecl
 	importIsvalid bool
+	importStrings bool
 }
 
 func buildCode(g *generator, vs *analysis.ValidatorStruct) {
@@ -79,6 +88,13 @@ func buildCode(g *generator, vs *analysis.ValidatorStruct) {
 		buildFieldCode(g, f, root, &body)
 	}
 	body = append(body, GO.ReturnStmt{GO.Ident{"nil"}})
+
+	if len(g.init) > 0 {
+		init := GO.FuncDecl{}
+		init.Name.Name = "init"
+		init.Body.List = g.init
+		g.file.Decls = append(g.file.Decls, init)
+	}
 
 	method := GO.MethodDecl{}
 	method.Recv.Name = root
@@ -116,20 +132,20 @@ func buildFieldCode(g *generator, field *analysis.StructField, root GO.ExprNode,
 		return
 	}
 
-	var required, notnil bool
+	var required, notnil *analysis.Rule
 	for i := 0; i < len(rules); i++ {
-		if name := rules[i].Name; name == "required" || name == "notnil" {
+		if r := rules[i]; r.Name == "required" || r.Name == "notnil" {
+			if r.Name == "required" {
+				required = r
+			} else if r.Name == "notnil" {
+				notnil = r
+			}
+
 			// delete (from https://github.com/golang/go/wiki/SliceTricks)
 			copy(rules[i:], rules[i+1:])
 			rules[len(rules)-1] = nil
 			rules = rules[:len(rules)-1]
 
-			if name == "required" {
-				required = true
-				notnil = true // what is required cannot be nil
-			} else if name == "notnil" {
-				notnil = true
-			}
 		}
 	}
 
@@ -140,7 +156,7 @@ func buildFieldCode(g *generator, field *analysis.StructField, root GO.ExprNode,
 	if fieldType.Kind == analysis.TypeKindPtr {
 		// logical op, and equality op
 		lop, eop := GO.BinaryLAnd, GO.BinaryNeq
-		if required || notnil {
+		if required != nil || notnil != nil {
 			lop, eop = GO.BinaryLOr, GO.BinaryEql
 		}
 
@@ -156,13 +172,13 @@ func buildFieldCode(g *generator, field *analysis.StructField, root GO.ExprNode,
 		}
 	}
 
-	if required || notnil {
+	if required != nil || notnil != nil {
 		var ruleExpr GO.ExprNode
 		var retStmt GO.StmtNode
-		if required {
+		if required != nil {
 			ruleExpr = makeExprForRequired(g, fieldType.Kind, fieldExpr)
 			retStmt = makeReturnStmtForError(g, field.Key+" is required")
-		} else if notnil {
+		} else if notnil != nil {
 			ruleExpr = makeExprForNotnil(g, fieldType.Kind, fieldExpr)
 			retStmt = makeReturnStmtForError(g, field.Key+" cannot be nil")
 		}
@@ -193,7 +209,7 @@ func buildFieldCode(g *generator, field *analysis.StructField, root GO.ExprNode,
 		if len(rules) > 0 {
 			mainIf, elseIf := GO.IfStmt{}, (*GO.IfStmt)(nil)
 			for _, r := range rules {
-				ifs := ruleIfStmtMap[r.Name](g, field, fieldExpr)
+				ifs := ruleIfStmtMap[r.Name](g, r, field, fieldExpr)
 				if elseIf != nil {
 					elseIf.Else = &ifs
 					elseIf = &ifs
@@ -219,7 +235,7 @@ func buildFieldCode(g *generator, field *analysis.StructField, root GO.ExprNode,
 			}
 		}
 
-		if required || notnil {
+		if required != nil || notnil != nil {
 			ifs.Else = GO.BlockStmt{block}
 		} else {
 			ifs.Body.Add(block...)
@@ -255,7 +271,7 @@ func makeExprForNotnil(g *generator, kind analysis.TypeKind, fieldExpr GO.ExprNo
 	return nil
 }
 
-var ruleIfStmtMap = map[string]func(g *generator, field *analysis.StructField, fieldExpr GO.ExprNode) GO.IfStmt{
+var ruleIfStmtMap = map[string]func(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) GO.IfStmt{
 	"email":    ifStmtMaker("Email", "must be a valid email"),
 	"url":      ifStmtMaker("URL", "must be a valid URL"),
 	"uri":      ifStmtMaker("URI", "must be a valid URI"),
@@ -263,15 +279,28 @@ var ruleIfStmtMap = map[string]func(g *generator, field *analysis.StructField, f
 	"cvv":      ifStmtMaker("CVV", "must be a valid CVV"),
 	"ssn":      ifStmtMaker("SSN", "must be a valid SSN"),
 	"ein":      ifStmtMaker("EIN", "must be a valid EIN"),
-	"numeric":  ifStmtMaker("Numeric", "must ..."),
-	"hex":      ifStmtMaker("Hex", "must be a valid hex string"),
-	"hexcolor": ifStmtMaker("HexColor", "must be a valid hex color"),
+	"numeric":  ifStmtMaker("Numeric", "must contain only digits [0-9]"),
+	"hex":      ifStmtMaker("Hex", "must be a valid hexadecimal string"),
+	"hexcolor": ifStmtMaker("HexColor", "must be a valid hex color code"),
 	"alphanum": ifStmtMaker("Alphanum", "must be an alphanumeric string"),
 	"cidr":     ifStmtMaker("CIDR", "must be a valid CIDR"),
+	"phone":    makeIfStmtForPhone,
+	"zip":      makeIfStmtForZip,
+	"uuid":     makeIfStmtForUUID,
+	"ip":       makeIfStmtForIP,
+	"mac":      makeIfStmtForMAC,
+	"iso":      makeIfStmtForISO,
+	"rfc":      makeIfStmtForRFC,
+	"re":       makeIfStmtForRegexp,
+	"prefix":   makeIfStmtForPrefix,
+	"suffix":   makeIfStmtForSuffix,
+	"contains": makeIfStmtForContains,
+	"eq":       makeIfStmtForEquals,
+	"ne":       makeIfStmtForNotEquals,
 }
 
-func ifStmtMaker(funcName string, errMessage string) (maker func(g *generator, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt)) {
-	return func(g *generator, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+func ifStmtMaker(funcName string, errMessage string) (maker func(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt)) {
+	return func(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
 		g.importIsvalid = true
 		fn := GO.QualifiedIdent{"isvalid", funcName}
 		call := GO.CallExpr{Fun: fn, Args: GO.ArgsList{List: fieldExpr}}
@@ -283,9 +312,320 @@ func ifStmtMaker(funcName string, errMessage string) (maker func(g *generator, f
 	}
 }
 
+func makeIfStmtForPhone(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+	g.importIsvalid = true
+	fn := GO.QualifiedIdent{"isvalid", "Phone"}
+	call := GO.CallExpr{Fun: fn}
+	retStmt := makeReturnStmtForError(g, field.Key+" must be a valid phone number")
+
+	args := GO.ExprList{fieldExpr}
+	for _, a := range r.Args {
+		args = append(args, GO.StringLit(a.Value))
+	}
+	call.Args.List = args
+
+	ifs.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: call}
+	ifs.Body.Add(retStmt)
+	return ifs
+}
+
+func makeIfStmtForZip(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+	g.importIsvalid = true
+	fn := GO.QualifiedIdent{"isvalid", "Zip"}
+	call := GO.CallExpr{Fun: fn}
+	retStmt := makeReturnStmtForError(g, field.Key+" must be a valid zip code")
+
+	args := GO.ExprList{fieldExpr}
+	for _, a := range r.Args {
+		args = append(args, GO.StringLit(a.Value))
+	}
+	call.Args.List = args
+
+	ifs.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: call}
+	ifs.Body.Add(retStmt)
+	return ifs
+}
+
+func makeIfStmtForUUID(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+	g.importIsvalid = true
+	fn := GO.QualifiedIdent{"isvalid", "UUID"}
+	call := GO.CallExpr{Fun: fn}
+	retStmt := makeReturnStmtForError(g, field.Key+" must be a valid UUID")
+
+	args := GO.ExprList{fieldExpr}
+	for _, a := range r.Args {
+		// if analysis did its job correctly a.Value will be either a
+		// single digit integer or a "v<DIGIT>" string, in the latter
+		// case remove the "v" so we can pass the argument as int.
+		v := a.Value
+		if len(v) > 1 {
+			v = v[1:]
+		}
+		args = append(args, GO.ValueLit(v))
+	}
+	call.Args.List = args
+
+	ifs.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: call}
+	ifs.Body.Add(retStmt)
+	return ifs
+}
+
+func makeIfStmtForIP(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+	g.importIsvalid = true
+	fn := GO.QualifiedIdent{"isvalid", "IP"}
+	call := GO.CallExpr{Fun: fn}
+	retStmt := makeReturnStmtForError(g, field.Key+" must be a valid IP")
+
+	args := GO.ExprList{fieldExpr}
+	for _, a := range r.Args {
+		// if analysis did its job correctly a.Value will be either a
+		// single digit integer or a "v<DIGIT>" string, in the latter
+		// case remove the "v" so we can pass the argument as int.
+		v := a.Value
+		if len(v) > 1 {
+			v = v[1:]
+		}
+		args = append(args, GO.ValueLit(v))
+	}
+	call.Args.List = args
+
+	ifs.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: call}
+	ifs.Body.Add(retStmt)
+	return ifs
+}
+
+func makeIfStmtForMAC(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+	g.importIsvalid = true
+	fn := GO.QualifiedIdent{"isvalid", "MAC"}
+	call := GO.CallExpr{Fun: fn}
+	retStmt := makeReturnStmtForError(g, field.Key+" must be a valid MAC")
+
+	args := GO.ExprList{fieldExpr}
+	for _, a := range r.Args {
+		// if analysis did its job correctly a.Value will be either a
+		// single digit integer or a "v<DIGIT>" string, in the latter
+		// case remove the "v" so we can pass the argument as int.
+		v := a.Value
+		if len(v) > 1 {
+			v = v[1:]
+		}
+		args = append(args, GO.ValueLit(v))
+	}
+	call.Args.List = args
+
+	ifs.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: call}
+	ifs.Body.Add(retStmt)
+	return ifs
+}
+
+func makeIfStmtForISO(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+	g.importIsvalid = true
+	fn := GO.QualifiedIdent{"isvalid", "ISO"}
+	call := GO.CallExpr{Fun: fn}
+
+	// if analysis did its job correctly r.Args will be of len 1
+	// and the argument will represent an integer.
+	arg := r.Args[0].Value
+	retStmt := makeReturnStmtForError(g, field.Key+" must be a valid ISO "+arg)
+	call.Args.List = GO.ExprList{fieldExpr, GO.ValueLit(arg)}
+
+	ifs.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: call}
+	ifs.Body.Add(retStmt)
+	return ifs
+}
+
+func makeIfStmtForRFC(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+	g.importIsvalid = true
+	fn := GO.QualifiedIdent{"isvalid", "RFC"}
+	call := GO.CallExpr{Fun: fn}
+
+	// if analysis did its job correctly r.Args will be of len 1
+	// and the argument will represent an integer.
+	arg := r.Args[0].Value
+	retStmt := makeReturnStmtForError(g, field.Key+" must be a valid RFC "+arg)
+	call.Args.List = GO.ExprList{fieldExpr, GO.ValueLit(arg)}
+
+	ifs.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: call}
+	ifs.Body.Add(retStmt)
+	return ifs
+}
+
+func makeIfStmtForRegexp(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+	g.importIsvalid = true
+	fn := GO.QualifiedIdent{"isvalid", "Match"}
+	call := GO.CallExpr{Fun: fn}
+
+	// if analysis did its job correctly r.Args will be of len 1
+	// and the argument will represent a regular expression.
+	arg := r.Args[0].Value
+	retStmt := makeReturnStmtForErrorRaw(g, field.Key+" must match the regular expression: "+arg)
+	call.Args.List = GO.ExprList{fieldExpr, GO.RawStringLit(arg)}
+
+	// add a registry call for the init function
+	regrx := GO.CallExpr{Fun: GO.QualifiedIdent{"isvalid", "RegisterRegexp"}}
+	regrx.Args.List = GO.RawStringLit(arg)
+	g.init = append(g.init, GO.ExprStmt{regrx})
+
+	ifs.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: call}
+	ifs.Body.Add(retStmt)
+	return ifs
+}
+
+func makeIfStmtForPrefix(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+	g.importStrings = true
+
+	args := make([]string, len(r.Args)) // for error message
+	for i, a := range r.Args {
+		args[i] = `\"` + a.Value + `\"`
+
+		call := GO.CallExpr{Fun: GO.QualifiedIdent{"strings", "HasPrefix"}}
+		call.Args.List = GO.ExprList{fieldExpr, GO.StringLit(a.Value)}
+		if ifs.Cond != nil {
+			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: ifs.Cond, Y: GO.UnaryExpr{Op: GO.UnaryNot, X: call}}
+		} else {
+			ifs.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: call}
+		}
+	}
+
+	retStmt := makeReturnStmtForError(g, field.Key+" must be prefixed with: "+strings.Join(args, " or "))
+
+	ifs.Body.Add(retStmt)
+	return ifs
+}
+
+func makeIfStmtForSuffix(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+	g.importStrings = true
+
+	args := make([]string, len(r.Args)) // for error message
+	for i, a := range r.Args {
+		args[i] = `\"` + a.Value + `\"`
+
+		call := GO.CallExpr{Fun: GO.QualifiedIdent{"strings", "HasSuffix"}}
+		call.Args.List = GO.ExprList{fieldExpr, GO.StringLit(a.Value)}
+		if ifs.Cond != nil {
+			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: ifs.Cond, Y: GO.UnaryExpr{Op: GO.UnaryNot, X: call}}
+		} else {
+			ifs.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: call}
+		}
+	}
+
+	retStmt := makeReturnStmtForError(g, field.Key+" must be suffixed with: "+strings.Join(args, " or "))
+
+	ifs.Body.Add(retStmt)
+	return ifs
+}
+
+func makeIfStmtForContains(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+	g.importStrings = true
+
+	args := make([]string, len(r.Args)) // for error message
+	for i, a := range r.Args {
+		args[i] = `\"` + a.Value + `\"`
+
+		call := GO.CallExpr{Fun: GO.QualifiedIdent{"strings", "Contains"}}
+		call.Args.List = GO.ExprList{fieldExpr, GO.StringLit(a.Value)}
+		if ifs.Cond != nil {
+			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: ifs.Cond, Y: GO.UnaryExpr{Op: GO.UnaryNot, X: call}}
+		} else {
+			ifs.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: call}
+		}
+	}
+
+	retStmt := makeReturnStmtForError(g, field.Key+" must contain substring: "+strings.Join(args, " or "))
+
+	ifs.Body.Add(retStmt)
+	return ifs
+}
+
+func makeIfStmtForEquals(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+	typ := field.Type
+	for typ.Kind == analysis.TypeKindPtr {
+		typ = *typ.Elem
+	}
+
+	args := make([]string, len(r.Args)) // for error message
+	for i, a := range r.Args {
+		val := a.Value
+
+		var y GO.ExprNode
+		if typ.Kind == analysis.TypeKindString {
+			y = GO.StringLit(val)
+		} else if a.Type == analysis.ArgTypeString {
+			if typ.Kind.IsNumeric() && len(val) == 0 {
+				y = GO.IntLit(0)
+				val = "0"
+			} else {
+				y = GO.StringLit(val)
+			}
+		} else {
+			y = GO.ValueLit(val)
+		}
+
+		cond := GO.BinaryExpr{Op: GO.BinaryNeq, X: fieldExpr, Y: y}
+		if ifs.Cond != nil {
+			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: ifs.Cond, Y: cond}
+		} else {
+			ifs.Cond = cond
+		}
+
+		args[i] = `\"` + val + `\"`
+	}
+
+	retStmt := makeReturnStmtForError(g, field.Key+" must be equal to: "+strings.Join(args, " or "))
+
+	ifs.Body.Add(retStmt)
+	return ifs
+}
+
+func makeIfStmtForNotEquals(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+	typ := field.Type
+	for typ.Kind == analysis.TypeKindPtr {
+		typ = *typ.Elem
+	}
+
+	args := make([]string, len(r.Args)) // for error message
+	for i, a := range r.Args {
+		val := a.Value
+
+		var y GO.ExprNode
+		if typ.Kind == analysis.TypeKindString {
+			y = GO.StringLit(val)
+		} else if a.Type == analysis.ArgTypeString {
+			if typ.Kind.IsNumeric() && len(val) == 0 {
+				y = GO.IntLit(0)
+				val = "0"
+			} else {
+				y = GO.StringLit(val)
+			}
+		} else {
+			y = GO.ValueLit(val)
+		}
+
+		cond := GO.BinaryExpr{Op: GO.BinaryEql, X: fieldExpr, Y: y}
+		if ifs.Cond != nil {
+			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLOr, X: ifs.Cond, Y: cond}
+		} else {
+			ifs.Cond = cond
+		}
+
+		args[i] = `\"` + val + `\"`
+	}
+
+	retStmt := makeReturnStmtForError(g, field.Key+" must not be equal to: "+strings.Join(args, " or "))
+
+	ifs.Body.Add(retStmt)
+	return ifs
+}
+
 func makeReturnStmtForError(g *generator, errmesg string) (ret GO.ReturnStmt) {
 	errnew := GO.QualifiedIdent{"errors", "New"}
 	ret.Result = GO.CallExpr{Fun: errnew, Args: GO.ArgsList{List: GO.StringLit(errmesg)}}
+	return ret
+}
+
+func makeReturnStmtForErrorRaw(g *generator, errmesg string) (ret GO.ReturnStmt) {
+	errnew := GO.QualifiedIdent{"errors", "New"}
+	ret.Result = GO.CallExpr{Fun: errnew, Args: GO.ArgsList{List: GO.RawStringLit(errmesg)}}
 	return ret
 }
 

@@ -70,7 +70,6 @@ func (m ruleTypeMap) check(a *analysis, f *StructField, r *Rule) error {
 var ruleTypes = ruleTypeMap{
 	"required": {{num: 0}: {}},
 	"notnil":   {{num: 0}: {checkTypeIsNilable}},
-
 	"email":    {{num: 0}: {checkTypeKindString}},
 	"url":      {{num: 0}: {checkTypeKindString}},
 	"uri":      {{num: 0}: {checkTypeKindString}},
@@ -83,7 +82,6 @@ var ruleTypes = ruleTypeMap{
 	"hexcolor": {{num: 0}: {checkTypeKindString}},
 	"alphanum": {{num: 0}: {checkTypeKindString}},
 	"cidr":     {{num: 0}: {checkTypeKindString}},
-
 	"phone":    {{num: -1}: {checkTypeKindString, checkArgCountryCode}},
 	"zip":      {{num: -1}: {checkTypeKindString, checkArgCountryCode}},
 	"uuid":     {{max: 5}: {checkTypeKindString, checkArgUUID}},
@@ -97,14 +95,15 @@ var ruleTypes = ruleTypeMap{
 	"contains": {{min: 1, max: -1}: {checkTypeKindString, checkArgValueString}},
 	"eq":       {{min: 1, max: -1}: {checkArgCanCompare}},
 	"ne":       {{min: 1, max: -1}: {checkArgCanCompare}},
-	"gt":       {{num: 1}: {checkTypeNumeric, checkArgCanCompare}},
-	"lt":       {{num: 1}: {checkTypeNumeric, checkArgCanCompare}},
-	"gte":      {{num: 1}: {checkTypeNumeric, checkArgCanCompare}},
-	"lte":      {{num: 1}: {checkTypeNumeric, checkArgCanCompare}},
-	"min":      {{num: 1}: {checkTypeNumeric, checkArgCanCompare}},
-	"max":      {{num: 1}: {checkTypeNumeric, checkArgCanCompare}},
-	"rng":      {{num: 2}: {checkTypeNumeric, checkArgCanCompare, checkArgRange}},
-	"len":      {{min: 1, max: 2}: {checkTypeHasLength, checkArgLen}},
+
+	"gt":  {{num: 1}: {checkTypeNumeric, checkArgCanCompare}},
+	"lt":  {{num: 1}: {checkTypeNumeric, checkArgCanCompare}},
+	"gte": {{num: 1}: {checkTypeNumeric, checkArgCanCompare}},
+	"lte": {{num: 1}: {checkTypeNumeric, checkArgCanCompare}},
+	"min": {{num: 1}: {checkTypeNumeric, checkArgCanCompare}},
+	"max": {{num: 1}: {checkTypeNumeric, checkArgCanCompare}},
+	"rng": {{num: 2}: {checkTypeNumeric, checkArgCanCompare, checkArgRange}},
+	"len": {{min: 1, max: 2}: {checkTypeHasLength, checkArgLen}},
 }
 
 var rxCountryCode2 = regexp.MustCompile(`^(?i:` +
@@ -460,6 +459,9 @@ func checkArgLen(a *analysis, f *StructField, r *Rule) error {
 
 // checks that the rule's args' values can be compared to the field's value.
 func checkArgCanCompare(a *analysis, f *StructField, r *Rule) error {
+	if isEmptyInterface(f) {
+		return nil
+	}
 	for _, arg := range r.Args {
 		switch arg.Type {
 		case ArgTypeString:
@@ -488,6 +490,10 @@ func checkArgCanCompare(a *analysis, f *StructField, r *Rule) error {
 			}
 		case ArgTypeFloat:
 			if !hasTypeKind(f, TypeKindString, TypeKindFloat32, TypeKindFloat64) {
+				return &anError{Code: errRuleArgTypeFloat, RuleArg: arg}
+			}
+		case ArgTypeBool:
+			if !hasTypeKind(f, TypeKindString, TypeKindBool) {
 				return &anError{Code: errRuleArgTypeFloat, RuleArg: arg}
 			}
 		case ArgTypeReference:
@@ -559,4 +565,12 @@ func hasTypeKind(f *StructField, kinds ...TypeKind) bool {
 		}
 	}
 	return false
+}
+
+func isEmptyInterface(f *StructField) bool {
+	typ := f.Type
+	for typ.Kind == TypeKindPtr {
+		typ = *typ.Elem
+	}
+	return typ.IsEmptyInterface
 }

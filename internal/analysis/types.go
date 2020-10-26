@@ -203,6 +203,7 @@ const (
 	ArgTypeNint                  // negative integer
 	ArgTypeUint                  // unsigned integer
 	ArgTypeFloat
+	ArgTypeBool
 	ArgTypeReference
 )
 
@@ -215,6 +216,7 @@ const (
 
 	_basic_kind_start
 	TypeKindBool
+	_numeric_kind_start
 	TypeKindInt
 	TypeKindInt8
 	TypeKindInt16
@@ -228,6 +230,7 @@ const (
 	TypeKindUintptr
 	TypeKindFloat32
 	TypeKindFloat64
+	_numeric_kind_end
 	TypeKindComplex64
 	TypeKindComplex128
 	TypeKindString
@@ -250,6 +253,8 @@ const (
 )
 
 func (k TypeKind) IsBasic() bool { return _basic_kind_start < k && k < _basic_kind_end }
+
+func (k TypeKind) IsNumeric() bool { return _numeric_kind_start < k && k < _numeric_kind_end }
 
 // BasicString returns a string representation of k.
 func (k TypeKind) BasicString() string {
