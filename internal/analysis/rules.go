@@ -70,6 +70,7 @@ func (m ruleTypeMap) check(a *analysis, f *StructField, r *Rule) error {
 var ruleTypes = ruleTypeMap{
 	"required": {{num: 0}: {}},
 	"notnil":   {{num: 0}: {checkTypeIsNilable}},
+
 	"email":    {{num: 0}: {checkTypeKindString}},
 	"url":      {{num: 0}: {checkTypeKindString}},
 	"uri":      {{num: 0}: {checkTypeKindString}},
@@ -82,6 +83,7 @@ var ruleTypes = ruleTypeMap{
 	"hexcolor": {{num: 0}: {checkTypeKindString}},
 	"alphanum": {{num: 0}: {checkTypeKindString}},
 	"cidr":     {{num: 0}: {checkTypeKindString}},
+
 	"phone":    {{num: -1}: {checkTypeKindString, checkArgCountryCode}},
 	"zip":      {{num: -1}: {checkTypeKindString, checkArgCountryCode}},
 	"uuid":     {{max: 5}: {checkTypeKindString, checkArgUUID}},
@@ -542,13 +544,17 @@ func checkTypeIsNilable(a *analysis, f *StructField, r *Rule) error {
 }
 
 func hasTypeKind(f *StructField, kinds ...TypeKind) bool {
-	kind := f.Type.Kind
-	for kind == TypeKindPtr {
-		kind = f.Type.Elem.Kind
-	}
+	isptr := f.Type.Kind == TypeKindPtr
 
+	typ := f.Type
+	for typ.Kind == TypeKindPtr {
+		typ = *typ.Elem
+	}
 	for _, k := range kinds {
-		if kind == k {
+		if k == typ.Kind {
+			return true
+		}
+		if k == TypeKindPtr && isptr {
 			return true
 		}
 	}

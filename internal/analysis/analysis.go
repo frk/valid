@@ -1,7 +1,6 @@
 package analysis
 
 import (
-	"fmt"
 	"go/token"
 	"go/types"
 	"regexp"
@@ -10,8 +9,6 @@ import (
 
 	"github.com/frk/tagutil"
 )
-
-var _ = fmt.Println
 
 // Info holds information related to an analyzed ValidatorStruct. If the analysis
 // returns an error, the collected information will be incomplete.
@@ -425,16 +422,22 @@ func ruleCheckStructFields(a *analysis, fields []*StructField) error {
 			}
 		}
 
-		if f.Type.Kind == TypeKindStruct {
-			if err := ruleCheckStructFields(a, f.Type.Fields); err != nil {
+		if subfields := f.SubFields(); subfields != nil {
+			if err := ruleCheckStructFields(a, subfields); err != nil {
 				return err
 			}
 		}
-		if f.Type.Kind == TypeKindPtr && f.Type.Elem.Kind == TypeKindStruct {
-			if err := ruleCheckStructFields(a, f.Type.Elem.Fields); err != nil {
-				return err
-			}
-		}
+
+		//if f.Type.Kind == TypeKindStruct {
+		//	if err := ruleCheckStructFields(a, f.Type.Fields); err != nil {
+		//		return err
+		//	}
+		//}
+		//if f.Type.Kind == TypeKindPtr && f.Type.Elem.Kind == TypeKindStruct {
+		//	if err := ruleCheckStructFields(a, f.Type.Elem.Fields); err != nil {
+		//		return err
+		//	}
+		//}
 	}
 	return nil
 }

@@ -17,6 +17,10 @@ import (
 func TestGenerator(t *testing.T) {
 	tests := []string{
 		"required",
+		"notnil",
+		"email",
+		"url",
+		"uri",
 	}
 
 	pkgs, err := parser.Parse("../testdata/generator", false, nil)

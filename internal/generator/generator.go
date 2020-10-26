@@ -2,12 +2,15 @@ package generator
 
 import (
 	"io"
+	"log"
 	"strings"
 
 	"github.com/frk/isvalid/internal/analysis"
 
 	GO "github.com/frk/ast/golang"
 )
+
+var _ = log.Println
 
 const (
 	isvalidPkgPath = `github.com/frk/isvalid`
@@ -34,9 +37,9 @@ func Write(f io.Writer, pkgName string, targets []*TargetInfo, conf Config) erro
 		g := new(generator)
 		g.conf = conf
 		g.info = t.Info
+		g.vs = t.ValidatorStruct
 		g.file = file
 		g.imports = imports
-		g.root = GO.Ident{"v"}
 
 		buildCode(g, t.ValidatorStruct)
 		if g.importIsvalid {
@@ -59,253 +62,228 @@ func Write(f io.Writer, pkgName string, targets []*TargetInfo, conf Config) erro
 
 type generator struct {
 	// The generator configuration.
-	conf    Config
-	info    *analysis.Info
-	field   *analysis.StructField
-	parents []*analysis.StructField
-	rule    *analysis.Rule
-
+	conf Config
+	info *analysis.Info
+	vs   *analysis.ValidatorStruct
 	// The target file to be build by the generator.
 	file *GO.File
 	// The associated file's import declaration.
 	imports       *GO.ImportDecl
 	importIsvalid bool
-
-	body []GO.StmtNode
-	root GO.Ident
 }
 
 func buildCode(g *generator, vs *analysis.ValidatorStruct) {
+	root := GO.Ident{"v"}
+	body := []GO.StmtNode{}
 	for _, f := range vs.Fields {
-		g.field = f
-		g.parents = nil
-		buildFieldCode(g, vs)
+		buildFieldCode(g, f, root, &body)
 	}
-	g.body = append(g.body, GO.ReturnStmt{GO.Ident{"nil"}})
+	body = append(body, GO.ReturnStmt{GO.Ident{"nil"}})
 
 	method := GO.MethodDecl{}
-	method.Recv.Name = g.root
+	method.Recv.Name = root
 	method.Recv.Type = GO.Ident{vs.TypeName}
 	method.Name.Name = "Validate"
 	method.Type.Results = GO.ParamList{{Type: GO.Ident{"error"}}}
-	method.Body.List = g.body
+	method.Body.List = body
 
 	g.file.Decls = append(g.file.Decls, method)
 }
 
-func buildFieldCode(g *generator, vs *analysis.ValidatorStruct) {
-	if subfields := g.field.SubFields(); subfields != nil {
-		// TODO how to best handle subfields with no rules, i.e. skip/ignore them?
-		var (
-			fieldSel = GO.ExprNode(GO.SelectorExpr{X: g.root, Sel: GO.Ident{g.field.Name}})
-			nilVal   = GO.Ident{"nil"}
-			errmesg  = g.field.Key + " is required"
-
-			// retain the current values
-			field   = g.field
-			parents = g.parents
-			body    = g.body
-			root    = g.root
-
-			// reset the previous values
-			reset = func() {
-				g.body = append(body, g.body...)
-				g.root = root
-				g.field = field
-				g.parents = parents
-			}
-		)
-
-		g.root = GO.Ident{"w"}
-		g.body = []GO.StmtNode{}
-
-		// figure out the pointer depth
-		ptr, typ := 0, field.Type
-		for typ.Kind == analysis.TypeKindPtr {
-			ptr, typ = ptr+1, *typ.Elem
-		}
-
-		if ptr == 0 {
-			// Builds a plain block inside which the subfileds will
-			// be validated, for example:
-			//
-			//	{
-			//		w := v.F
-			//		// ...
-			// 	}
-			assign := GO.AssignStmt{Token: GO.AssignDefine, Lhs: g.root, Rhs: fieldSel}
-			g.body = append(g.body, assign)
-
-			done := reset // to avoid circular func calls
-			reset = func() {
-				g.body = []GO.StmtNode{GO.BlockStmt{g.body}}
-				done()
-			}
-		} else if ptr == 1 {
-			// Builds an if-statetment with a simple statement to initialize
-			// a variable for the current field, inside the if's block the
-			// subfileds will be validated, for example:
-			//
-			//	if w := v.F; w != nil {
-			//		// ...
-			// 	}
-			// or:
-			//	if w := v.F; w == nil {
-			//		return errors.New("...")
-			// 	} else {
-			//		// ...
-			//	}
-			ifs := GO.IfStmt{}
-			ifs.Init = GO.AssignStmt{Token: GO.AssignDefine, Lhs: g.root, Rhs: fieldSel}
-
-			if field.HasRuleRequired() || field.HasRuleNotnil() {
-				ifs.Cond = GO.BinaryExpr{Op: GO.BinaryEql, X: g.root, Y: nilVal}
-				ifs.Body.Add(buildReturnErrorStmt(g, vs, errmesg))
-
-				done := reset // to avoid circular func calls
-				reset = func() {
-					ifs.Else = GO.BlockStmt{g.body}
-					g.body = []GO.StmtNode{ifs}
-					done()
-				}
-			} else {
-				ifs.Cond = GO.BinaryExpr{Op: GO.BinaryNeq, X: g.root, Y: nilVal}
-
-				done := reset // to avoid circular func calls
-				reset = func() {
-					ifs.Body.List = g.body
-					g.body = []GO.StmtNode{ifs}
-					done()
-				}
-			}
-		} else if ptr > 1 {
-			// Builds an if-statetment checking each pointer for nil
-			// before validating the subfileds inside the if's block,
-			// for example:
-			//
-			//	if v.F != nil && *v.F != nil && **v.F != nil && ***v.F != nil && ****v.F != nil {
-			//		w := ****v.F
-			// 		// ...
-			// 	}
-			// or:
-			//	if v.F == nil || *v.F == nil || **v.F == nil || ***v.F == nil || ****v.F == nil {
-			// 		return error.New("...")
-			// 	} else {
-			// 		w := ****v.F
-			// 		// ...
-			// 	}
-
-			ifs := GO.IfStmt{}
-			lop := GO.BinaryOp("") // logical op
-			eop := GO.BinaryOp("") // equality op
-			done := reset          // to avoid circular func calls
-
-			if field.HasRuleRequired() || field.HasRuleNotnil() {
-				lop = GO.BinaryLOr
-				eop = GO.BinaryEql
-				reset = func() {
-					ifs.Else = GO.BlockStmt{g.body}
-					g.body = []GO.StmtNode{ifs}
-					done()
-				}
-
-				ifs.Body.Add(buildReturnErrorStmt(g, vs, errmesg))
-			} else {
-				lop = GO.BinaryLAnd
-				eop = GO.BinaryNeq
-				reset = func() {
-					ifs.Body.List = g.body
-					g.body = []GO.StmtNode{ifs}
-					done()
-				}
-			}
-
-			ifs.Cond = GO.BinaryExpr{Op: eop, X: fieldSel, Y: nilVal}
-			for i := 1; i < ptr; i++ {
-				fieldSel = GO.PointerIndirectionExpr{fieldSel}
-				ifs.Cond = GO.BinaryExpr{Op: lop, X: ifs.Cond, Y: GO.BinaryExpr{Op: eop, X: fieldSel, Y: nilVal}}
-			}
-			g.body = append(g.body, GO.AssignStmt{Token: GO.AssignDefine, Lhs: g.root, Rhs: fieldSel})
-		}
-
-		parents2 := append(parents, field)
-		for _, f := range subfields {
-			g.field = f
-			g.parents = parents2
-			buildFieldCode(g, vs)
-		}
-
-		reset()
+func buildFieldCode(g *generator, field *analysis.StructField, root GO.ExprNode, body *[]GO.StmtNode) {
+	rules := field.RulesCopy()
+	subfields := field.SubFields()
+	if len(rules) == 0 && len(subfields) == 0 { // nothing to do?
 		return
 	}
 
-	for _, r := range g.field.Rules {
-		g.rule = r
-		buildRuleMap[r.Name](g, vs)
-	}
-}
+	fieldExpr := GO.ExprNode(GO.SelectorExpr{X: root, Sel: GO.Ident{field.Name}})
 
-var buildRuleMap = map[string]func(g *generator, vs *analysis.ValidatorStruct){
-	"required": buildRuleRequired,
-}
-
-func buildRuleRequired(g *generator, vs *analysis.ValidatorStruct) {
-	var (
-		fieldSel = GO.ExprNode(GO.SelectorExpr{X: g.root, Sel: GO.Ident{g.field.Name}})
-		nilVal   = GO.Ident{"nil"}
-		errmesg  = g.field.Key + " is required"
-		cond     GO.ExprNode
-	)
-
-	// pointer nil check & dereferencing
-	typ := g.field.Type
-	for typ.Kind == analysis.TypeKindPtr {
-		typ = *typ.Elem
-
-		expr := GO.BinaryExpr{Op: GO.BinaryEql, X: fieldSel, Y: nilVal}
-		if cond != nil {
-			cond = GO.BinaryExpr{Op: GO.BinaryLOr, X: cond, Y: expr}
-		} else {
-			cond = expr
+	// special case: no if-stmt necessary for this field, but possibly subfields
+	if field.Type.Kind != analysis.TypeKindPtr && len(rules) == 0 && len(subfields) > 0 {
+		root := GO.Ident{"f"}
+		block := []GO.StmtNode{}
+		for _, f := range subfields {
+			buildFieldCode(g, f, root, &block)
 		}
 
-		// update v.F to *v.F
-		fieldSel = GO.PointerIndirectionExpr{fieldSel}
+		if len(block) > 0 {
+			assign := GO.AssignStmt{Token: GO.AssignDefine, Lhs: root, Rhs: fieldExpr}
+			block = append([]GO.StmtNode{assign}, block...)
+
+			*body = append(*body, GO.BlockStmt{block})
+		}
+		return
 	}
 
-	// the binary expression
-	var expr GO.ExprNode
+	var required, notnil bool
+	for i := 0; i < len(rules); i++ {
+		if name := rules[i].Name; name == "required" || name == "notnil" {
+			// delete (from https://github.com/golang/go/wiki/SliceTricks)
+			copy(rules[i:], rules[i+1:])
+			rules[len(rules)-1] = nil
+			rules = rules[:len(rules)-1]
 
-	switch typ.Kind {
-	case analysis.TypeKindString, analysis.TypeKindMap, analysis.TypeKindSlice:
-		expr = GO.BinaryExpr{Op: GO.BinaryEql, X: GO.CallLenExpr{fieldSel}, Y: GO.IntLit(0)}
-	case analysis.TypeKindInt, analysis.TypeKindInt8, analysis.TypeKindInt16, analysis.TypeKindInt32, analysis.TypeKindInt64:
-		expr = GO.BinaryExpr{Op: GO.BinaryEql, X: fieldSel, Y: GO.IntLit(0)}
-	case analysis.TypeKindUint, analysis.TypeKindUint8, analysis.TypeKindUint16, analysis.TypeKindUint32, analysis.TypeKindUint64:
-		expr = GO.BinaryExpr{Op: GO.BinaryEql, X: fieldSel, Y: GO.IntLit(0)}
-	case analysis.TypeKindFloat32, analysis.TypeKindFloat64:
-		expr = GO.BinaryExpr{Op: GO.BinaryEql, X: fieldSel, Y: GO.ValueLit("0.0")}
-	case analysis.TypeKindBool:
-		expr = GO.BinaryExpr{Op: GO.BinaryEql, X: fieldSel, Y: GO.ValueLit("false")}
-	case analysis.TypeKindInterface:
-		expr = GO.BinaryExpr{Op: GO.BinaryEql, X: fieldSel, Y: nilVal}
-	}
-
-	if expr != nil {
-		if cond != nil {
-			cond = GO.BinaryExpr{Op: GO.BinaryLOr, X: cond, Y: expr}
-		} else {
-			cond = expr
+			if name == "required" {
+				required = true
+				notnil = true // what is required cannot be nil
+			} else if name == "notnil" {
+				notnil = true
+			}
 		}
 	}
 
 	ifs := GO.IfStmt{}
-	ifs.Cond = cond
-	ifs.Body.Add(buildReturnErrorStmt(g, vs, errmesg))
-	g.body = append(g.body, ifs)
+	nilId := GO.Ident{"nil"}
+	fieldType := field.Type
+
+	if fieldType.Kind == analysis.TypeKindPtr {
+		// logical op, and equality op
+		lop, eop := GO.BinaryLAnd, GO.BinaryNeq
+		if required || notnil {
+			lop, eop = GO.BinaryLOr, GO.BinaryEql
+		}
+
+		ifs.Cond = GO.BinaryExpr{Op: eop, X: fieldExpr, Y: nilId}
+		fieldExpr = GO.PointerIndirectionExpr{fieldExpr}
+		fieldType = *fieldType.Elem
+
+		// handle multiple pointers
+		for fieldType.Kind == analysis.TypeKindPtr {
+			ifs.Cond = GO.BinaryExpr{Op: lop, X: ifs.Cond, Y: GO.BinaryExpr{Op: eop, X: fieldExpr, Y: nilId}}
+			fieldExpr = GO.PointerIndirectionExpr{fieldExpr}
+			fieldType = *fieldType.Elem
+		}
+	}
+
+	if required || notnil {
+		var ruleExpr GO.ExprNode
+		var retStmt GO.StmtNode
+		if required {
+			ruleExpr = makeExprForRequired(g, fieldType.Kind, fieldExpr)
+			retStmt = makeReturnStmtForError(g, field.Key+" is required")
+		} else if notnil {
+			ruleExpr = makeExprForNotnil(g, fieldType.Kind, fieldExpr)
+			retStmt = makeReturnStmtForError(g, field.Key+" cannot be nil")
+		}
+
+		if ruleExpr != nil {
+			if ifs.Cond != nil {
+				ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLOr, X: ifs.Cond, Y: ruleExpr}
+			} else {
+				ifs.Cond = ruleExpr
+			}
+		}
+
+		if retStmt != nil {
+			ifs.Body.Add(retStmt)
+		}
+	}
+
+	if len(rules) > 0 || len(subfields) > 0 {
+		block := []GO.StmtNode{}
+		if ifs.Cond != nil {
+			fieldVar := GO.Ident{"f"}
+			assign := GO.AssignStmt{Token: GO.AssignDefine, Lhs: fieldVar, Rhs: fieldExpr}
+			block = append(block, assign)
+
+			fieldExpr = fieldVar
+		}
+
+		if len(rules) > 0 {
+			mainIf, elseIf := GO.IfStmt{}, (*GO.IfStmt)(nil)
+			for _, r := range rules {
+				ifs := ruleIfStmtMap[r.Name](g, field, fieldExpr)
+				if elseIf != nil {
+					elseIf.Else = &ifs
+					elseIf = &ifs
+				} else if mainIf.Cond != nil {
+					mainIf.Else = &ifs
+					elseIf = &ifs
+				} else {
+					mainIf = ifs
+				}
+			}
+
+			if ifs.Cond != nil {
+				block = append(block, mainIf)
+			} else {
+				ifs = mainIf
+			}
+		}
+
+		// loop over subfields
+		if len(subfields) > 0 {
+			for _, f := range subfields {
+				buildFieldCode(g, f, fieldExpr, &block)
+			}
+		}
+
+		if required || notnil {
+			ifs.Else = GO.BlockStmt{block}
+		} else {
+			ifs.Body.Add(block...)
+		}
+	}
+
+	*body = append(*body, ifs)
 }
 
-func buildReturnErrorStmt(g *generator, vs *analysis.ValidatorStruct, errmesg string) (ret GO.ReturnStmt) {
+func makeExprForRequired(g *generator, kind analysis.TypeKind, fieldExpr GO.ExprNode) GO.ExprNode {
+	switch kind {
+	case analysis.TypeKindString, analysis.TypeKindMap, analysis.TypeKindSlice:
+		return GO.BinaryExpr{Op: GO.BinaryEql, X: GO.CallLenExpr{fieldExpr}, Y: GO.IntLit(0)}
+	case analysis.TypeKindInt, analysis.TypeKindInt8, analysis.TypeKindInt16, analysis.TypeKindInt32, analysis.TypeKindInt64:
+		return GO.BinaryExpr{Op: GO.BinaryEql, X: fieldExpr, Y: GO.IntLit(0)}
+	case analysis.TypeKindUint, analysis.TypeKindUint8, analysis.TypeKindUint16, analysis.TypeKindUint32, analysis.TypeKindUint64:
+		return GO.BinaryExpr{Op: GO.BinaryEql, X: fieldExpr, Y: GO.IntLit(0)}
+	case analysis.TypeKindFloat32, analysis.TypeKindFloat64:
+		return GO.BinaryExpr{Op: GO.BinaryEql, X: fieldExpr, Y: GO.ValueLit("0.0")}
+	case analysis.TypeKindBool:
+		return GO.BinaryExpr{Op: GO.BinaryEql, X: fieldExpr, Y: GO.ValueLit("false")}
+	case analysis.TypeKindInterface:
+		return GO.BinaryExpr{Op: GO.BinaryEql, X: fieldExpr, Y: GO.Ident{"nil"}}
+	}
+	return nil
+}
+
+func makeExprForNotnil(g *generator, kind analysis.TypeKind, fieldExpr GO.ExprNode) GO.ExprNode {
+	switch kind {
+	case analysis.TypeKindInterface, analysis.TypeKindMap, analysis.TypeKindSlice:
+		return GO.BinaryExpr{Op: GO.BinaryEql, X: fieldExpr, Y: GO.Ident{"nil"}}
+	}
+	return nil
+}
+
+var ruleIfStmtMap = map[string]func(g *generator, field *analysis.StructField, fieldExpr GO.ExprNode) GO.IfStmt{
+	"email":    ifStmtMaker("Email", "must be a valid email"),
+	"url":      ifStmtMaker("URL", "must be a valid URL"),
+	"uri":      ifStmtMaker("URI", "must be a valid URI"),
+	"pan":      ifStmtMaker("PAN", "must be a valid PAN"),
+	"cvv":      ifStmtMaker("CVV", "must be a valid CVV"),
+	"ssn":      ifStmtMaker("SSN", "must be a valid SSN"),
+	"ein":      ifStmtMaker("EIN", "must be a valid EIN"),
+	"numeric":  ifStmtMaker("Numeric", "must ..."),
+	"hex":      ifStmtMaker("Hex", "must be a valid hex string"),
+	"hexcolor": ifStmtMaker("HexColor", "must be a valid hex color"),
+	"alphanum": ifStmtMaker("Alphanum", "must be an alphanumeric string"),
+	"cidr":     ifStmtMaker("CIDR", "must be a valid CIDR"),
+}
+
+func ifStmtMaker(funcName string, errMessage string) (maker func(g *generator, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt)) {
+	return func(g *generator, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+		g.importIsvalid = true
+		fn := GO.QualifiedIdent{"isvalid", funcName}
+		call := GO.CallExpr{Fun: fn, Args: GO.ArgsList{List: fieldExpr}}
+		retStmt := makeReturnStmtForError(g, field.Key+" "+errMessage)
+
+		ifs.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: call}
+		ifs.Body.Add(retStmt)
+		return ifs
+	}
+}
+
+func makeReturnStmtForError(g *generator, errmesg string) (ret GO.ReturnStmt) {
 	errnew := GO.QualifiedIdent{"errors", "New"}
 	ret.Result = GO.CallExpr{Fun: errnew, Args: GO.ArgsList{List: GO.StringLit(errmesg)}}
 	return ret

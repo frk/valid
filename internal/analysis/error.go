@@ -210,6 +210,11 @@ var error_template_string = `
 	TODO {{R .FieldName}}
 {{ end }}
 
+{{ define "` + errTypeNil.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Field type is not nilable."}}
+	TODO {{R .FieldName}}
+{{ end }}
+
 {{ define "` + errTypeLength.name() + `" -}}
 {{Wb .FileAndLine}}: {{Y "Field type has no length."}}
 	TODO {{R .FieldName}}

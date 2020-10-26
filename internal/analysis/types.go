@@ -152,6 +152,16 @@ func (t Type) String() string {
 	return "<unknown>"
 }
 
+func (f *StructField) RulesCopy() []*Rule {
+	if f.Rules == nil {
+		return nil
+	}
+
+	rules := make([]*Rule, len(f.Rules))
+	copy(rules, f.Rules)
+	return rules
+}
+
 func (f *StructField) SubFields() []*StructField {
 	typ := f.Type
 	for typ.Kind == TypeKindPtr {
