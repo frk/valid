@@ -297,6 +297,15 @@ var ruleIfStmtMap = map[string]func(g *generator, r *analysis.Rule, field *analy
 	"contains": makeIfStmtForContains,
 	"eq":       makeIfStmtForEquals,
 	"ne":       makeIfStmtForNotEquals,
+
+	"gt":  makeIfStmtForGreaterThan,
+	"lt":  makeIfStmtForLessThan,
+	"gte": makeIfStmtForGreaterThanOrEqual,
+	"lte": makeIfStmtForLessThanOrEqual,
+	"min": makeIfStmtForMin,
+	"max": makeIfStmtForMax,
+	"rng": makeIfStmtForRange,
+	"len": makeIfStmtForLength,
 }
 
 func ifStmtMaker(funcName string, errMessage string) (maker func(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt)) {
@@ -614,6 +623,82 @@ func makeIfStmtForNotEquals(g *generator, r *analysis.Rule, field *analysis.Stru
 	retStmt := makeReturnStmtForError(g, field.Key+" must not be equal to: "+strings.Join(args, " or "))
 
 	ifs.Body.Add(retStmt)
+	return ifs
+}
+
+func makeIfStmtForGreaterThan(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+	arg := r.Args[0]
+	ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLeq, X: fieldExpr, Y: GO.ValueLit(arg.Value)}
+	ifs.Body.Add(makeReturnStmtForErrorRaw(g, field.Key+" must be greater than: "+arg.Value))
+	return ifs
+}
+
+func makeIfStmtForLessThan(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+	arg := r.Args[0]
+	ifs.Cond = GO.BinaryExpr{Op: GO.BinaryGeq, X: fieldExpr, Y: GO.ValueLit(arg.Value)}
+	ifs.Body.Add(makeReturnStmtForErrorRaw(g, field.Key+" must be less than: "+arg.Value))
+	return ifs
+}
+
+func makeIfStmtForGreaterThanOrEqual(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+	arg := r.Args[0]
+	ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLss, X: fieldExpr, Y: GO.ValueLit(arg.Value)}
+	ifs.Body.Add(makeReturnStmtForErrorRaw(g, field.Key+" must be greater than or equal to: "+arg.Value))
+	return ifs
+}
+
+func makeIfStmtForLessThanOrEqual(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+	arg := r.Args[0]
+	ifs.Cond = GO.BinaryExpr{Op: GO.BinaryGtr, X: fieldExpr, Y: GO.ValueLit(arg.Value)}
+	ifs.Body.Add(makeReturnStmtForErrorRaw(g, field.Key+" must be less than or equal to: "+arg.Value))
+	return ifs
+}
+
+func makeIfStmtForMin(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+	arg := r.Args[0]
+	ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLss, X: fieldExpr, Y: GO.ValueLit(arg.Value)}
+	ifs.Body.Add(makeReturnStmtForErrorRaw(g, field.Key+" must be greater than or equal to: "+arg.Value))
+	return ifs
+}
+
+func makeIfStmtForMax(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+	arg := r.Args[0]
+	ifs.Cond = GO.BinaryExpr{Op: GO.BinaryGtr, X: fieldExpr, Y: GO.ValueLit(arg.Value)}
+	ifs.Body.Add(makeReturnStmtForErrorRaw(g, field.Key+" must be less than or equal to: "+arg.Value))
+	return ifs
+}
+
+func makeIfStmtForRange(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+	a1, a2 := r.Args[0], r.Args[1]
+
+	ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLOr,
+		X: GO.BinaryExpr{Op: GO.BinaryLss, X: fieldExpr, Y: GO.ValueLit(a1.Value)},
+		Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: fieldExpr, Y: GO.ValueLit(a2.Value)}}
+
+	ifs.Body.Add(makeReturnStmtForErrorRaw(g, field.Key+" must be between: "+a1.Value+" and "+a2.Value))
+	return ifs
+}
+
+func makeIfStmtForLength(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+	if len(r.Args) == 1 {
+		a := r.Args[0]
+		ifs.Cond = GO.BinaryExpr{Op: GO.BinaryNeq, X: GO.CallLenExpr{fieldExpr}, Y: GO.ValueLit(a.Value)}
+		ifs.Body.Add(makeReturnStmtForErrorRaw(g, field.Key+" must be of length: "+a.Value))
+	} else { // len(r.Args) == 2 is assumed
+		a1, a2 := r.Args[0], r.Args[1]
+		if len(a1.Value) > 0 && len(a2.Value) == 0 {
+			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLss, X: GO.CallLenExpr{fieldExpr}, Y: GO.ValueLit(a1.Value)}
+			ifs.Body.Add(makeReturnStmtForErrorRaw(g, field.Key+" must be of length at least: "+a1.Value))
+		} else if len(a1.Value) == 0 && len(a2.Value) > 0 {
+			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{fieldExpr}, Y: GO.ValueLit(a2.Value)}
+			ifs.Body.Add(makeReturnStmtForErrorRaw(g, field.Key+" must be of length at most: "+a2.Value))
+		} else {
+			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLOr,
+				X: GO.BinaryExpr{Op: GO.BinaryLss, X: GO.CallLenExpr{fieldExpr}, Y: GO.ValueLit(a1.Value)},
+				Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{fieldExpr}, Y: GO.ValueLit(a2.Value)}}
+			ifs.Body.Add(makeReturnStmtForErrorRaw(g, field.Key+" must be of length between: "+a1.Value+" and "+a2.Value+" (inclusive)"))
+		}
+	}
 	return ifs
 }
 

@@ -43,6 +43,15 @@ func TestGenerator(t *testing.T) {
 		"contains",
 		"eq",
 		"ne",
+
+		"gt",
+		"lt",
+		"gte",
+		"lte",
+		"min",
+		"max",
+		"rng",
+		"len",
 	}
 
 	pkgs, err := parser.Parse("../testdata/generator", false, nil)
