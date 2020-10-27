@@ -4,6 +4,22 @@ type AnalysisTestOK_Validator struct {
 	UserInput *UserInput
 }
 
+type AnalysisTestOK_ErrorConstructorValidator struct {
+	F string `is:"required"`
+	CustomErrorConstructor
+}
+
+type AnalysisTestOK_ErrorAggregatorValidator struct {
+	F      string `is:"required"`
+	erragg CustomErrorAggregator
+}
+
+type AnalysisTestBAD_ErrorHandlerFieldConflictValidator struct {
+	F string `is:"required"`
+	CustomErrorConstructor
+	CustomErrorAggregator
+}
+
 type AnalysisTestBAD_EmptyValidator struct {
 	// ...
 }

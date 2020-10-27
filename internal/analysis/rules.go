@@ -458,9 +458,16 @@ func checkArgLen(a *analysis, f *StructField, r *Rule) error {
 
 // checks that the rule's args' values can be compared to the field's value.
 func checkArgCanCompare(a *analysis, f *StructField, r *Rule) error {
-	if isEmptyInterface(f) {
+	// Check first if f isn't an empty interface, if it is we can exit
+	// since a literal of basic type can be compared to an empty interface.
+	typ := f.Type
+	for typ.Kind == TypeKindPtr {
+		typ = *typ.Elem
+	}
+	if typ.IsEmptyInterface {
 		return nil
 	}
+
 	for _, arg := range r.Args {
 		switch arg.Type {
 		case ArgTypeString:
@@ -564,12 +571,4 @@ func hasTypeKind(f *StructField, kinds ...TypeKind) bool {
 		}
 	}
 	return false
-}
-
-func isEmptyInterface(f *StructField) bool {
-	typ := f.Type
-	for typ.Kind == TypeKindPtr {
-		typ = *typ.Elem
-	}
-	return typ.IsEmptyInterface
 }

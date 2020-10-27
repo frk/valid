@@ -69,6 +69,9 @@ func (a *analysis) anError(e interface{}, f *StructField, r *Rule) error {
 		pos := a.fset.Position(fv.Var.Pos())
 		err.FieldFileName = pos.Filename
 		err.FieldFileLine = pos.Line
+		if f.Type.Kind == TypeKindInvalid {
+			err.FieldType = fv.Var.Type().String()
+		}
 	}
 
 	obj := a.named.Obj()
@@ -178,6 +181,21 @@ func analyzeStructFields(a *analysis, structType *types.Struct, root bool, local
 			a.selector = append(a.selector, f)
 		}
 
+		// Check for special, untagged root fields.
+		if root && len(istag) == 0 {
+			if isErrorConstructor(fvar.Type()) {
+				if err := analyzeErrorHandlerField(a, f, false); err != nil {
+					return nil, err
+				}
+				continue
+			} else if isErrorAggregator(fvar.Type()) {
+				if err := analyzeErrorHandlerField(a, f, true); err != nil {
+					return nil, err
+				}
+				continue
+			}
+		}
+
 		// resolve field key & make sure that it is unique
 		f.Key = makeFieldKey(a, fvar, ftag)
 		if _, ok := a.keys[f.Key]; ok {
@@ -201,6 +219,18 @@ func analyzeStructFields(a *analysis, structType *types.Struct, root bool, local
 		fields = append(fields, f)
 	}
 	return fields, nil
+}
+
+func analyzeErrorHandlerField(a *analysis, f *StructField, isAggregator bool) error {
+	if a.validator.ErrorHandler != nil {
+		// TODO
+		return a.anError(errErrorHandlerFieldConflict, f, nil)
+	}
+
+	a.validator.ErrorHandler = new(ErrorHandlerField)
+	a.validator.ErrorHandler.Name = f.Name
+	a.validator.ErrorHandler.IsAggregator = isAggregator
+	return nil
 }
 
 func analyzeType(a *analysis, t types.Type) (typ Type, err error) {

@@ -16,7 +16,7 @@ type anError struct {
 	// The file in which the validator that caused the error is declared.
 	VtorFileName string
 	// The line at which the validator that caused the error is declared.
-	VtorFileLine int `cmp:"-"`
+	VtorFileLine int `cmp:"+"`
 	// The name of the field which caused the error, may be empty.
 	FieldName string
 	// The type of the field which caused the error.
@@ -26,7 +26,7 @@ type anError struct {
 	// The file in which the field that caused the error is defined.
 	FieldFileName string
 	// The line at which the field that caused the error is defined.
-	FieldFileLine int `cmp:"-"`
+	FieldFileLine int `cmp:"+"`
 	// The rule that caused the error.
 	RuleName string
 	// The rule arg that caused the error.
@@ -87,6 +87,7 @@ const (
 	errTypeKindString
 	errFieldKeyUnknown
 	errFieldKeyConflict
+	errErrorHandlerFieldConflict
 )
 
 var error_template_string = `
@@ -240,6 +241,10 @@ var error_template_string = `
 	TODO {{R .FieldName}}
 {{ end }}
 
+{{ define "` + errErrorHandlerFieldConflict.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Conflicting error handler field."}}
+	TODO {{R .FieldName}}
+{{ end }}
 
 ` // `
 

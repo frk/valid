@@ -43,7 +43,6 @@ func TestGenerator(t *testing.T) {
 		"contains",
 		"eq",
 		"ne",
-
 		"gt",
 		"lt",
 		"gte",

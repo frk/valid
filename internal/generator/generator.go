@@ -59,7 +59,7 @@ func Write(f io.Writer, pkgName string, targets []*TargetInfo, conf Config) erro
 	if importStrings {
 		imports.Specs = append(imports.Specs, GO.ImportSpec{Path: "strings"})
 	}
-	sortImports(imports)
+	groupImports(imports)
 
 	file.PkgName = pkgName
 	file.Preamble = GO.LineComment{filePreamble}
@@ -732,7 +732,11 @@ func addImport(g *generator, path, name, local string) {
 	g.imports.Specs = append(g.imports.Specs, spec)
 }
 
-func sortImports(imports *GO.ImportDecl) {
+// groupImports groups the imports into 3 groups separated by a new line, the
+// 1st group will contain imports from the standard library, the 3rd group will
+// contain imports from github.com/frk/isvalid..., and the 2nd group will contain
+// the rest of the imports.
+func groupImports(imports *GO.ImportDecl) {
 	var specs1, specs2, specs3 []GO.ImportSpec
 	for _, s := range imports.Specs {
 		if strings.HasPrefix(string(s.Path), isvalidPkgPath) {

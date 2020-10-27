@@ -102,3 +102,21 @@ type UserInput struct {
 		f1 string `is:"required"`
 	}
 }
+
+type CustomErrorConstructor struct{}
+
+func (CustomErrorConstructor) Error(key string, val interface{}, rule string, args ...interface{}) error {
+	// ...
+	return nil
+}
+
+type CustomErrorAggregator struct{}
+
+func (CustomErrorAggregator) Error(key string, val interface{}, rule string, args ...interface{}) {
+	// ...
+}
+
+func (CustomErrorAggregator) Out() error {
+	// ...
+	return nil
+}

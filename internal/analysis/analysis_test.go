@@ -34,6 +34,17 @@ func TestAnalysisRun(t *testing.T) {
 		err      error
 		printerr bool
 	}{{
+		name: "AnalysisTestBAD_ErrorHandlerFieldConflictValidator",
+		err: &anError{Code: errErrorHandlerFieldConflict,
+			VtorName:      "AnalysisTestBAD_ErrorHandlerFieldConflictValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  123,
+			FieldName:     "CustomErrorAggregator",
+			FieldType:     "path/to/test.CustomErrorAggregator",
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 123,
+		},
+	}, {
 		name: "AnalysisTestBAD_EmptyValidator",
 		err: &anError{Code: errEmptyValidator,
 			VtorName:     "AnalysisTestBAD_EmptyValidator",
@@ -1966,8 +1977,35 @@ func TestAnalysisRun(t *testing.T) {
 			RuleArg:       &RuleArg{Value: "y", Type: ArgTypeReference},
 		},
 	}, {
-		name:     "AnalysisTestOK_Validator",
-		printerr: true,
+		name: "AnalysisTestOK_ErrorConstructorValidator",
+		want: &ValidatorStruct{
+			TypeName: "AnalysisTestOK_ErrorConstructorValidator",
+			ErrorHandler: &ErrorHandlerField{
+				Name: "CustomErrorConstructor", IsAggregator: false,
+			},
+			Fields: []*StructField{{
+				Name: "F", Key: "F",
+				Tag:  tagutil.Tag{"is": []string{"required"}},
+				Type: Type{Kind: TypeKindString}, IsExported: true,
+				Rules: []*Rule{{Name: "required"}},
+			}},
+		},
+	}, {
+		name: "AnalysisTestOK_ErrorAggregatorValidator",
+		want: &ValidatorStruct{
+			TypeName: "AnalysisTestOK_ErrorAggregatorValidator",
+			ErrorHandler: &ErrorHandlerField{
+				Name: "erragg", IsAggregator: true,
+			},
+			Fields: []*StructField{{
+				Name: "F", Key: "F",
+				Tag:  tagutil.Tag{"is": []string{"required"}},
+				Type: Type{Kind: TypeKindString}, IsExported: true,
+				Rules: []*Rule{{Name: "required"}},
+			}},
+		},
+	}, {
+		name: "AnalysisTestOK_Validator",
 		want: &ValidatorStruct{
 			TypeName: "AnalysisTestOK_Validator",
 			Fields: []*StructField{{

@@ -14,6 +14,9 @@ type (
 		TypeName string
 		// The primary fields of the validator struct.
 		Fields []*StructField
+		// Info on the isvalid.ErrorConstructor or gosql.ErrorAggregator
+		// field of the validator struct type, or nil.
+		ErrorHandler *ErrorHandlerField
 	}
 
 	// StructField
@@ -69,6 +72,16 @@ type (
 		Elem *Type
 		// If kind is struct, Fields will hold the list of the struct's fields.
 		Fields []*StructField
+	}
+
+	// ErrorHandlerField is the result of analyzing a validator struct's field whose
+	// type implements the isvalid.ErrorConstructor or isvalid.ErrorAggregator interface.
+	ErrorHandlerField struct {
+		// Name of the field (case preserved).
+		Name string
+		// Indicates whether or not the field's type implements
+		// the isvalid.ErrorAggregator interface.
+		IsAggregator bool
 	}
 
 	// Rule
