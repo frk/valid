@@ -8,12 +8,12 @@ import (
 
 func (v LessThanValidator) Validate() error {
 	if v.F1 >= 3.14 {
-		return errors.New(`F1 must be less than: 3.14`)
+		return errors.New("F1 must be less than: 3.14")
 	}
 	if v.F2 != nil {
 		f := *v.F2
 		if f >= 123 {
-			return errors.New(`F2 must be less than: 123`)
+			return errors.New("F2 must be less than: 123")
 		}
 	}
 	if v.F3 == nil || *v.F3 == nil || **v.F3 == 0 {
@@ -21,7 +21,7 @@ func (v LessThanValidator) Validate() error {
 	} else {
 		f := **v.F3
 		if f >= 1 {
-			return errors.New(`F3 must be less than: 1`)
+			return errors.New("F3 must be less than: 1")
 		}
 	}
 	return nil

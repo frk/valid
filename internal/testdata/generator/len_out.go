@@ -8,12 +8,12 @@ import (
 
 func (v LengthValidator) Validate() error {
 	if len(v.F1) != 10 {
-		return errors.New(`F1 must be of length: 10`)
+		return errors.New("F1 must be of length: 10")
 	}
 	if v.F2 != nil {
 		f := *v.F2
 		if len(f) < 8 || len(f) > 256 {
-			return errors.New(`F2 must be of length between: 8 and 256 (inclusive)`)
+			return errors.New("F2 must be of length between: 8 and 256 (inclusive)")
 		}
 	}
 	if v.F3 == nil || *v.F3 == nil || len(**v.F3) == 0 {
@@ -21,14 +21,14 @@ func (v LengthValidator) Validate() error {
 	} else {
 		f := **v.F3
 		if len(f) < 1 || len(f) > 2 {
-			return errors.New(`F3 must be of length between: 1 and 2 (inclusive)`)
+			return errors.New("F3 must be of length between: 1 and 2 (inclusive)")
 		}
 	}
 	if len(v.F4) < 4 {
-		return errors.New(`F4 must be of length at least: 4`)
+		return errors.New("F4 must be of length at least: 4")
 	}
 	if len(v.F5) > 15 {
-		return errors.New(`F5 must be of length at most: 15`)
+		return errors.New("F5 must be of length at most: 15")
 	}
 	return nil
 }
