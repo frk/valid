@@ -2,6 +2,7 @@ package testdata
 
 type AnalysisTestOK_Validator struct {
 	UserInput *UserInput
+	Context   string
 }
 
 type AnalysisTestOK_ErrorConstructorValidator struct {
@@ -14,10 +15,31 @@ type AnalysisTestOK_ErrorAggregatorValidator struct {
 	erragg CustomErrorAggregator
 }
 
+type AnalysisTestOK_ContextValidator struct {
+	F       string `is:"required"`
+	context string
+}
+
+type AnalysisTestOK_Context2Validator struct {
+	F       string `is:"required"`
+	Context string
+}
+
 type AnalysisTestBAD_ErrorHandlerFieldConflictValidator struct {
 	F string `is:"required"`
 	CustomErrorConstructor
 	CustomErrorAggregator
+}
+
+type AnalysisTestBAD_ContextOptionFieldConflictValidator struct {
+	F       string `is:"required"`
+	Context string
+	context string
+}
+
+type AnalysisTestBAD_ContextOptionFieldTypeValidator struct {
+	F       string `is:"required"`
+	Context int
 }
 
 type AnalysisTestBAD_EmptyValidator struct {

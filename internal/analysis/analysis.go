@@ -44,6 +44,16 @@ type analysis struct {
 	keys map[string]uint
 	// Holds useful information aggregated during analysis.
 	info *Info
+
+	// For error reporting. If not nil it will hold the last encountered
+	// rule & field that need the ValidatorStruct to have a "context" field.
+	needsContext *needsContext
+}
+
+// used for error reporting only
+type needsContext struct {
+	field *StructField
+	rule  *Rule
 }
 
 func (a *analysis) anError(e interface{}, f *StructField, r *Rule) error {
@@ -136,6 +146,11 @@ func analyzeValidatorStruct(a *analysis, structType *types.Struct) (*ValidatorSt
 		return nil, err
 	}
 
+	// 4. ensure that if a rule with context exists, that then also a ContextOptionField exists
+	if a.needsContext != nil && a.validator.ContextOption == nil {
+		return nil, a.anError(errContextOptionFieldRequired, a.needsContext.field, a.needsContext.rule)
+	}
+
 	a.validator.Fields = fields
 	return a.validator, nil
 }
@@ -181,21 +196,6 @@ func analyzeStructFields(a *analysis, structType *types.Struct, root bool, local
 			a.selector = append(a.selector, f)
 		}
 
-		// Check for special, untagged root fields.
-		if root && len(istag) == 0 {
-			if isErrorConstructor(fvar.Type()) {
-				if err := analyzeErrorHandlerField(a, f, false); err != nil {
-					return nil, err
-				}
-				continue
-			} else if isErrorAggregator(fvar.Type()) {
-				if err := analyzeErrorHandlerField(a, f, true); err != nil {
-					return nil, err
-				}
-				continue
-			}
-		}
-
 		// resolve field key & make sure that it is unique
 		f.Key = makeFieldKey(a, fvar, ftag)
 		if _, ok := a.keys[f.Key]; ok {
@@ -214,6 +214,24 @@ func analyzeStructFields(a *analysis, structType *types.Struct, root bool, local
 			if err := analyzeRules(a, f); err != nil {
 				return nil, err
 			}
+		} else if root {
+			// Check for untagged, "special" root fields.
+			if isErrorConstructor(fvar.Type()) {
+				if err := analyzeErrorHandlerField(a, f, false); err != nil {
+					return nil, err
+				}
+				continue
+			} else if isErrorAggregator(fvar.Type()) {
+				if err := analyzeErrorHandlerField(a, f, true); err != nil {
+					return nil, err
+				}
+				continue
+			} else if strings.ToLower(fvar.Name()) == "context" {
+				if err := analyzeContextOptionField(a, f); err != nil {
+					return nil, err
+				}
+				continue
+			}
 		}
 
 		fields = append(fields, f)
@@ -223,13 +241,25 @@ func analyzeStructFields(a *analysis, structType *types.Struct, root bool, local
 
 func analyzeErrorHandlerField(a *analysis, f *StructField, isAggregator bool) error {
 	if a.validator.ErrorHandler != nil {
-		// TODO
 		return a.anError(errErrorHandlerFieldConflict, f, nil)
 	}
 
 	a.validator.ErrorHandler = new(ErrorHandlerField)
 	a.validator.ErrorHandler.Name = f.Name
 	a.validator.ErrorHandler.IsAggregator = isAggregator
+	return nil
+}
+
+func analyzeContextOptionField(a *analysis, f *StructField) error {
+	if a.validator.ContextOption != nil {
+		return a.anError(errContextOptionFieldConflict, f, nil)
+	}
+	if f.Type.Kind != TypeKindString {
+		return a.anError(errContextOptionFieldType, f, nil)
+	}
+
+	a.validator.ContextOption = new(ContextOptionField)
+	a.validator.ContextOption.Name = f.Name
 	return nil
 }
 
@@ -309,6 +339,9 @@ func analyzeRules(a *analysis, f *StructField) error {
 					StructField: f,
 				}
 			}
+		}
+		if len(r.Context) > 0 && a.needsContext == nil {
+			a.needsContext = &needsContext{f, r}
 		}
 
 		// check that rule type exists

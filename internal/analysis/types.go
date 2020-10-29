@@ -17,6 +17,8 @@ type (
 		// Info on the isvalid.ErrorConstructor or gosql.ErrorAggregator
 		// field of the validator struct type, or nil.
 		ErrorHandler *ErrorHandlerField
+		// Info on the validator type's field named "context" (case insensitive), or nil.
+		ContextOption *ContextOptionField
 	}
 
 	// StructField
@@ -82,6 +84,13 @@ type (
 		// Indicates whether or not the field's type implements
 		// the isvalid.ErrorAggregator interface.
 		IsAggregator bool
+	}
+
+	// ContextOptionField is the result of analyzing a validator struct's
+	// field whose name is equal to "context" (case insensitive).
+	ContextOptionField struct {
+		// Name of the field (case preserved).
+		Name string
 	}
 
 	// Rule

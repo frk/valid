@@ -88,6 +88,9 @@ const (
 	errFieldKeyUnknown
 	errFieldKeyConflict
 	errErrorHandlerFieldConflict
+	errContextOptionFieldConflict
+	errContextOptionFieldRequired
+	errContextOptionFieldType
 )
 
 var error_template_string = `
@@ -246,6 +249,20 @@ var error_template_string = `
 	TODO {{R .FieldName}}
 {{ end }}
 
+{{ define "` + errContextOptionFieldConflict.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Conflicting context field."}}
+	TODO {{R .FieldName}}
+{{ end }}
+
+{{ define "` + errContextOptionFieldRequired.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Missing context field."}}
+	TODO {{R .FieldName}}
+{{ end }}
+
+{{ define "` + errContextOptionFieldType.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Bad context field type."}}
+	TODO {{R .FieldName}} {{R .FieldType}}
+{{ end }}
 ` // `
 
 var error_templates = template.Must(template.New("t").Funcs(template.FuncMap{

@@ -40,7 +40,29 @@ func TestAnalysisRun(t *testing.T) {
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
 			FieldName:     "CustomErrorAggregator",
-			FieldType:     "path/to/test.CustomErrorAggregator",
+			FieldType:     "CustomErrorAggregator",
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 123,
+		},
+	}, {
+		name: "AnalysisTestBAD_ContextOptionFieldConflictValidator",
+		err: &anError{Code: errContextOptionFieldConflict,
+			VtorName:      "AnalysisTestBAD_ContextOptionFieldConflictValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  123,
+			FieldName:     "context",
+			FieldType:     "string",
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 123,
+		},
+	}, {
+		name: "AnalysisTestBAD_ContextOptionFieldTypeValidator",
+		err: &anError{Code: errContextOptionFieldType,
+			VtorName:      "AnalysisTestBAD_ContextOptionFieldTypeValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  123,
+			FieldName:     "Context",
+			FieldType:     "int",
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 		},
@@ -2005,9 +2027,41 @@ func TestAnalysisRun(t *testing.T) {
 			}},
 		},
 	}, {
+		name: "AnalysisTestOK_ContextValidator",
+		want: &ValidatorStruct{
+			TypeName: "AnalysisTestOK_ContextValidator",
+			ContextOption: &ContextOptionField{
+				Name: "context",
+			},
+			Fields: []*StructField{{
+				Name: "F", Key: "F",
+				Tag:  tagutil.Tag{"is": []string{"required"}},
+				Type: Type{Kind: TypeKindString}, IsExported: true,
+				Rules: []*Rule{{Name: "required"}},
+			}},
+		},
+	}, {
+		name:     "AnalysisTestOK_Context2Validator",
+		printerr: true,
+		want: &ValidatorStruct{
+			TypeName: "AnalysisTestOK_Context2Validator",
+			ContextOption: &ContextOptionField{
+				Name: "Context",
+			},
+			Fields: []*StructField{{
+				Name: "F", Key: "F",
+				Tag:  tagutil.Tag{"is": []string{"required"}},
+				Type: Type{Kind: TypeKindString}, IsExported: true,
+				Rules: []*Rule{{Name: "required"}},
+			}},
+		},
+	}, {
 		name: "AnalysisTestOK_Validator",
 		want: &ValidatorStruct{
 			TypeName: "AnalysisTestOK_Validator",
+			ContextOption: &ContextOptionField{
+				Name: "Context",
+			},
 			Fields: []*StructField{{
 				Name: "UserInput",
 				Key:  "UserInput",
