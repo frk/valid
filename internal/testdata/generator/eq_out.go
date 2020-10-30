@@ -13,7 +13,7 @@ func (v EqualsValidator) Validate() error {
 	if v.F2 != nil {
 		f := *v.F2
 		if f != 123 && f != 0 && f != 321 {
-			return errors.New("F2 must be equal to: \"123\" or \"0\" or \"321\"")
+			return errors.New("F2 must be equal to: 123 or 0 or 321")
 		}
 	}
 	if v.F3 == nil || *v.F3 == nil || **v.F3 == nil {
@@ -21,7 +21,7 @@ func (v EqualsValidator) Validate() error {
 	} else {
 		f := **v.F3
 		if f != "foo" && f != 123 && f != false && f != 3.14 {
-			return errors.New("F3 must be equal to: \"foo\" or \"123\" or \"false\" or \"3.14\"")
+			return errors.New("F3 must be equal to: \"foo\" or 123 or false or 3.14")
 		}
 	}
 	return nil

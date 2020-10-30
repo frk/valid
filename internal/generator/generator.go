@@ -3,6 +3,7 @@ package generator
 import (
 	"io"
 	"log"
+	"strconv"
 	"strings"
 
 	"github.com/frk/isvalid/internal/analysis"
@@ -28,48 +29,23 @@ type TargetInfo struct {
 }
 
 func Write(f io.Writer, pkgName string, targets []*TargetInfo, conf Config) error {
-	var (
-		file          = new(GO.File)
-		imports       = new(GO.ImportDecl)
-		importIsvalid bool
-		importStrings bool
-		importErrors  bool
-	)
-	for _, t := range targets {
-		g := new(generator)
-		g.conf = conf
-		g.info = t.Info
-		g.vs = t.ValidatorStruct
-		g.file = file
-		g.imports = imports
-
-		buildCode(g, t.ValidatorStruct)
-		if g.importIsvalid {
-			importIsvalid = true
-		}
-		if g.importStrings {
-			importStrings = true
-		}
-		if g.vs.ErrorHandler == nil {
-			importErrors = true
-		}
-	}
-
-	if importErrors {
-		imports.Specs = append(imports.Specs, GO.ImportSpec{Path: "errors"})
-	}
-	if importIsvalid {
-		imports.Specs = append(imports.Specs, GO.ImportSpec{Path: isvalidPkgPath})
-	}
-	if importStrings {
-		imports.Specs = append(imports.Specs, GO.ImportSpec{Path: "strings"})
-	}
-	groupImports(imports)
-
-	file.PkgName = pkgName
-	file.Preamble = GO.LineComment{filePreamble}
-	file.Imports = []GO.ImportDeclNode{imports}
+	file := buildFile(pkgName, targets, conf)
 	return GO.Write(file, f)
+}
+
+type file struct {
+	GO.File
+	// The target file's import declaration.
+	imports *GO.ImportDecl
+	// List of statements to be produced for the body of an init function.
+	// If the slice is empty then the init function will not be generated.
+	init []GO.StmtNode
+
+	importIsvalid bool // file needs to import "github.com/frk/isvalid"
+	importStrings bool // file needs to import "strings"
+	importErrors  bool // file needs to import "errors"
+	importFmt     bool // file needs to import "fmt"
+
 }
 
 type generator struct {
@@ -79,21 +55,51 @@ type generator struct {
 	vs *analysis.ValidatorStruct
 	// Additional info associated with the validator type's analysis.
 	info *analysis.Info
-
-	// inidicates that the generated code should import the "github.com/frk/isvalid" package.
-	importIsvalid bool
-	// inidicates that the generated code should import the "strings" package.
-	importStrings bool
-
 	// The target file to be build by the generator.
-	file *GO.File
-	// The target file's import declaration.
-	imports *GO.ImportDecl
-	// List of statements to be produced for the body of an init function.
-	// If the slice is empty then the init function will not be generated.
-	init []GO.StmtNode
+	file *file
 	// The generated Validation method's receiver
 	recv GO.Ident
+}
+
+func buildFile(pkgName string, targets []*TargetInfo, conf Config) GO.File {
+	file := new(file)
+	for _, t := range targets {
+		g := new(generator)
+		g.conf = conf
+		g.info = t.Info
+		g.vs = t.ValidatorStruct
+		g.file = file
+
+		buildCode(g, t.ValidatorStruct)
+	}
+
+	if len(file.init) > 0 {
+		init := GO.FuncDecl{}
+		init.Name.Name = "init"
+		init.Body.List = file.init
+		file.Decls = append([]GO.TopLevelDeclNode{init}, file.Decls...)
+	}
+
+	var imports = new(GO.ImportDecl)
+	if file.importErrors {
+		imports.Specs = append(imports.Specs, GO.ImportSpec{Path: "errors"})
+	}
+	if file.importFmt {
+		imports.Specs = append(imports.Specs, GO.ImportSpec{Path: "fmt"})
+	}
+	if file.importStrings {
+		imports.Specs = append(imports.Specs, GO.ImportSpec{Path: "strings"})
+	}
+	if file.importIsvalid {
+		imports.Specs = append(imports.Specs, GO.ImportSpec{Path: isvalidPkgPath})
+	}
+	groupImports(imports)
+
+	file.PkgName = pkgName
+	file.Preamble = GO.LineComment{filePreamble}
+	file.Imports = []GO.ImportDeclNode{imports}
+
+	return file.File
 }
 
 func buildCode(g *generator, vs *analysis.ValidatorStruct) {
@@ -103,13 +109,6 @@ func buildCode(g *generator, vs *analysis.ValidatorStruct) {
 		buildFieldCode(g, f, g.recv, &body)
 	}
 	body = append(body, newFinalReturnStmt(g, g.recv))
-
-	if len(g.init) > 0 {
-		init := GO.FuncDecl{}
-		init.Name.Name = "init"
-		init.Body.List = g.init
-		g.file.Decls = append(g.file.Decls, init)
-	}
 
 	method := GO.MethodDecl{}
 	method.Recv.Name = g.recv
@@ -194,11 +193,11 @@ func buildFieldCode(g *generator, field *analysis.StructField, root GO.ExprNode,
 		var context string
 		if required != nil {
 			ruleExpr = makeExprForRequired(g, fieldType.Kind, fieldExpr)
-			retStmt = makeReturnStmtForError(g, required, field, fieldExpr)
+			retStmt = newReturnStmtForError(g, required, field, fieldExpr)
 			context = required.Context
 		} else if notnil != nil {
 			ruleExpr = makeExprForNotnil(g, fieldType.Kind, fieldExpr)
-			retStmt = makeReturnStmtForError(g, notnil, field, fieldExpr)
+			retStmt = newReturnStmtForError(g, notnil, field, fieldExpr)
 			context = notnil.Context
 		}
 
@@ -346,10 +345,10 @@ var ruleIfStmtMap = map[string]func(g *generator, r *analysis.Rule, field *analy
 
 func ifStmtMaker(funcName string) (maker func(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt)) {
 	return func(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
-		g.importIsvalid = true
+		g.file.importIsvalid = true
 		fn := GO.QualifiedIdent{"isvalid", funcName}
 		call := GO.CallExpr{Fun: fn, Args: GO.ArgsList{List: fieldExpr}}
-		retStmt := makeReturnStmtForError(g, r, field, fieldExpr)
+		retStmt := newReturnStmtForError(g, r, field, fieldExpr)
 
 		ifs.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: call}
 		ifs.Body.Add(retStmt)
@@ -358,14 +357,17 @@ func ifStmtMaker(funcName string) (maker func(g *generator, r *analysis.Rule, fi
 }
 
 func makeIfStmtForPhone(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
-	g.importIsvalid = true
+	g.file.importIsvalid = true
 	fn := GO.QualifiedIdent{"isvalid", "Phone"}
 	call := GO.CallExpr{Fun: fn}
-	retStmt := makeReturnStmtForError(g, r, field, fieldExpr)
+	retStmt := newReturnStmtForError(g, r, field, fieldExpr)
 
 	args := GO.ExprList{fieldExpr}
 	for _, a := range r.Args {
-		args = append(args, GO.StringLit(a.Value))
+		if a.Type == analysis.ArgTypeReference {
+		} else {
+			args = append(args, GO.StringLit(a.Value))
+		}
 	}
 	call.Args.List = args
 
@@ -375,10 +377,10 @@ func makeIfStmtForPhone(g *generator, r *analysis.Rule, field *analysis.StructFi
 }
 
 func makeIfStmtForZip(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
-	g.importIsvalid = true
+	g.file.importIsvalid = true
 	fn := GO.QualifiedIdent{"isvalid", "Zip"}
 	call := GO.CallExpr{Fun: fn}
-	retStmt := makeReturnStmtForError(g, r, field, fieldExpr)
+	retStmt := newReturnStmtForError(g, r, field, fieldExpr)
 
 	args := GO.ExprList{fieldExpr}
 	for _, a := range r.Args {
@@ -392,10 +394,10 @@ func makeIfStmtForZip(g *generator, r *analysis.Rule, field *analysis.StructFiel
 }
 
 func makeIfStmtForUUID(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
-	g.importIsvalid = true
+	g.file.importIsvalid = true
 	fn := GO.QualifiedIdent{"isvalid", "UUID"}
 	call := GO.CallExpr{Fun: fn}
-	retStmt := makeReturnStmtForError(g, r, field, fieldExpr)
+	retStmt := newReturnStmtForError(g, r, field, fieldExpr)
 
 	args := GO.ExprList{fieldExpr}
 	for _, a := range r.Args {
@@ -416,10 +418,10 @@ func makeIfStmtForUUID(g *generator, r *analysis.Rule, field *analysis.StructFie
 }
 
 func makeIfStmtForIP(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
-	g.importIsvalid = true
+	g.file.importIsvalid = true
 	fn := GO.QualifiedIdent{"isvalid", "IP"}
 	call := GO.CallExpr{Fun: fn}
-	retStmt := makeReturnStmtForError(g, r, field, fieldExpr)
+	retStmt := newReturnStmtForError(g, r, field, fieldExpr)
 
 	args := GO.ExprList{fieldExpr}
 	for _, a := range r.Args {
@@ -440,10 +442,10 @@ func makeIfStmtForIP(g *generator, r *analysis.Rule, field *analysis.StructField
 }
 
 func makeIfStmtForMAC(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
-	g.importIsvalid = true
+	g.file.importIsvalid = true
 	fn := GO.QualifiedIdent{"isvalid", "MAC"}
 	call := GO.CallExpr{Fun: fn}
-	retStmt := makeReturnStmtForError(g, r, field, fieldExpr)
+	retStmt := newReturnStmtForError(g, r, field, fieldExpr)
 
 	args := GO.ExprList{fieldExpr}
 	for _, a := range r.Args {
@@ -464,14 +466,14 @@ func makeIfStmtForMAC(g *generator, r *analysis.Rule, field *analysis.StructFiel
 }
 
 func makeIfStmtForISO(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
-	g.importIsvalid = true
+	g.file.importIsvalid = true
 	fn := GO.QualifiedIdent{"isvalid", "ISO"}
 	call := GO.CallExpr{Fun: fn}
 
 	// if analysis did its job correctly r.Args will be of len 1
 	// and the argument will represent an integer.
 	arg := r.Args[0].Value
-	retStmt := makeReturnStmtForError(g, r, field, fieldExpr)
+	retStmt := newReturnStmtForError(g, r, field, fieldExpr)
 	call.Args.List = GO.ExprList{fieldExpr, GO.ValueLit(arg)}
 
 	ifs.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: call}
@@ -480,14 +482,14 @@ func makeIfStmtForISO(g *generator, r *analysis.Rule, field *analysis.StructFiel
 }
 
 func makeIfStmtForRFC(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
-	g.importIsvalid = true
+	g.file.importIsvalid = true
 	fn := GO.QualifiedIdent{"isvalid", "RFC"}
 	call := GO.CallExpr{Fun: fn}
 
 	// if analysis did its job correctly r.Args will be of len 1
 	// and the argument will represent an integer.
 	arg := r.Args[0].Value
-	retStmt := makeReturnStmtForError(g, r, field, fieldExpr)
+	retStmt := newReturnStmtForError(g, r, field, fieldExpr)
 	call.Args.List = GO.ExprList{fieldExpr, GO.ValueLit(arg)}
 
 	ifs.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: call}
@@ -496,20 +498,20 @@ func makeIfStmtForRFC(g *generator, r *analysis.Rule, field *analysis.StructFiel
 }
 
 func makeIfStmtForRegexp(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
-	g.importIsvalid = true
+	g.file.importIsvalid = true
 	fn := GO.QualifiedIdent{"isvalid", "Match"}
 	call := GO.CallExpr{Fun: fn}
 
 	// if analysis did its job correctly r.Args will be of len 1
 	// and the argument will represent a regular expression.
 	arg := r.Args[0].Value
-	retStmt := makeReturnStmtForError(g, r, field, fieldExpr)
+	retStmt := newReturnStmtForError(g, r, field, fieldExpr)
 	call.Args.List = GO.ExprList{fieldExpr, GO.RawStringLit(arg)}
 
 	// add a registry call for the init function
 	regrx := GO.CallExpr{Fun: GO.QualifiedIdent{"isvalid", "RegisterRegexp"}}
 	regrx.Args.List = GO.RawStringLit(arg)
-	g.init = append(g.init, GO.ExprStmt{regrx})
+	g.file.init = append(g.file.init, GO.ExprStmt{regrx})
 
 	ifs.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: call}
 	ifs.Body.Add(retStmt)
@@ -517,7 +519,7 @@ func makeIfStmtForRegexp(g *generator, r *analysis.Rule, field *analysis.StructF
 }
 
 func makeIfStmtForPrefix(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
-	g.importStrings = true
+	g.file.importStrings = true
 
 	for _, a := range r.Args {
 		call := GO.CallExpr{Fun: GO.QualifiedIdent{"strings", "HasPrefix"}}
@@ -529,14 +531,14 @@ func makeIfStmtForPrefix(g *generator, r *analysis.Rule, field *analysis.StructF
 		}
 	}
 
-	retStmt := makeReturnStmtForError(g, r, field, fieldExpr)
+	retStmt := newReturnStmtForError(g, r, field, fieldExpr)
 
 	ifs.Body.Add(retStmt)
 	return ifs
 }
 
 func makeIfStmtForSuffix(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
-	g.importStrings = true
+	g.file.importStrings = true
 
 	for _, a := range r.Args {
 		call := GO.CallExpr{Fun: GO.QualifiedIdent{"strings", "HasSuffix"}}
@@ -548,14 +550,14 @@ func makeIfStmtForSuffix(g *generator, r *analysis.Rule, field *analysis.StructF
 		}
 	}
 
-	retStmt := makeReturnStmtForError(g, r, field, fieldExpr)
+	retStmt := newReturnStmtForError(g, r, field, fieldExpr)
 
 	ifs.Body.Add(retStmt)
 	return ifs
 }
 
 func makeIfStmtForContains(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
-	g.importStrings = true
+	g.file.importStrings = true
 
 	for _, a := range r.Args {
 		call := GO.CallExpr{Fun: GO.QualifiedIdent{"strings", "Contains"}}
@@ -567,7 +569,7 @@ func makeIfStmtForContains(g *generator, r *analysis.Rule, field *analysis.Struc
 		}
 	}
 
-	retStmt := makeReturnStmtForError(g, r, field, fieldExpr)
+	retStmt := newReturnStmtForError(g, r, field, fieldExpr)
 
 	ifs.Body.Add(retStmt)
 	return ifs
@@ -604,7 +606,7 @@ func makeIfStmtForEquals(g *generator, r *analysis.Rule, field *analysis.StructF
 		}
 	}
 
-	retStmt := makeReturnStmtForError(g, r, field, fieldExpr)
+	retStmt := newReturnStmtForError(g, r, field, fieldExpr)
 
 	ifs.Body.Add(retStmt)
 	return ifs
@@ -641,7 +643,7 @@ func makeIfStmtForNotEquals(g *generator, r *analysis.Rule, field *analysis.Stru
 		}
 	}
 
-	retStmt := makeReturnStmtForError(g, r, field, fieldExpr)
+	retStmt := newReturnStmtForError(g, r, field, fieldExpr)
 
 	ifs.Body.Add(retStmt)
 	return ifs
@@ -650,42 +652,42 @@ func makeIfStmtForNotEquals(g *generator, r *analysis.Rule, field *analysis.Stru
 func makeIfStmtForGreaterThan(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
 	arg := r.Args[0]
 	ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLeq, X: fieldExpr, Y: GO.ValueLit(arg.Value)}
-	ifs.Body.Add(makeReturnStmtForError(g, r, field, fieldExpr))
+	ifs.Body.Add(newReturnStmtForError(g, r, field, fieldExpr))
 	return ifs
 }
 
 func makeIfStmtForLessThan(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
 	arg := r.Args[0]
 	ifs.Cond = GO.BinaryExpr{Op: GO.BinaryGeq, X: fieldExpr, Y: GO.ValueLit(arg.Value)}
-	ifs.Body.Add(makeReturnStmtForError(g, r, field, fieldExpr))
+	ifs.Body.Add(newReturnStmtForError(g, r, field, fieldExpr))
 	return ifs
 }
 
 func makeIfStmtForGreaterThanOrEqual(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
 	arg := r.Args[0]
 	ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLss, X: fieldExpr, Y: GO.ValueLit(arg.Value)}
-	ifs.Body.Add(makeReturnStmtForError(g, r, field, fieldExpr))
+	ifs.Body.Add(newReturnStmtForError(g, r, field, fieldExpr))
 	return ifs
 }
 
 func makeIfStmtForLessThanOrEqual(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
 	arg := r.Args[0]
 	ifs.Cond = GO.BinaryExpr{Op: GO.BinaryGtr, X: fieldExpr, Y: GO.ValueLit(arg.Value)}
-	ifs.Body.Add(makeReturnStmtForError(g, r, field, fieldExpr))
+	ifs.Body.Add(newReturnStmtForError(g, r, field, fieldExpr))
 	return ifs
 }
 
 func makeIfStmtForMin(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
 	arg := r.Args[0]
 	ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLss, X: fieldExpr, Y: GO.ValueLit(arg.Value)}
-	ifs.Body.Add(makeReturnStmtForError(g, r, field, fieldExpr))
+	ifs.Body.Add(newReturnStmtForError(g, r, field, fieldExpr))
 	return ifs
 }
 
 func makeIfStmtForMax(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
 	arg := r.Args[0]
 	ifs.Cond = GO.BinaryExpr{Op: GO.BinaryGtr, X: fieldExpr, Y: GO.ValueLit(arg.Value)}
-	ifs.Body.Add(makeReturnStmtForError(g, r, field, fieldExpr))
+	ifs.Body.Add(newReturnStmtForError(g, r, field, fieldExpr))
 	return ifs
 }
 
@@ -693,37 +695,49 @@ func makeIfStmtForRange(g *generator, r *analysis.Rule, field *analysis.StructFi
 	a1, a2 := r.Args[0], r.Args[1]
 
 	ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLOr,
-		X: GO.BinaryExpr{Op: GO.BinaryLss, X: fieldExpr, Y: GO.ValueLit(a1.Value)},
-		Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: fieldExpr, Y: GO.ValueLit(a2.Value)}}
+		X: GO.BinaryExpr{Op: GO.BinaryLss, X: fieldExpr, Y: newExprForArg(g, a1)},
+		Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: fieldExpr, Y: newExprForArg(g, a2)}}
 
-	ifs.Body.Add(makeReturnStmtForError(g, r, field, fieldExpr))
+	ifs.Body.Add(newReturnStmtForError(g, r, field, fieldExpr))
 	return ifs
 }
 
 func makeIfStmtForLength(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
 	if len(r.Args) == 1 {
 		a := r.Args[0]
-		ifs.Cond = GO.BinaryExpr{Op: GO.BinaryNeq, X: GO.CallLenExpr{fieldExpr}, Y: GO.ValueLit(a.Value)}
-		ifs.Body.Add(makeReturnStmtForError(g, r, field, fieldExpr))
+		ifs.Cond = GO.BinaryExpr{Op: GO.BinaryNeq, X: GO.CallLenExpr{fieldExpr}, Y: newExprForArg(g, a)}
+		ifs.Body.Add(newReturnStmtForError(g, r, field, fieldExpr))
 	} else { // len(r.Args) == 2 is assumed
 		a1, a2 := r.Args[0], r.Args[1]
 		if len(a1.Value) > 0 && len(a2.Value) == 0 {
-			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLss, X: GO.CallLenExpr{fieldExpr}, Y: GO.ValueLit(a1.Value)}
-			ifs.Body.Add(makeReturnStmtForError(g, r, field, fieldExpr))
+			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLss, X: GO.CallLenExpr{fieldExpr}, Y: newExprForArg(g, a1)}
+			ifs.Body.Add(newReturnStmtForError(g, r, field, fieldExpr))
 		} else if len(a1.Value) == 0 && len(a2.Value) > 0 {
-			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{fieldExpr}, Y: GO.ValueLit(a2.Value)}
-			ifs.Body.Add(makeReturnStmtForError(g, r, field, fieldExpr))
+			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{fieldExpr}, Y: newExprForArg(g, a2)}
+			ifs.Body.Add(newReturnStmtForError(g, r, field, fieldExpr))
 		} else {
 			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLOr,
-				X: GO.BinaryExpr{Op: GO.BinaryLss, X: GO.CallLenExpr{fieldExpr}, Y: GO.ValueLit(a1.Value)},
-				Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{fieldExpr}, Y: GO.ValueLit(a2.Value)}}
-			ifs.Body.Add(makeReturnStmtForError(g, r, field, fieldExpr))
+				X: GO.BinaryExpr{Op: GO.BinaryLss, X: GO.CallLenExpr{fieldExpr}, Y: newExprForArg(g, a1)},
+				Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{fieldExpr}, Y: newExprForArg(g, a2)}}
+			ifs.Body.Add(newReturnStmtForError(g, r, field, fieldExpr))
 		}
 	}
 	return ifs
 }
 
-func makeReturnStmtForError(g *generator, r *analysis.Rule, f *analysis.StructField, fieldExpr GO.ExprNode) GO.StmtNode {
+func newExprForArg(g *generator, a *analysis.RuleArg) (x GO.ExprNode) {
+	if a.Type == analysis.ArgTypeReference {
+		x = g.recv
+		ref := g.info.ArgReferenceMap[a]
+		for _, f := range ref.Selector {
+			x = GO.SelectorExpr{X: x, Sel: GO.Ident{f.Name}}
+		}
+		return x
+	}
+	return GO.ValueLit(a.Value)
+}
+
+func newReturnStmtForError(g *generator, r *analysis.Rule, f *analysis.StructField, fieldExpr GO.ExprNode) GO.StmtNode {
 	if g.vs.ErrorHandler != nil {
 		args := make(GO.ExprList, len(r.Args)+3)
 		args[0] = GO.StringLit(f.Key)
@@ -750,9 +764,71 @@ func makeReturnStmtForError(g *generator, r *analysis.Rule, f *analysis.StructFi
 		}
 	}
 
-	errnew := GO.QualifiedIdent{"errors", "New"}
-	errtext := errTextMap[r.Name].errText(f, r)
-	return GO.ReturnStmt{GO.CallExpr{Fun: errnew, Args: GO.ArgsList{List: errtext}}}
+	return GO.ReturnStmt{newExprForError(g, f, r)}
+}
+
+func newExprForError(g *generator, f *analysis.StructField, r *analysis.Rule) (errExpr GO.ExprNode) {
+	typ := f.Type.Base()
+
+	var refs GO.ExprList
+	var args []string
+	for _, a := range r.Args {
+		// if the field's type is numeric an empty string arg can be overwritten as 0.
+		if len(a.Value) == 0 && a.Type == analysis.ArgTypeString && typ.Kind.IsNumeric() {
+			a = &analysis.RuleArg{Type: analysis.ArgTypeUint, Value: "0"}
+		}
+
+		// skip if still empty
+		if len(a.Value) == 0 {
+			continue
+		}
+
+		if a.Type == analysis.ArgTypeReference {
+			x := GO.ExprNode(g.recv)
+			ref := g.info.ArgReferenceMap[a]
+			for _, f := range ref.Selector {
+				x = GO.SelectorExpr{X: x, Sel: GO.Ident{f.Name}}
+			}
+			refs = append(refs, x)
+			args = append(args, "%v")
+		} else if a.Type == analysis.ArgTypeString {
+			args = append(args, strconv.Quote(a.Value))
+		} else {
+			args = append(args, a.Value)
+		}
+	}
+
+	var argopt int
+	if r.Name == "len" && len(r.Args) == 2 {
+		if len(r.Args[0].Value) > 0 && len(r.Args[1].Value) == 0 {
+			argopt = 1
+		} else if len(r.Args[0].Value) == 0 && len(r.Args[1].Value) > 0 {
+			argopt = 2
+		} else {
+			argopt = 3
+		}
+	}
+
+	conf := errorConfigMap[r.Name][argopt]
+	text := f.Key + " " + conf.text
+	if len(args) > 0 && conf.omitargs == false {
+		text += ": " + strings.Join(args, conf.argsep)
+	}
+	if len(conf.suffix) > 0 {
+		text += " " + conf.suffix
+	}
+
+	errText := GO.ValueLit(strconv.Quote(text))
+	if len(refs) > 0 {
+		g.file.importFmt = true
+		errExpr = GO.CallExpr{Fun: GO.QualifiedIdent{"fmt", "Errorf"},
+			Args: GO.ArgsList{List: append(GO.ExprList{errText}, refs...)}}
+	} else {
+		g.file.importErrors = true
+		errExpr = GO.CallExpr{Fun: GO.QualifiedIdent{"errors", "New"},
+			Args: GO.ArgsList{List: errText}}
+	}
+	return errExpr
 }
 
 func newFinalReturnStmt(g *generator, root GO.ExprNode) (stmt GO.ReturnStmt) {
@@ -763,24 +839,6 @@ func newFinalReturnStmt(g *generator, root GO.ExprNode) (stmt GO.ReturnStmt) {
 		stmt.Result = GO.Ident{"nil"}
 	}
 	return stmt
-}
-
-// addImport
-func addImport(g *generator, path, name, local string) {
-	// check that the package path hasn't yet been added to the imports
-	for _, spec := range g.imports.Specs {
-		if string(spec.Path) == path {
-			return
-		}
-	}
-
-	// if the local name is the same as the package name set it to empty
-	if local == name {
-		local = ""
-	}
-
-	spec := GO.ImportSpec{Path: GO.StringLit(path), Name: GO.Ident{local}}
-	g.imports.Specs = append(g.imports.Specs, spec)
 }
 
 // groupImports groups the imports into 3 groups separated by a new line, the
@@ -812,4 +870,59 @@ func groupImports(imports *GO.ImportDecl) {
 		specs = append(specs, specs3...)
 	}
 	imports.Specs = specs
+}
+
+type errorConfig struct {
+	text string
+	// if the validation rule takes multiple arguments, separate them with
+	// argsep in the errro message.
+	argsep string
+	// if set, append the suffix to the error message
+	suffix string
+	// even if the validation rule takes an argument, do not display it
+	// in the error message
+	omitargs bool
+}
+
+var errorConfigMap = map[string]map[int]errorConfig{
+	"required": {0: {text: "is required"}},
+	"notnil":   {0: {text: "cannot be nil"}},
+	"email":    {0: {text: "must be a valid email"}},
+	"url":      {0: {text: "must be a valid URL"}},
+	"uri":      {0: {text: "must be a valid URI"}},
+	"pan":      {0: {text: "must be a valid PAN"}},
+	"cvv":      {0: {text: "must be a valid CVV"}},
+	"ssn":      {0: {text: "must be a valid SSN"}},
+	"ein":      {0: {text: "must be a valid EIN"}},
+	"numeric":  {0: {text: "must contain only digits [0-9]"}},
+	"hex":      {0: {text: "must be a valid hexadecimal string"}},
+	"hexcolor": {0: {text: "must be a valid hex color code"}},
+	"alphanum": {0: {text: "must be an alphanumeric string"}},
+	"cidr":     {0: {text: "must be a valid CIDR"}},
+	"phone":    {0: {text: "must be a valid phone number", omitargs: true}},
+	"zip":      {0: {text: "must be a valid zip code", omitargs: true}},
+	"uuid":     {0: {text: "must be a valid UUID", omitargs: true}},
+	"ip":       {0: {text: "must be a valid IP", omitargs: true}},
+	"mac":      {0: {text: "must be a valid MAC", omitargs: true}},
+	"iso":      {0: {text: "must be a valid ISO"}},
+	"rfc":      {0: {text: "must be a valid RFC"}},
+	"re":       {0: {text: "must match the regular expression"}},
+	"prefix":   {0: {text: "must be prefixed with", argsep: " or "}},
+	"suffix":   {0: {text: "must be suffixed with", argsep: " or "}},
+	"contains": {0: {text: "must contain substring", argsep: " or "}},
+	"eq":       {0: {text: "must be equal to", argsep: " or "}},
+	"ne":       {0: {text: "must not be equal to", argsep: " or "}},
+	"gt":       {0: {text: "must be greater than"}},
+	"lt":       {0: {text: "must be less than"}},
+	"gte":      {0: {text: "must be greater than or equal to"}},
+	"lte":      {0: {text: "must be less than or equal to"}},
+	"min":      {0: {text: "must be greater than or equal to"}},
+	"max":      {0: {text: "must be less than or equal to"}},
+	"rng":      {0: {text: "must be between", argsep: " and "}},
+	"len": {
+		0: {text: "must be of length"},
+		1: {text: "must be of length at least"},
+		2: {text: "must be of length at most"},
+		3: {text: "must be of length between", argsep: " and ", suffix: "(inclusive)"},
+	},
 }

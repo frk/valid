@@ -174,6 +174,13 @@ func (t Type) String() string {
 	return "<unknown>"
 }
 
+func (t Type) Base() Type {
+	for t.Kind == TypeKindPtr {
+		t = *t.Elem
+	}
+	return t
+}
+
 func (f *StructField) RulesCopy() []*Rule {
 	if f.Rules == nil {
 		return nil

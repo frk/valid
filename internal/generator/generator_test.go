@@ -55,6 +55,7 @@ func TestGenerator(t *testing.T) {
 		"error_constructor",
 		"error_aggregator",
 		"context_option",
+		"references",
 	}
 
 	pkgs, err := parser.Parse("../testdata/generator", false, nil)
