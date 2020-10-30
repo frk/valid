@@ -18,3 +18,29 @@ func (v ReferencesValidator) Validate() error {
 	}
 	return nil
 }
+
+func (v References2Validator) Validate() error {
+	if len(v.F1) > v.Max {
+		return v.ec.Error("F1", v.F1, "len", "", v.Max)
+	}
+	if v.F2 != nil {
+		f := *v.F2
+		if f < v.Min || f > v.Max {
+			return v.ec.Error("F2", f, "rng", v.Min, v.Max)
+		}
+	}
+	return nil
+}
+
+func (v References3Validator) Validate() error {
+	if len(v.F1) > v.Max {
+		v.ea.Error("F1", v.F1, "len", "", v.Max)
+	}
+	if v.F2 != nil {
+		f := *v.F2
+		if f < v.Min || f > v.Max {
+			v.ea.Error("F2", f, "rng", v.Min, v.Max)
+		}
+	}
+	return v.ea.Out()
+}

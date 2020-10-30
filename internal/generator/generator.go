@@ -738,20 +738,42 @@ func newExprForArg(g *generator, a *analysis.RuleArg) (x GO.ExprNode) {
 }
 
 func newReturnStmtForError(g *generator, r *analysis.Rule, f *analysis.StructField, fieldExpr GO.ExprNode) GO.StmtNode {
+	// Resolve the alternative form of the error message,
+	// currently only "len" supports alternative forms.
+	var altform int
+	if r.Name == "len" && len(r.Args) == 2 {
+		if len(r.Args[0].Value) > 0 && len(r.Args[1].Value) == 0 {
+			altform = 1
+		} else if len(r.Args[0].Value) == 0 && len(r.Args[1].Value) > 0 {
+			altform = 2
+		} else {
+			altform = 3
+		}
+	}
+
+	// Get the error config.
+	conf := errorConfigMap[r.Name][altform]
+
+	// Build code for custom handler, if one exists.
 	if g.vs.ErrorHandler != nil {
-		args := make(GO.ExprList, len(r.Args)+3)
+		args := make(GO.ExprList, 3)
 		args[0] = GO.StringLit(f.Key)
 		args[1] = fieldExpr
 		args[2] = GO.StringLit(r.Name)
 
-		for i := 0; i < len(r.Args); i++ {
-			switch r.Args[i].Type {
-			default:
-				args[i+3] = GO.ValueLit(r.Args[i].Value)
-			case analysis.ArgTypeString:
-				args[i+3] = GO.StringLit(r.Args[i].Value)
+		for _, a := range r.Args {
+			switch a.Type {
 			case analysis.ArgTypeReference:
-				// TODO
+				x := GO.ExprNode(g.recv)
+				ref := g.info.ArgReferenceMap[a]
+				for _, f := range ref.Selector {
+					x = GO.SelectorExpr{X: x, Sel: GO.Ident{f.Name}}
+				}
+				args = append(args, x)
+			case analysis.ArgTypeString:
+				args = append(args, GO.StringLit(a.Value))
+			default:
+				args = append(args, GO.ValueLit(a.Value))
 			}
 		}
 
@@ -764,56 +786,49 @@ func newReturnStmtForError(g *generator, r *analysis.Rule, f *analysis.StructFie
 		}
 	}
 
-	return GO.ReturnStmt{newExprForError(g, f, r)}
+	// If no custom handler exists, just return the default error message.
+	return GO.ReturnStmt{newExprForError(g, f, r, conf)}
+
 }
 
-func newExprForError(g *generator, f *analysis.StructField, r *analysis.Rule) (errExpr GO.ExprNode) {
+func newExprForError(g *generator, f *analysis.StructField, r *analysis.Rule, conf errorConfig) (errExpr GO.ExprNode) {
+	text := f.Key + " " + conf.text // primary error text
 	typ := f.Type.Base()
 
 	var refs GO.ExprList
-	var args []string
-	for _, a := range r.Args {
-		// if the field's type is numeric an empty string arg can be overwritten as 0.
-		if len(a.Value) == 0 && a.Type == analysis.ArgTypeString && typ.Kind.IsNumeric() {
-			a = &analysis.RuleArg{Type: analysis.ArgTypeUint, Value: "0"}
-		}
-
-		// skip if still empty
-		if len(a.Value) == 0 {
-			continue
-		}
-
-		if a.Type == analysis.ArgTypeReference {
-			x := GO.ExprNode(g.recv)
-			ref := g.info.ArgReferenceMap[a]
-			for _, f := range ref.Selector {
-				x = GO.SelectorExpr{X: x, Sel: GO.Ident{f.Name}}
+	if conf.omitArgs == false {
+		var args []string
+		for _, a := range r.Args {
+			// if the field's type is numeric an empty string arg can be overwritten as 0.
+			if len(a.Value) == 0 && a.Type == analysis.ArgTypeString && typ.Kind.IsNumeric() {
+				a = &analysis.RuleArg{Type: analysis.ArgTypeUint, Value: "0"}
 			}
-			refs = append(refs, x)
-			args = append(args, "%v")
-		} else if a.Type == analysis.ArgTypeString {
-			args = append(args, strconv.Quote(a.Value))
-		} else {
-			args = append(args, a.Value)
+
+			// skip if still empty
+			if len(a.Value) == 0 {
+				continue
+			}
+
+			if a.Type == analysis.ArgTypeReference {
+				x := GO.ExprNode(g.recv)
+				ref := g.info.ArgReferenceMap[a]
+				for _, f := range ref.Selector {
+					x = GO.SelectorExpr{X: x, Sel: GO.Ident{f.Name}}
+				}
+				refs = append(refs, x)
+				args = append(args, "%v")
+			} else if a.Type == analysis.ArgTypeString {
+				args = append(args, strconv.Quote(a.Value))
+			} else {
+				args = append(args, a.Value)
+			}
+		}
+
+		if len(args) > 0 {
+			text += ": " + strings.Join(args, conf.argSep)
 		}
 	}
 
-	var argopt int
-	if r.Name == "len" && len(r.Args) == 2 {
-		if len(r.Args[0].Value) > 0 && len(r.Args[1].Value) == 0 {
-			argopt = 1
-		} else if len(r.Args[0].Value) == 0 && len(r.Args[1].Value) > 0 {
-			argopt = 2
-		} else {
-			argopt = 3
-		}
-	}
-
-	conf := errorConfigMap[r.Name][argopt]
-	text := f.Key + " " + conf.text
-	if len(args) > 0 && conf.omitargs == false {
-		text += ": " + strings.Join(args, conf.argsep)
-	}
 	if len(conf.suffix) > 0 {
 		text += " " + conf.suffix
 	}
@@ -872,18 +887,22 @@ func groupImports(imports *GO.ImportDecl) {
 	imports.Specs = specs
 }
 
+// error message configuation
 type errorConfig struct {
+	// primary text of the error message
 	text string
-	// if the validation rule takes multiple arguments, separate them with
-	// argsep in the errro message.
-	argsep string
 	// if set, append the suffix to the error message
 	suffix string
+	// if the validation rule takes multiple arguments, separate them with
+	// argSep in the errro message
+	argSep string
 	// even if the validation rule takes an argument, do not display it
 	// in the error message
-	omitargs bool
+	omitArgs bool
 }
 
+// A map of errorConfigs used for generating error messages. The first key is
+// the rule's name and the second key maps the alternative forms of the error.
 var errorConfigMap = map[string]map[int]errorConfig{
 	"required": {0: {text: "is required"}},
 	"notnil":   {0: {text: "cannot be nil"}},
@@ -899,30 +918,30 @@ var errorConfigMap = map[string]map[int]errorConfig{
 	"hexcolor": {0: {text: "must be a valid hex color code"}},
 	"alphanum": {0: {text: "must be an alphanumeric string"}},
 	"cidr":     {0: {text: "must be a valid CIDR"}},
-	"phone":    {0: {text: "must be a valid phone number", omitargs: true}},
-	"zip":      {0: {text: "must be a valid zip code", omitargs: true}},
-	"uuid":     {0: {text: "must be a valid UUID", omitargs: true}},
-	"ip":       {0: {text: "must be a valid IP", omitargs: true}},
-	"mac":      {0: {text: "must be a valid MAC", omitargs: true}},
+	"phone":    {0: {text: "must be a valid phone number", omitArgs: true}},
+	"zip":      {0: {text: "must be a valid zip code", omitArgs: true}},
+	"uuid":     {0: {text: "must be a valid UUID", omitArgs: true}},
+	"ip":       {0: {text: "must be a valid IP", omitArgs: true}},
+	"mac":      {0: {text: "must be a valid MAC", omitArgs: true}},
 	"iso":      {0: {text: "must be a valid ISO"}},
 	"rfc":      {0: {text: "must be a valid RFC"}},
 	"re":       {0: {text: "must match the regular expression"}},
-	"prefix":   {0: {text: "must be prefixed with", argsep: " or "}},
-	"suffix":   {0: {text: "must be suffixed with", argsep: " or "}},
-	"contains": {0: {text: "must contain substring", argsep: " or "}},
-	"eq":       {0: {text: "must be equal to", argsep: " or "}},
-	"ne":       {0: {text: "must not be equal to", argsep: " or "}},
+	"prefix":   {0: {text: "must be prefixed with", argSep: " or "}},
+	"suffix":   {0: {text: "must be suffixed with", argSep: " or "}},
+	"contains": {0: {text: "must contain substring", argSep: " or "}},
+	"eq":       {0: {text: "must be equal to", argSep: " or "}},
+	"ne":       {0: {text: "must not be equal to", argSep: " or "}},
 	"gt":       {0: {text: "must be greater than"}},
 	"lt":       {0: {text: "must be less than"}},
 	"gte":      {0: {text: "must be greater than or equal to"}},
 	"lte":      {0: {text: "must be less than or equal to"}},
 	"min":      {0: {text: "must be greater than or equal to"}},
 	"max":      {0: {text: "must be less than or equal to"}},
-	"rng":      {0: {text: "must be between", argsep: " and "}},
+	"rng":      {0: {text: "must be between", argSep: " and "}},
 	"len": {
 		0: {text: "must be of length"},
 		1: {text: "must be of length at least"},
 		2: {text: "must be of length at most"},
-		3: {text: "must be of length between", argsep: " and ", suffix: "(inclusive)"},
+		3: {text: "must be of length between", argSep: " and ", suffix: "(inclusive)"},
 	},
 }
