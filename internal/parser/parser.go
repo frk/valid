@@ -137,7 +137,7 @@ func Parse(dir string, recursive bool, filter func(filePath string) bool) (out [
 	return out, nil
 }
 
-// hasIgnoreDirective reports whether or not the given documentation contains the "gosql:ignore" directive.
+// hasIgnoreDirective reports whether or not the given documentation contains the "isvalid:ignore" directive.
 func hasIgnoreDirective(doc *ast.CommentGroup) bool {
 	if doc != nil {
 		for _, com := range doc.List {

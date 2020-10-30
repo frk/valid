@@ -14,7 +14,7 @@ type (
 		TypeName string
 		// The primary fields of the validator struct.
 		Fields []*StructField
-		// Info on the isvalid.ErrorConstructor or gosql.ErrorAggregator
+		// Info on the isvalid.ErrorConstructor or isvalid.ErrorAggregator
 		// field of the validator struct type, or nil.
 		ErrorHandler *ErrorHandlerField
 		// Info on the validator type's field named "context" (case insensitive), or nil.

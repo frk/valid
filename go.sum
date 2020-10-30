@@ -1,16 +1,9 @@
-github.com/frk/ast v0.0.3 h1:B38eNseFd0PfC8H/RYdTmr5GhZ2esGJjFFlsABOJtz4=
-github.com/frk/ast v0.0.3/go.mod h1:PZvafXe37J/Yhe6jbYQgbmlRfVEjeVej6ruZhrSrgdQ=
 github.com/frk/ast v0.0.4 h1:o4mfVqgDQSwyMRAumOUuWBJz53kRTbMblT4wXSTLRxI=
 github.com/frk/ast v0.0.4/go.mod h1:PZvafXe37J/Yhe6jbYQgbmlRfVEjeVej6ruZhrSrgdQ=
 github.com/frk/compare v0.0.6 h1:iltAyhxsNb2lAl5666vr+mZGyIkVV0S/wx0qVlkNklM=
 github.com/frk/compare v0.0.6/go.mod h1:5bwv6/gZd3HD/UngMXbki5nvp6aJBTiWmXozSqE1uPc=
-github.com/frk/fql v0.0.1/go.mod h1:WsLcfryEdyH/Km6f8Q5LMESkCMSC/xWpxc+JemzJdnQ=
-github.com/frk/gosql v0.0.2 h1:sjKQhCiOncwSofiwmmihOq2kwD/Ys5gdUoZYy+fs72o=
-github.com/frk/gosql v0.0.2/go.mod h1:Vx0H5a12NtgvnZ5d/piDzbbVkrWho/ctXDd8cHQwB/s=
-github.com/frk/tagutil v0.0.0-20190626082652-a41f4c5605cc/go.mod h1:p9oLIpN9tDmOBisei3Ihy46DiCGsuykaIVV4Rxb6qYo=
 github.com/frk/tagutil v0.0.1 h1:wv/RrK2pIp8DXQEJ4C+0CO+q0mMJmM3whygoEEi/JsE=
 github.com/frk/tagutil v0.0.1/go.mod h1:+Yv521jCPj2PsGbvGcGo6mV/y7r09QiKZ/aSTMFsm+A=
-github.com/lib/pq v1.2.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=
