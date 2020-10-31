@@ -34,18 +34,18 @@ func (v RequiredValidator) Validate() error {
 	{
 		f := v.G1
 		if f.F1 == nil || len(*f.F1) == 0 {
-			return errors.New("F1-1 is required")
+			return errors.New("G1.F1 is required")
 		}
 		if f.G2 == nil {
-			return errors.New("G2 is required")
+			return errors.New("G1.G2 is required")
 		} else {
 			f := *f.G2
 			if f.F1 == nil || len(*f.F1) == 0 {
-				return errors.New("F1-2 is required")
+				return errors.New("G1.G2.F1 is required")
 			}
 		}
 		if f.F2 == nil || len(*f.F2) == 0 {
-			return errors.New("F2-1 is required")
+			return errors.New("G1.F2 is required")
 		}
 	}
 	if v.FX == nil || *v.FX == nil || **v.FX == nil || ***v.FX == nil || ****v.FX == nil || *****v.FX == nil {
@@ -56,13 +56,13 @@ func (v RequiredValidator) Validate() error {
 	} else {
 		f := *****v.GX
 		if len(f.F1) == 0 {
-			return errors.New("F1-3 is required")
+			return errors.New("GX.F1 is required")
 		}
 		if f.F2 == 0 {
-			return errors.New("F2-2 is required")
+			return errors.New("GX.F2 is required")
 		}
 		if f.F3 == 0.0 {
-			return errors.New("F3-1 is required")
+			return errors.New("GX.F3 is required")
 		}
 	}
 	return nil

@@ -38,12 +38,12 @@ type analysis struct {
 	pkgPath string
 	// This field will hold the result of the analysis.
 	validator *ValidatorStruct
-	// The selector of the current field under analysis.
-	selector []*StructField
 	// Tracks already created field keys to ensure uniqueness.
 	keys map[string]uint
 	// Holds useful information aggregated during analysis.
 	info *Info
+	// Constructs a field key for the given selector, initialized from Config.
+	fieldKey func([]*StructField) (key string)
 
 	// For error reporting. If not nil it will hold the last encountered
 	// rule & field that need the ValidatorStruct to have a "context" field.
@@ -54,6 +54,36 @@ type analysis struct {
 type needsContext struct {
 	field *StructField
 	rule  *Rule
+}
+
+type Config struct {
+	FieldKeyTag       string
+	FieldKeySeparator string
+	FieldKeyBase      bool
+}
+
+func (c Config) Analyze(fset *token.FileSet, named *types.Named, pos token.Pos, info *Info) (*ValidatorStruct, error) {
+	structType, ok := named.Underlying().(*types.Struct)
+	if !ok {
+		panic(named.Obj().Name() + " must be a struct type.") // this shouldn't happen
+	}
+
+	a := new(analysis)
+	a.fset = fset
+	a.named = named
+	a.pkgPath = named.Obj().Pkg().Path()
+	a.keys = make(map[string]uint)
+
+	a.info = info
+	a.info.FileSet = fset
+	a.info.PkgPath = a.pkgPath
+	a.info.TypeName = named.Obj().Name()
+	a.info.TypeNamePos = pos
+	a.info.FieldMap = make(map[*StructField]FieldVar)
+	a.info.ArgReferenceMap = make(map[*RuleArg]*ArgReferenceInfo)
+
+	a.fieldKey = makeFieldKeyFunc(c)
+	return analyzeValidatorStruct(a, structType)
 }
 
 func (a *analysis) anError(e interface{}, f *StructField, r *Rule) error {
@@ -92,29 +122,6 @@ func (a *analysis) anError(e interface{}, f *StructField, r *Rule) error {
 	return err
 }
 
-func Run(fset *token.FileSet, named *types.Named, pos token.Pos, info *Info) (*ValidatorStruct, error) {
-	structType, ok := named.Underlying().(*types.Struct)
-	if !ok {
-		panic(named.Obj().Name() + " must be a struct type.") // this shouldn't happen
-	}
-
-	a := new(analysis)
-	a.fset = fset
-	a.named = named
-	a.pkgPath = named.Obj().Pkg().Path()
-	a.keys = make(map[string]uint)
-
-	a.info = info
-	a.info.FileSet = fset
-	a.info.PkgPath = a.pkgPath
-	a.info.TypeName = named.Obj().Name()
-	a.info.TypeNamePos = pos
-	a.info.FieldMap = make(map[*StructField]FieldVar)
-	a.info.ArgReferenceMap = make(map[*RuleArg]*ArgReferenceInfo)
-
-	return analyzeValidatorStruct(a, structType)
-}
-
 // analyzeValidatorStruct runs the analysis of a ValidatorStruct.
 func analyzeValidatorStruct(a *analysis, structType *types.Struct) (*ValidatorStruct, error) {
 	a.validator = new(ValidatorStruct)
@@ -126,7 +133,7 @@ func analyzeValidatorStruct(a *analysis, structType *types.Struct) (*ValidatorSt
 	}
 
 	// 1. analyze all fields
-	fields, err := analyzeStructFields(a, structType, true, true)
+	fields, err := analyzeStructFields(a, structType, nil, true)
 	if err != nil {
 		return nil, err
 	} else if len(fields) == 0 {
@@ -155,7 +162,7 @@ func analyzeValidatorStruct(a *analysis, structType *types.Struct) (*ValidatorSt
 	return a.validator, nil
 }
 
-func analyzeStructFields(a *analysis, structType *types.Struct, root bool, local bool) (fields []*StructField, err error) {
+func analyzeStructFields(a *analysis, structType *types.Struct, selector []*StructField, local bool) (fields []*StructField, err error) {
 	for i := 0; i < structType.NumFields(); i++ {
 		fvar := structType.Field(i)
 		ftag := structType.Tag(i)
@@ -188,23 +195,16 @@ func analyzeStructFields(a *analysis, structType *types.Struct, root bool, local
 		// map field to fvar for error reporting
 		a.info.FieldMap[f] = FieldVar{Var: fvar, Tag: ftag}
 
-		// set the selector for the current field,
-		// used by key resolution and error reporting
-		if root {
-			a.selector = []*StructField{f}
-		} else {
-			a.selector = append(a.selector, f)
-		}
-
-		// resolve field key & make sure that it is unique
-		f.Key = makeFieldKey(a, fvar, ftag)
+		// resolve field key for selector & make sure that it is unique
+		fsel := append(selector, f)
+		f.Key = makeFieldKey(a, fsel)
 		if _, ok := a.keys[f.Key]; ok {
 			return nil, a.anError(errFieldKeyConflict, f, nil)
 		} else {
 			a.keys[f.Key] = 1
 		}
 
-		typ, err := analyzeType(a, fvar.Type())
+		typ, err := analyzeType(a, fsel, fvar.Type())
 		if err != nil {
 			return nil, err
 		}
@@ -214,7 +214,7 @@ func analyzeStructFields(a *analysis, structType *types.Struct, root bool, local
 			if err := analyzeRules(a, f); err != nil {
 				return nil, err
 			}
-		} else if root {
+		} else if len(selector) == 0 { // root?
 			// Check for untagged, "special" root fields.
 			if isErrorConstructor(fvar.Type()) {
 				if err := analyzeErrorHandlerField(a, f, false); err != nil {
@@ -263,7 +263,7 @@ func analyzeContextOptionField(a *analysis, f *StructField) error {
 	return nil
 }
 
-func analyzeType(a *analysis, t types.Type) (typ Type, err error) {
+func analyzeType(a *analysis, selector []*StructField, t types.Type) (typ Type, err error) {
 	if named, ok := t.(*types.Named); ok {
 		pkg := named.Obj().Pkg()
 		typ.Name = named.Obj().Name()
@@ -282,31 +282,31 @@ func analyzeType(a *analysis, t types.Type) (typ Type, err error) {
 		typ.IsRune = T.Name() == "rune"
 		typ.IsByte = T.Name() == "byte"
 	case *types.Slice:
-		elem, err := analyzeType(a, T.Elem())
+		elem, err := analyzeType(a, selector, T.Elem())
 		if err != nil {
 			return Type{}, err
 		}
 		typ.Elem = &elem
 	case *types.Array:
-		elem, err := analyzeType(a, T.Elem())
+		elem, err := analyzeType(a, selector, T.Elem())
 		if err != nil {
 			return Type{}, err
 		}
 		typ.Elem = &elem
 		typ.ArrayLen = T.Len()
 	case *types.Map:
-		key, err := analyzeType(a, T.Key())
+		key, err := analyzeType(a, selector, T.Key())
 		if err != nil {
 			return Type{}, err
 		}
-		elem, err := analyzeType(a, T.Elem())
+		elem, err := analyzeType(a, selector, T.Elem())
 		if err != nil {
 			return Type{}, err
 		}
 		typ.Key = &key
 		typ.Elem = &elem
 	case *types.Pointer:
-		elem, err := analyzeType(a, T.Elem())
+		elem, err := analyzeType(a, selector, T.Elem())
 		if err != nil {
 			return Type{}, err
 		}
@@ -314,7 +314,7 @@ func analyzeType(a *analysis, t types.Type) (typ Type, err error) {
 	case *types.Interface:
 		typ.IsEmptyInterface = T.NumMethods() == 0
 	case *types.Struct:
-		fields, err := analyzeStructFields(a, T, false, !typ.IsImported)
+		fields, err := analyzeStructFields(a, T, selector, !typ.IsImported)
 		if err != nil {
 			return Type{}, err
 		}
@@ -381,20 +381,13 @@ func analyzeTypeKind(typ types.Type) TypeKind {
 	return 0 // unsupported / unknown
 }
 
-func makeFieldKey(a *analysis, fvar *types.Var, ftag string) string {
-	// TODO
-	// The key of the StructField (used for errors, reference args, etc.),
-	// the value of this is determined by the "f key" setting, if not
-	// specified by the user it will default to the value of the f's name.
-
-	// default strategy
-	k := fvar.Name()
-	if num, ok := a.keys[k]; ok {
-		a.keys[k] = num + 1
-		k += "-" + strconv.FormatUint(uint64(num), 10)
-
+func makeFieldKey(a *analysis, selector []*StructField) (key string) {
+	key = a.fieldKey(selector)
+	if num, ok := a.keys[key]; ok {
+		a.keys[key] = num + 1
+		key += "-" + strconv.FormatUint(uint64(num), 10)
 	}
-	return k
+	return key
 }
 
 // isImportedType reports whether or not the given type is imported based on
@@ -525,4 +518,75 @@ func findSelectorForKey(key string, fields []*StructField) []*StructField {
 		}
 	}
 	return nil
+}
+
+func makeFieldKeyFunc(conf Config) (fn func([]*StructField) string) {
+	if len(conf.FieldKeyTag) > 0 {
+		if !conf.FieldKeyBase {
+			return func(sel []*StructField) string {
+				return fieldKeyFromTag(sel, conf.FieldKeyTag, conf.FieldKeySeparator)
+			}
+		}
+		return func(sel []*StructField) string {
+			return fieldKeyFromTagBase(sel, conf.FieldKeyTag)
+		}
+	}
+
+	if !conf.FieldKeyBase {
+		return func(sel []*StructField) string {
+			return fieldKeyFromName(sel, conf.FieldKeySeparator)
+		}
+	}
+	return fieldKeyFromNameBase
+}
+
+func fieldKeyFromNameBase(selector []*StructField) (key string) {
+	f := selector[len(selector)-1]
+	return f.Name
+}
+
+func fieldKeyFromName(selector []*StructField, sep string) (key string) {
+	for _, f := range selector {
+		if f.IsEmbedded {
+			continue
+		}
+		if f.Tag.Contains("isvalid", "omitkey") {
+			continue
+		}
+		key += f.Name + sep
+	}
+	if len(sep) > 0 && len(key) > len(sep) {
+		return key[:len(key)-len(sep)]
+	}
+	return key
+}
+
+func fieldKeyFromTagBase(selector []*StructField, tag string) (key string) {
+	f := selector[len(selector)-1]
+	key = f.Tag.First(tag)
+	if len(key) == 0 {
+		key = f.Name
+	}
+	return key
+}
+
+func fieldKeyFromTag(selector []*StructField, tag, sep string) (key string) {
+	for _, f := range selector {
+		if f.IsEmbedded {
+			continue
+		}
+		if f.Tag.Contains("isvalid", "omitkey") {
+			continue
+		}
+
+		v := f.Tag.First(tag)
+		if len(v) == 0 {
+			v = f.Name
+		}
+		key += v + sep
+	}
+	if len(sep) > 0 && len(key) > len(sep) {
+		return key[:len(key)-len(sep)]
+	}
+	return key
 }

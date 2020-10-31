@@ -31,8 +31,28 @@ type Config struct {
 	// tool will replace with the input file's base name, if no placeholder is
 	// present then the input file's base name will be prefixed to the format.
 	//
-	// If not provided, the format "%s_isvalid.go" will by used by default.
+	// If not provided, the format "%s_isvalid.go" will be used by default.
 	OutputFileNameFormat String `json:"output_file_name_format"`
+	// If set to a non-empty string, it specifies the struct tag to be used
+	// for constructing the field keys that will be used by the generator for
+	// error reporting. A valid tag must begin with a letter (A-z) or an
+	// underscore (_), subsequent characters in the tag can be letters,
+	// underscores, and digits (0-9). If set to "" (empty string), the generator
+	// will default to use the field names instead of struct tags to construct
+	// the field keys.
+	//
+	// If not provided, the tag "json" will be used by default.
+	FieldKeyTag String `json:"field_key_tag"`
+	// If set, instructs the generator to use only the base of a tag/field
+	// chain to construct the field keys.
+	//
+	// If not provided, `false` will be used by default.
+	FieldKeyBase Bool `json:"field_key_base"`
+	// The separator to be used to join a chain of tag/field values for
+	// constructing the field keys. The separator can be at most one byte long.
+	//
+	// If not provided, the separator "." will be used by default.
+	FieldKeySeparator String `json:"field_key_separator"`
 
 	// holds the compiled expressions of the InputFileRegexps slice.
 	compiledInputFileRegexps []*regexp.Regexp
@@ -44,6 +64,9 @@ var DefaultConfig = Config{
 	InputFiles:           StringSlice{},
 	InputFileRegexps:     StringSlice{},
 	OutputFileNameFormat: String{Value: "%s_isvalid.go"},
+	FieldKeyTag:          String{Value: "json"},
+	FieldKeyBase:         Bool{Value: false},
+	FieldKeySeparator:    String{Value: "."},
 }
 
 // ParseFlags unmarshals the cli flags into the receiver.
@@ -55,6 +78,9 @@ func (c *Config) ParseFlags() {
 	fs.Var(&c.InputFiles, "f", "")
 	fs.Var(&c.InputFileRegexps, "rx", "")
 	fs.Var(&c.OutputFileNameFormat, "o", "")
+	fs.Var(&c.FieldKeyTag, "fktag", "")
+	fs.Var(&c.FieldKeyBase, "fkbase", "")
+	fs.Var(&c.FieldKeySeparator, "fksep", "")
 	_ = fs.Parse(os.Args[1:])
 }
 
@@ -158,6 +184,15 @@ func (c *Config) validate() (err error) {
 		c.OutputFileNameFormat.Value = "%s" + c.OutputFileNameFormat.Value
 	} else if n > 1 || (n == 1 && !strings.Contains(c.OutputFileNameFormat.Value, "%s")) {
 		return fmt.Errorf("bad output filename format: %q", c.OutputFileNameFormat.Value)
+	}
+
+	// check the field key configuration for errors
+	rxFCKTag := regexp.MustCompile(`^(?:[A-Za-z_]\w*)?$`)
+	if !rxFCKTag.MatchString(c.FieldKeyTag.Value) {
+		return fmt.Errorf("bad field key tag: %q", c.FieldKeyTag.Value)
+	}
+	if len(c.FieldKeySeparator.Value) > 1 {
+		return fmt.Errorf("bad field key separator: %q", c.FieldKeySeparator.Value)
 	}
 
 	return nil

@@ -25,18 +25,18 @@ func (v NotnilValidator) Validate() error {
 	if v.G1 != nil {
 		f := *v.G1
 		if f.F1 == nil {
-			return errors.New("F1-1 cannot be nil")
+			return errors.New("G1.F1 cannot be nil")
 		}
 		if f.G2 == nil {
-			return errors.New("G2 cannot be nil")
+			return errors.New("G1.G2 cannot be nil")
 		} else {
 			f := *f.G2
 			if f.F1 == nil {
-				return errors.New("F1-2 cannot be nil")
+				return errors.New("G1.G2.F1 cannot be nil")
 			}
 		}
 		if f.F2 == nil {
-			return errors.New("F2-1 cannot be nil")
+			return errors.New("G1.F2 cannot be nil")
 		}
 	}
 	if v.FX == nil || *v.FX == nil || **v.FX == nil || ***v.FX == nil || ****v.FX == nil || *****v.FX == nil {
@@ -47,13 +47,13 @@ func (v NotnilValidator) Validate() error {
 	} else {
 		f := *****v.GX
 		if f.F1 == nil {
-			return errors.New("F1-3 cannot be nil")
+			return errors.New("GX.F1 cannot be nil")
 		}
 		if f.F2 == nil || *f.F2 == nil {
-			return errors.New("F2-2 cannot be nil")
+			return errors.New("GX.F2 cannot be nil")
 		}
 		if f.F3 == nil || *f.F3 == nil || **f.F3 == nil {
-			return errors.New("F3-1 cannot be nil")
+			return errors.New("GX.F3 cannot be nil")
 		}
 	}
 	return nil

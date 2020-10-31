@@ -42,8 +42,10 @@ func New(cfg Config) (*Command, error) {
 }
 
 func (cmd *Command) Run() error {
-	var gcfg generator.Config
-	// TODO initialize generator specific configuration
+	var aConf analysis.Config
+	aConf.FieldKeyTag = cmd.FieldKeyTag.Value
+	aConf.FieldKeyBase = cmd.FieldKeyBase.Value
+	aConf.FieldKeySeparator = cmd.FieldKeySeparator.Value
 
 	// 1. parse
 	pkgs, err := parser.Parse(cmd.WorkingDirectory.Value, cmd.Recursive.Value, cmd.FileFilterFunc())
@@ -62,20 +64,17 @@ func (cmd *Command) Run() error {
 
 			for k, target := range file.Targets {
 				// 2. analyze
-				anInfo := new(analysis.Info)
-				validatorStruct, err := analysis.Run(pkg.Fset, target.Named, target.Pos, anInfo)
+				aInfo := new(analysis.Info)
+				vs, err := aConf.Analyze(pkg.Fset, target.Named, target.Pos, aInfo)
 				if err != nil {
 					return err
 				}
 
-				out.targInfos[k] = &generator.TargetInfo{
-					ValidatorStruct: validatorStruct,
-					Info:            anInfo,
-				}
+				out.targInfos[k] = &generator.TargetInfo{ValidatorStruct: vs, Info: aInfo}
 			}
 
 			// 3. generate
-			if err := generator.Write(&out.buf, pkg.Name, out.targInfos, gcfg); err != nil {
+			if err := generator.Write(&out.buf, pkg.Name, out.targInfos); err != nil {
 				return err
 			}
 

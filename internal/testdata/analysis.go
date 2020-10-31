@@ -1,7 +1,7 @@
 package testdata
 
 type AnalysisTestOK_Validator struct {
-	UserInput *UserInput
+	UserInput *UserInput `isvalid:"omitkey"`
 	Context   string
 }
 

@@ -19,7 +19,8 @@ func testRunAnalysis(name string, t *testing.T) (*ValidatorStruct, error) {
 		return nil, nil
 	}
 
-	vs, err := Run(tdata.Fset, named, pos, &Info{})
+	conf := Config{FieldKeySeparator: "."}
+	vs, err := conf.Analyze(tdata.Fset, named, pos, &Info{})
 	if err != nil {
 		return nil, err
 	}
@@ -2041,8 +2042,7 @@ func TestAnalysisRun(t *testing.T) {
 			}},
 		},
 	}, {
-		name:     "AnalysisTestOK_Context2Validator",
-		printerr: true,
+		name: "AnalysisTestOK_Context2Validator",
 		want: &ValidatorStruct{
 			TypeName: "AnalysisTestOK_Context2Validator",
 			ContextOption: &ContextOptionField{
@@ -2056,7 +2056,8 @@ func TestAnalysisRun(t *testing.T) {
 			}},
 		},
 	}, {
-		name: "AnalysisTestOK_Validator",
+		name:     "AnalysisTestOK_Validator",
+		printerr: true,
 		want: &ValidatorStruct{
 			TypeName: "AnalysisTestOK_Validator",
 			ContextOption: &ContextOptionField{
@@ -2064,7 +2065,7 @@ func TestAnalysisRun(t *testing.T) {
 			},
 			Fields: []*StructField{{
 				Name: "UserInput",
-				Key:  "UserInput",
+				Tag:  tagutil.Tag{"isvalid": []string{"omitkey"}},
 				Type: Type{
 					Kind: TypeKindPtr,
 					Elem: &Type{
@@ -2586,7 +2587,7 @@ func TestAnalysisRun(t *testing.T) {
 							IsExported: false,
 							Type: Type{Kind: TypeKindStruct,
 								Fields: []*StructField{{
-									Name: "f1", Key: "f1-1",
+									Name: "f1", Key: "g1.f1",
 									Tag:  tagutil.Tag{"is": []string{`required`}},
 									Type: Type{Kind: TypeKindString}, IsExported: false,
 									Rules: []*Rule{{Name: "required"}},

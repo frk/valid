@@ -64,6 +64,7 @@ func TestGenerator(t *testing.T) {
 	}
 	pkg := pkgs[0]
 
+	anConf := analysis.Config{FieldKeySeparator: "."}
 	for _, filename := range tests {
 		t.Run(filename, func(t *testing.T) {
 			tinfos := []*TargetInfo{}
@@ -76,7 +77,7 @@ func TestGenerator(t *testing.T) {
 
 			for _, target := range f.Targets {
 				ainfo := &analysis.Info{}
-				vs, err := analysis.Run(pkg.Fset, target.Named, target.Pos, ainfo)
+				vs, err := anConf.Analyze(pkg.Fset, target.Named, target.Pos, ainfo)
 				if err != nil {
 					t.Error(err)
 					return
@@ -86,8 +87,7 @@ func TestGenerator(t *testing.T) {
 			}
 
 			buf := new(bytes.Buffer)
-			conf := Config{}
-			if err := Write(buf, pkg.Name, tinfos, conf); err != nil {
+			if err := Write(buf, pkg.Name, tinfos); err != nil {
 				t.Error(err)
 				return
 			}

@@ -9,7 +9,7 @@ func printUsage() {
 	fmt.Fprint(os.Stderr, usage)
 }
 
-const usage = `usage: isvalid [-wd] [-r] [-f] [-rx] [-o]
+const usage = `usage: isvalid [-wd] [-r] [-f] [-rx] [-o] [-fktag] [-fkbase] [-fksep]
 
 isvalid generates struct field validation .... (todo: write doc)
 
@@ -39,6 +39,23 @@ The -o flag specifies the format to be used for generating the name of the outpu
 The format can contain one (and only one) "%s" placeholder which the tool will replace
 with the input file's base name, if no placeholder is present then the input file's base
 name will be prefixed to the format.
-If left unspecified, the format "%s_isvalid.go" will by used by default.
+If left unspecified, the format "%s_isvalid.go" will be used by default.
+
+
+The -fktag flag if set to a non-empty string, specifies the struct tag to be used
+for constructing the field keys that will be used by the generator for error reporting.
+A valid tag must begin with a letter (A-z) or an underscore (_), subsequent characters
+in the tag can be letters, underscores, and digits (0-9). If set to "" (empty string),
+the generator will default to use the field names instead of struct tags to construct
+the field keys. If left unspecified, the tag "json" will be used by default.
+
+
+The -fkbase flag if set, instructs the generator to use only the base of a tag/field chain
+to construct the field keys. If left unspecified, the value false will be used by default.
+
+
+The -fksep flag specifies the separator to be used to join a chain of tag/field values
+for constructing the field keys. The separator can be at most one byte long.
+If left unspecified, the separator "." will be used by default.
 
 ` //`
