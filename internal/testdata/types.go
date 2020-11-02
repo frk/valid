@@ -1,8 +1,12 @@
 package testdata
 
+import (
+	"time"
+)
+
 type UserInput struct {
 	CountryCode string
-	SomeVersion string
+	SomeVersion int
 	SomeValue   string
 
 	f0  string `is:"-"`
@@ -101,6 +105,10 @@ type UserInput struct {
 	g1 struct {
 		f1 string `is:"required"`
 	}
+
+	// custom rule...
+	f73 string    `is:"utf8"`
+	f74 time.Time `is:"timecheck,ifacecheck"`
 }
 
 type CustomErrorConstructor struct{}

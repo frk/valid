@@ -20,6 +20,15 @@ func isString(typ types.Type) bool {
 	return basic.Kind() == types.String && basic.Name() == "string"
 }
 
+// isBool reports whether or not the given type is the builtin "bool" type.
+func isBool(typ types.Type) bool {
+	basic, ok := typ.(*types.Basic)
+	if !ok {
+		return false
+	}
+	return basic.Kind() == types.Bool && basic.Name() == "bool"
+}
+
 // isEmptyInterface reports whether or not the given type is the "interface{}" type.
 func isEmptyInterface(typ types.Type) bool {
 	iface, ok := typ.(*types.Interface)

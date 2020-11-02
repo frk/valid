@@ -56,6 +56,7 @@ func TestGenerator(t *testing.T) {
 		"error_aggregator",
 		"context_option",
 		"references",
+		"custom",
 	}
 
 	pkgs, err := parser.Parse("../testdata/generator", false, nil)
@@ -64,7 +65,23 @@ func TestGenerator(t *testing.T) {
 	}
 	pkg := pkgs[0]
 
+	customrules := [][3]string{
+		{"myrule", "github.com/frk/isvalid/internal/testdata/mypkg", "MyRule"},
+		{"myrule2", "github.com/frk/isvalid/internal/testdata/mypkg", "MyRule2"},
+		{"myrule3", "github.com/frk/isvalid/internal/testdata/mypkg", "MyRule3"},
+	}
+
 	anConf := analysis.Config{FieldKeySeparator: "."}
+	for _, cr := range customrules {
+		f, err := parser.ParseFunc(cr[1], cr[2])
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := anConf.AddRuleFunc(cr[0], f); err != nil {
+			t.Fatal(err)
+		}
+	}
+
 	for _, filename := range tests {
 		t.Run(filename, func(t *testing.T) {
 			tinfos := []*TargetInfo{}
@@ -76,18 +93,18 @@ func TestGenerator(t *testing.T) {
 			}
 
 			for _, target := range f.Targets {
-				ainfo := &analysis.Info{}
-				vs, err := anConf.Analyze(pkg.Fset, target.Named, target.Pos, ainfo)
+				anInfo := &analysis.Info{}
+				vs, err := anConf.Analyze(pkg.Fset, target.Named, target.Pos, anInfo)
 				if err != nil {
 					t.Error(err)
 					return
 				}
 
-				tinfos = append(tinfos, &TargetInfo{vs, ainfo})
+				tinfos = append(tinfos, &TargetInfo{vs, anInfo})
 			}
 
 			buf := new(bytes.Buffer)
-			if err := Write(buf, pkg.Name, tinfos); err != nil {
+			if err := Generate(buf, pkg.Name, tinfos); err != nil {
 				t.Error(err)
 				return
 			}

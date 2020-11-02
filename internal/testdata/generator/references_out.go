@@ -3,7 +3,11 @@
 package testdata
 
 import (
+	"errors"
 	"fmt"
+	"strings"
+
+	"github.com/frk/isvalid"
 )
 
 func (v ReferencesValidator) Validate() error {
@@ -15,6 +19,12 @@ func (v ReferencesValidator) Validate() error {
 		if f < v.Min || f > v.Max {
 			return fmt.Errorf("F2 must be between: %v and %v", v.Min, v.Max)
 		}
+	}
+	if !isvalid.Phone(v.F3, v.SomeValue, "us", "jp") {
+		return errors.New("F3 must be a valid phone number")
+	}
+	if !strings.Contains(v.F4, v.SomeValue) && !strings.Contains(v.F4, "bar") && !strings.Contains(v.F4, "baz") {
+		return fmt.Errorf("F4 must contain substring: %v or \"bar\" or \"baz\"", v.SomeValue)
 	}
 	return nil
 }
@@ -29,6 +39,12 @@ func (v References2Validator) Validate() error {
 			return v.ec.Error("F2", f, "rng", v.Min, v.Max)
 		}
 	}
+	if !isvalid.Phone(v.F3, "us", "jp", v.SomeValue) {
+		return v.ec.Error("F3", v.F3, "phone", "us", "jp", v.SomeValue)
+	}
+	if !strings.Contains(v.F4, "foo") && !strings.Contains(v.F4, "bar") && !strings.Contains(v.F4, v.SomeValue) {
+		return v.ec.Error("F4", v.F4, "contains", "foo", "bar", v.SomeValue)
+	}
 	return nil
 }
 
@@ -41,6 +57,12 @@ func (v References3Validator) Validate() error {
 		if f < v.Min || f > v.Max {
 			v.ea.Error("F2", f, "rng", v.Min, v.Max)
 		}
+	}
+	if !isvalid.Phone(v.F3, "us", v.SomeValue, "jp") {
+		v.ea.Error("F3", v.F3, "phone", "us", v.SomeValue, "jp")
+	}
+	if !strings.Contains(v.F4, "foo") && !strings.Contains(v.F4, v.SomeValue) && !strings.Contains(v.F4, "baz") {
+		v.ea.Error("F4", v.F4, "contains", "foo", v.SomeValue, "baz")
 	}
 	return v.ea.Out()
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"go/token"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -54,8 +55,19 @@ type Config struct {
 	// If not provided, the separator "." will be used by default.
 	FieldKeySeparator String `json:"field_key_separator"`
 
+	// TODO add documentation
+	CustomRules []*RuleConfig `json:"custom_rules"`
+
 	// holds the compiled expressions of the InputFileRegexps slice.
 	compiledInputFileRegexps []*regexp.Regexp
+}
+
+type RuleConfig struct {
+	Name string `json:"name"`
+	Func string `json:"func"`
+
+	funcPkg  string `json:"-"`
+	funcName string `json:"-"`
 }
 
 var DefaultConfig = Config{
@@ -193,6 +205,41 @@ func (c *Config) validate() (err error) {
 	}
 	if len(c.FieldKeySeparator.Value) > 1 {
 		return fmt.Errorf("bad field key separator: %q", c.FieldKeySeparator.Value)
+	}
+
+	// check custom rules
+	ruleNameMap := make(map[string]struct{}) // to ensure uniqueness
+	for _, rc := range c.CustomRules {
+		if rc == nil {
+			continue
+		}
+
+		rc.Name = strings.TrimSpace(rc.Name)
+		if len(rc.Name) == 0 {
+			return fmt.Errorf("missing custom rule name" /*TODO more helpful message */)
+		}
+		rc.Func = strings.TrimSpace(rc.Func)
+		if len(rc.Func) == 0 {
+			return fmt.Errorf("missing custom rule func" /*TODO more helpful message */)
+		}
+
+		if _, ok := ruleNameMap[rc.Name]; ok {
+			return fmt.Errorf("duplicate custom rule name" /*TODO more helpful message */)
+		}
+		ruleNameMap[rc.Name] = struct{}{}
+
+		// split function name from package
+		if i := strings.LastIndex(rc.Func, "."); i < 0 {
+			return fmt.Errorf("bad custom rule func format: %q", rc.Func)
+		} else {
+			rc.funcPkg, rc.funcName = rc.Func[:i], rc.Func[i+1:]
+		}
+
+		// make sure the function is actually exported
+		if !token.IsExported(rc.funcName) {
+			return fmt.Errorf("only exported functions can be used "+
+				"for custom rules, %q is unexported", rc.Func)
+		}
 	}
 
 	return nil

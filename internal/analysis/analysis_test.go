@@ -19,7 +19,43 @@ func testRunAnalysis(name string, t *testing.T) (*ValidatorStruct, error) {
 		return nil, nil
 	}
 
-	conf := Config{FieldKeySeparator: "."}
+	conf := Config{}
+	conf.FieldKeySeparator = "."
+	conf.ruleSpecMap = map[string]RuleSpec{
+		// legit
+		"utf8": RuleFunc{
+			FuncName: "ValidString",
+			PkgPath:  "unicode/utf8",
+			ArgTypes: []Type{{Kind: TypeKindString}},
+			iscustom: true,
+		},
+
+		// for testing success
+		"timecheck": RuleFunc{
+			FuncName: "TimeCheck", PkgPath: "path/to/rule",
+			ArgTypes: []Type{{Kind: TypeKindStruct, Name: "Time", PkgPath: "time", PkgName: "time"}},
+			iscustom: true,
+		},
+		"ifacecheck": RuleFunc{
+			FuncName: "IfaceCheck", PkgPath: "path/to/rule",
+			ArgTypes: []Type{{Kind: TypeKindInterface, IsEmptyInterface: true}},
+			iscustom: true,
+		},
+
+		// for testing errors
+		"rulefunc1": RuleFunc{
+			FuncName: "RuleFunc1", PkgPath: "path/to/rule",
+			ArgTypes: []Type{{Kind: TypeKindString}, {Kind: TypeKindInt}},
+			iscustom: true,
+		},
+		"rulefunc2": RuleFunc{
+			FuncName: "RuleFunc2", PkgPath: "path/to/rule",
+			ArgTypes: []Type{{Kind: TypeKindString}, {Kind: TypeKindInt},
+				{Kind: TypeKindSlice, Elem: &Type{Kind: TypeKindBool}}},
+			IsVariadic: true, iscustom: true,
+		},
+	}
+
 	vs, err := conf.Analyze(tdata.Fset, named, pos, &Info{})
 	if err != nil {
 		return nil, err
@@ -90,7 +126,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumRequiredValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumRequiredValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -103,7 +139,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumNotNilValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumNotNilValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -129,7 +165,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumEmailValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumEmailValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -142,7 +178,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringEmailValidator",
-		err: &anError{Code: errTypeKindString,
+		err: &anError{Code: errRuleFuncFieldArgType,
 			VtorName:      "AnalysisTestBAD_TypeKindStringEmailValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -155,7 +191,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumURLValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumURLValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -168,7 +204,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringURLValidator",
-		err: &anError{Code: errTypeKindString,
+		err: &anError{Code: errRuleFuncFieldArgType,
 			VtorName:      "AnalysisTestBAD_TypeKindStringURLValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -181,7 +217,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumURIValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumURIValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -194,7 +230,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringURIValidator",
-		err: &anError{Code: errTypeKindString,
+		err: &anError{Code: errRuleFuncFieldArgType,
 			VtorName:      "AnalysisTestBAD_TypeKindStringURIValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -207,7 +243,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumPANValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumPANValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -220,7 +256,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringPANValidator",
-		err: &anError{Code: errTypeKindString,
+		err: &anError{Code: errRuleFuncFieldArgType,
 			VtorName:      "AnalysisTestBAD_TypeKindStringPANValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -233,7 +269,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumCVVValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumCVVValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -246,7 +282,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringCVVValidator",
-		err: &anError{Code: errTypeKindString,
+		err: &anError{Code: errRuleFuncFieldArgType,
 			VtorName:      "AnalysisTestBAD_TypeKindStringCVVValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -259,7 +295,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumSSNValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumSSNValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -272,7 +308,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringSSNValidator",
-		err: &anError{Code: errTypeKindString,
+		err: &anError{Code: errRuleFuncFieldArgType,
 			VtorName:      "AnalysisTestBAD_TypeKindStringSSNValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -285,7 +321,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumEINValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumEINValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -298,7 +334,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringEINValidator",
-		err: &anError{Code: errTypeKindString,
+		err: &anError{Code: errRuleFuncFieldArgType,
 			VtorName:      "AnalysisTestBAD_TypeKindStringEINValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -311,7 +347,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumNumericValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumNumericValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -324,7 +360,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringNumericValidator",
-		err: &anError{Code: errTypeKindString,
+		err: &anError{Code: errRuleFuncFieldArgType,
 			VtorName:      "AnalysisTestBAD_TypeKindStringNumericValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -337,7 +373,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumHexValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumHexValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -350,7 +386,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringHexValidator",
-		err: &anError{Code: errTypeKindString,
+		err: &anError{Code: errRuleFuncFieldArgType,
 			VtorName:      "AnalysisTestBAD_TypeKindStringHexValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -363,7 +399,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumHexcolorValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumHexcolorValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -376,7 +412,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringHexcolorValidator",
-		err: &anError{Code: errTypeKindString,
+		err: &anError{Code: errRuleFuncFieldArgType,
 			VtorName:      "AnalysisTestBAD_TypeKindStringHexcolorValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -389,7 +425,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumAlphanumValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumAlphanumValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -402,7 +438,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringAlphanumValidator",
-		err: &anError{Code: errTypeKindString,
+		err: &anError{Code: errRuleFuncFieldArgType,
 			VtorName:      "AnalysisTestBAD_TypeKindStringAlphanumValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -415,7 +451,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumCIDRValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumCIDRValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -428,7 +464,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringCIDRValidator",
-		err: &anError{Code: errTypeKindString,
+		err: &anError{Code: errRuleFuncFieldArgType,
 			VtorName:      "AnalysisTestBAD_TypeKindStringCIDRValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -441,12 +477,12 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringPhoneValidator",
-		err: &anError{Code: errTypeKindString,
+		err: &anError{Code: errRuleFuncFieldArgType,
 			VtorName:      "AnalysisTestBAD_TypeKindStringPhoneValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
 			FieldName:     "F",
-			FieldType:     "[]byte",
+			FieldType:     "uint",
 			FieldTag:      tagutil.Tag{"is": {"phone"}},
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
@@ -464,7 +500,7 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "phone",
-			RuleArg:       &RuleArg{Value: "321", Type: ArgTypeUint},
+			RuleArg:       &RuleArg{Value: "321", Type: ArgTypeInt},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgValueCountryCodePhoneValidator",
@@ -482,7 +518,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeReferenceKindPhoneValidator",
-		err: &anError{Code: errRuleArgTypeReferenceKind,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeReferenceKindPhoneValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -492,16 +528,16 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "phone",
-			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeReference},
+			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeField},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringZipValidator",
-		err: &anError{Code: errTypeKindString,
+		err: &anError{Code: errRuleFuncFieldArgType,
 			VtorName:      "AnalysisTestBAD_TypeKindStringZipValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
 			FieldName:     "F",
-			FieldType:     "[]byte",
+			FieldType:     "uint",
 			FieldTag:      tagutil.Tag{"is": {"zip"}},
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
@@ -519,7 +555,7 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "zip",
-			RuleArg:       &RuleArg{Value: "321", Type: ArgTypeUint},
+			RuleArg:       &RuleArg{Value: "321", Type: ArgTypeInt},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgValueCountryCodeZipValidator",
@@ -537,7 +573,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeReferenceKindZipValidator",
-		err: &anError{Code: errRuleArgTypeReferenceKind,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeReferenceKindZipValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -547,16 +583,16 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "zip",
-			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeReference},
+			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeField},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringUUIDValidator",
-		err: &anError{Code: errTypeKindString,
+		err: &anError{Code: errRuleFuncFieldArgType,
 			VtorName:      "AnalysisTestBAD_TypeKindStringUUIDValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
 			FieldName:     "F",
-			FieldType:     "[]byte",
+			FieldType:     "uint16",
 			FieldTag:      tagutil.Tag{"is": {"uuid"}},
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
@@ -574,7 +610,7 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "uuid",
-			RuleArg:       &RuleArg{Value: "-4", Type: ArgTypeNint},
+			RuleArg:       &RuleArg{Value: "-4", Type: ArgTypeInt},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgValueUUIDVerUUIDValidator",
@@ -592,7 +628,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeReferenceKindUUIDValidator",
-		err: &anError{Code: errRuleArgTypeReferenceKind,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeReferenceKindUUIDValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -602,7 +638,7 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "uuid",
-			RuleArg:       &RuleArg{Value: "z", Type: ArgTypeReference},
+			RuleArg:       &RuleArg{Value: "z", Type: ArgTypeField},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgValueConflictUUIDValidator",
@@ -616,11 +652,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "uuid",
-			RuleArg:       &RuleArg{Value: "4", Type: ArgTypeUint},
+			RuleArg:       &RuleArg{Value: "4", Type: ArgTypeInt},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumUUIDValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumUUIDValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -633,12 +669,12 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringIPValidator",
-		err: &anError{Code: errTypeKindString,
+		err: &anError{Code: errRuleFuncFieldArgType,
 			VtorName:      "AnalysisTestBAD_TypeKindStringIPValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
 			FieldName:     "F",
-			FieldType:     "[]byte",
+			FieldType:     "uint8",
 			FieldTag:      tagutil.Tag{"is": {"ip"}},
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
@@ -656,7 +692,7 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "ip",
-			RuleArg:       &RuleArg{Value: "-4", Type: ArgTypeNint},
+			RuleArg:       &RuleArg{Value: "-4", Type: ArgTypeInt},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgValueIPVerIPValidator",
@@ -674,7 +710,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeReferenceKindIPValidator",
-		err: &anError{Code: errRuleArgTypeReferenceKind,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeReferenceKindIPValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -684,7 +720,7 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "ip",
-			RuleArg:       &RuleArg{Value: "y", Type: ArgTypeReference},
+			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeField},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgValueConflictIPValidator",
@@ -698,11 +734,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "ip",
-			RuleArg:       &RuleArg{Value: "4", Type: ArgTypeUint},
+			RuleArg:       &RuleArg{Value: "4", Type: ArgTypeInt},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumIPValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumIPValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -715,12 +751,12 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringMACValidator",
-		err: &anError{Code: errTypeKindString,
+		err: &anError{Code: errRuleFuncFieldArgType,
 			VtorName:      "AnalysisTestBAD_TypeKindStringMACValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
 			FieldName:     "F",
-			FieldType:     "[]byte",
+			FieldType:     "uint32",
 			FieldTag:      tagutil.Tag{"is": {"mac"}},
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
@@ -738,7 +774,7 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "mac",
-			RuleArg:       &RuleArg{Value: "-6", Type: ArgTypeNint},
+			RuleArg:       &RuleArg{Value: "-6", Type: ArgTypeInt},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgValueMACVerMACValidator",
@@ -756,7 +792,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeReferenceKindMACValidator",
-		err: &anError{Code: errRuleArgTypeReferenceKind,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeReferenceKindMACValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -766,7 +802,7 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "mac",
-			RuleArg:       &RuleArg{Value: "y", Type: ArgTypeReference},
+			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeField},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgValueConflictMACValidator",
@@ -780,11 +816,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "mac",
-			RuleArg:       &RuleArg{Value: "6", Type: ArgTypeUint},
+			RuleArg:       &RuleArg{Value: "6", Type: ArgTypeInt},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumMACValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumMACValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -797,12 +833,12 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringISOValidator",
-		err: &anError{Code: errTypeKindString,
+		err: &anError{Code: errRuleFuncFieldArgType,
 			VtorName:      "AnalysisTestBAD_TypeKindStringISOValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
 			FieldName:     "F",
-			FieldType:     "[]byte",
+			FieldType:     "complex128",
 			FieldTag:      tagutil.Tag{"is": {"iso:1234"}},
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
@@ -824,7 +860,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeReferenceKindISOValidator",
-		err: &anError{Code: errRuleArgTypeReferenceKind,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeReferenceKindISOValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -834,11 +870,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "iso",
-			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeReference},
+			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeField},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumISOValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumISOValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -851,7 +887,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNum2ISOValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNum2ISOValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -864,12 +900,12 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringRFCValidator",
-		err: &anError{Code: errTypeKindString,
+		err: &anError{Code: errRuleFuncFieldArgType,
 			VtorName:      "AnalysisTestBAD_TypeKindStringRFCValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
 			FieldName:     "F",
-			FieldType:     "[]byte",
+			FieldType:     "uint64",
 			FieldTag:      tagutil.Tag{"is": {"rfc:1234"}},
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
@@ -891,7 +927,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeReferenceKindRFCValidator",
-		err: &anError{Code: errRuleArgTypeReferenceKind,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeReferenceKindRFCValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -901,11 +937,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "rfc",
-			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeReference},
+			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeField},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumRFCValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumRFCValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -918,7 +954,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNum2RFCValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNum2RFCValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -931,7 +967,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringRegexpValidator",
-		err: &anError{Code: errTypeKindString,
+		err: &anError{Code: errRuleFuncFieldArgType,
 			VtorName:      "AnalysisTestBAD_TypeKindStringRegexpValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -958,7 +994,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeReferenceKindRegexpValidator",
-		err: &anError{Code: errRuleArgTypeReferenceKind,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeReferenceKindRegexpValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -968,11 +1004,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "re",
-			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeReference},
+			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeField},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumRegexpValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumRegexpValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -985,7 +1021,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNum2RegexpValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNum2RegexpValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -998,7 +1034,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringPrefixValidator",
-		err: &anError{Code: errTypeKindString,
+		err: &anError{Code: errRuleFuncFieldArgType,
 			VtorName:      "AnalysisTestBAD_TypeKindStringPrefixValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1011,7 +1047,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeReferenceKindPrefixValidator",
-		err: &anError{Code: errRuleArgTypeReferenceKind,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeReferenceKindPrefixValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1021,11 +1057,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "prefix",
-			RuleArg:       &RuleArg{Value: "y", Type: ArgTypeReference},
+			RuleArg:       &RuleArg{Value: "y", Type: ArgTypeField},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumPrefixValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumPrefixValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1038,7 +1074,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringSuffixValidator",
-		err: &anError{Code: errTypeKindString,
+		err: &anError{Code: errRuleFuncFieldArgType,
 			VtorName:      "AnalysisTestBAD_TypeKindStringSuffixValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1051,7 +1087,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeReferenceKindSuffixValidator",
-		err: &anError{Code: errRuleArgTypeReferenceKind,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeReferenceKindSuffixValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1061,11 +1097,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "suffix",
-			RuleArg:       &RuleArg{Value: "y", Type: ArgTypeReference},
+			RuleArg:       &RuleArg{Value: "y", Type: ArgTypeField},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumSuffixValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumSuffixValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1078,7 +1114,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringContainsValidator",
-		err: &anError{Code: errTypeKindString,
+		err: &anError{Code: errRuleFuncFieldArgType,
 			VtorName:      "AnalysisTestBAD_TypeKindStringContainsValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1091,7 +1127,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeReferenceKindContainsValidator",
-		err: &anError{Code: errRuleArgTypeReferenceKind,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeReferenceKindContainsValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1101,11 +1137,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "contains",
-			RuleArg:       &RuleArg{Value: "y", Type: ArgTypeReference},
+			RuleArg:       &RuleArg{Value: "y", Type: ArgTypeField},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumContainsValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumContainsValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1118,7 +1154,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumEQValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumEQValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1131,7 +1167,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeStringEQValidator",
-		err: &anError{Code: errRuleArgTypeString,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeStringEQValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1145,7 +1181,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeNintEQValidator",
-		err: &anError{Code: errRuleArgTypeNint,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeNintEQValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1155,11 +1191,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "eq",
-			RuleArg:       &RuleArg{Value: "-123", Type: ArgTypeNint},
+			RuleArg:       &RuleArg{Value: "-123", Type: ArgTypeInt},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeUintEQValidator",
-		err: &anError{Code: errRuleArgTypeUint,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeUintEQValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1169,11 +1205,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "eq",
-			RuleArg:       &RuleArg{Value: "123", Type: ArgTypeUint},
+			RuleArg:       &RuleArg{Value: "123", Type: ArgTypeInt},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeFloatEQValidator",
-		err: &anError{Code: errRuleArgTypeFloat,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeFloatEQValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1187,7 +1223,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeReferenceKindEQValidator",
-		err: &anError{Code: errRuleArgTypeReferenceKind,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeReferenceKindEQValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1197,11 +1233,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "eq",
-			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeReference},
+			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeField},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumNEValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumNEValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1214,7 +1250,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeStringNEValidator",
-		err: &anError{Code: errRuleArgTypeString,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeStringNEValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1228,7 +1264,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeNintNEValidator",
-		err: &anError{Code: errRuleArgTypeNint,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeNintNEValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1238,11 +1274,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "ne",
-			RuleArg:       &RuleArg{Value: "-123", Type: ArgTypeNint},
+			RuleArg:       &RuleArg{Value: "-123", Type: ArgTypeInt},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeUintNEValidator",
-		err: &anError{Code: errRuleArgTypeUint,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeUintNEValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1252,11 +1288,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "ne",
-			RuleArg:       &RuleArg{Value: "123", Type: ArgTypeUint},
+			RuleArg:       &RuleArg{Value: "123", Type: ArgTypeInt},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeFloatNEValidator",
-		err: &anError{Code: errRuleArgTypeFloat,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeFloatNEValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1270,7 +1306,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeReferenceKindNEValidator",
-		err: &anError{Code: errRuleArgTypeReferenceKind,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeReferenceKindNEValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1280,11 +1316,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "ne",
-			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeReference},
+			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeField},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumGTValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumGTValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1297,7 +1333,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNum2GTValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNum2GTValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1323,7 +1359,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeNintGTValidator",
-		err: &anError{Code: errRuleArgTypeNint,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeNintGTValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1333,11 +1369,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "gt",
-			RuleArg:       &RuleArg{Value: "-123", Type: ArgTypeNint},
+			RuleArg:       &RuleArg{Value: "-123", Type: ArgTypeInt},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeFloatGTValidator",
-		err: &anError{Code: errRuleArgTypeFloat,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeFloatGTValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1351,7 +1387,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeReferenceKindGTValidator",
-		err: &anError{Code: errRuleArgTypeReferenceKind,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeReferenceKindGTValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1361,11 +1397,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "gt",
-			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeReference},
+			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeField},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumLTValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumLTValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1378,7 +1414,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNum2LTValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNum2LTValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1404,7 +1440,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeNintLTValidator",
-		err: &anError{Code: errRuleArgTypeNint,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeNintLTValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1414,11 +1450,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "lt",
-			RuleArg:       &RuleArg{Value: "-123", Type: ArgTypeNint},
+			RuleArg:       &RuleArg{Value: "-123", Type: ArgTypeInt},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeFloatLTValidator",
-		err: &anError{Code: errRuleArgTypeFloat,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeFloatLTValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1432,7 +1468,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeReferenceKindLTValidator",
-		err: &anError{Code: errRuleArgTypeReferenceKind,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeReferenceKindLTValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1442,11 +1478,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "lt",
-			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeReference},
+			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeField},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumGTEValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumGTEValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1459,7 +1495,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNum2GTEValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNum2GTEValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1485,7 +1521,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeNintGTEValidator",
-		err: &anError{Code: errRuleArgTypeNint,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeNintGTEValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1495,11 +1531,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "gte",
-			RuleArg:       &RuleArg{Value: "-123", Type: ArgTypeNint},
+			RuleArg:       &RuleArg{Value: "-123", Type: ArgTypeInt},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeFloatGTEValidator",
-		err: &anError{Code: errRuleArgTypeFloat,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeFloatGTEValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1513,7 +1549,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeReferenceKindGTEValidator",
-		err: &anError{Code: errRuleArgTypeReferenceKind,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeReferenceKindGTEValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1523,11 +1559,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "gte",
-			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeReference},
+			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeField},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumLTEValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumLTEValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1540,7 +1576,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNum2LTEValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNum2LTEValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1566,7 +1602,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeNintLTEValidator",
-		err: &anError{Code: errRuleArgTypeNint,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeNintLTEValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1576,11 +1612,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "lte",
-			RuleArg:       &RuleArg{Value: "-123", Type: ArgTypeNint},
+			RuleArg:       &RuleArg{Value: "-123", Type: ArgTypeInt},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeFloatLTEValidator",
-		err: &anError{Code: errRuleArgTypeFloat,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeFloatLTEValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1594,7 +1630,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeReferenceKindLTEValidator",
-		err: &anError{Code: errRuleArgTypeReferenceKind,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeReferenceKindLTEValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1604,11 +1640,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "lte",
-			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeReference},
+			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeField},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumMinValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumMinValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1621,7 +1657,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNum2MinValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNum2MinValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1647,7 +1683,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeNintMinValidator",
-		err: &anError{Code: errRuleArgTypeNint,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeNintMinValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1657,11 +1693,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "min",
-			RuleArg:       &RuleArg{Value: "-123", Type: ArgTypeNint},
+			RuleArg:       &RuleArg{Value: "-123", Type: ArgTypeInt},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeFloatMinValidator",
-		err: &anError{Code: errRuleArgTypeFloat,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeFloatMinValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1675,7 +1711,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeReferenceKindMinValidator",
-		err: &anError{Code: errRuleArgTypeReferenceKind,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeReferenceKindMinValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1685,11 +1721,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "min",
-			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeReference},
+			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeField},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumMaxValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumMaxValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1702,7 +1738,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNum2MaxValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNum2MaxValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1728,7 +1764,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeNintMaxValidator",
-		err: &anError{Code: errRuleArgTypeNint,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeNintMaxValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1738,11 +1774,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "max",
-			RuleArg:       &RuleArg{Value: "-123", Type: ArgTypeNint},
+			RuleArg:       &RuleArg{Value: "-123", Type: ArgTypeInt},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeFloatMaxValidator",
-		err: &anError{Code: errRuleArgTypeFloat,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeFloatMaxValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1756,7 +1792,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeReferenceKindMaxValidator",
-		err: &anError{Code: errRuleArgTypeReferenceKind,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeReferenceKindMaxValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1766,11 +1802,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "max",
-			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeReference},
+			RuleArg:       &RuleArg{Value: "x", Type: ArgTypeField},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumRngValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumRngValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1783,7 +1819,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNum2RngValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNum2RngValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1796,7 +1832,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNum3RngValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNum3RngValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1822,7 +1858,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeStringRngValidator",
-		err: &anError{Code: errRuleArgTypeString,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeStringRngValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1836,7 +1872,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeNintRngValidator",
-		err: &anError{Code: errRuleArgTypeNint,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeNintRngValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1846,11 +1882,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "rng",
-			RuleArg:       &RuleArg{Value: "-123", Type: ArgTypeNint},
+			RuleArg:       &RuleArg{Value: "-123", Type: ArgTypeInt},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeFloatRngValidator",
-		err: &anError{Code: errRuleArgTypeFloat,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeFloatRngValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1878,7 +1914,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeReferenceKindRngValidator",
-		err: &anError{Code: errRuleArgTypeReferenceKind,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeReferenceKindRngValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1888,11 +1924,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "rng",
-			RuleArg:       &RuleArg{Value: "y", Type: ArgTypeReference},
+			RuleArg:       &RuleArg{Value: "y", Type: ArgTypeField},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumLenValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNumLenValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1905,7 +1941,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNum2LenValidator",
-		err: &anError{Code: errRuleArgNum,
+		err: &anError{Code: errRuleFuncRuleArgCount,
 			VtorName:      "AnalysisTestBAD_RuleArgNum2LenValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1931,7 +1967,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeLenValidator",
-		err: &anError{Code: errRuleArgType,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeLenValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1945,7 +1981,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgType2LenValidator",
-		err: &anError{Code: errRuleArgType,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgType2LenValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1955,11 +1991,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "len",
-			RuleArg:       &RuleArg{Value: "-123", Type: ArgTypeNint},
+			RuleArg:       &RuleArg{Value: "-123", Type: ArgTypeInt},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgType3LenValidator",
-		err: &anError{Code: errRuleArgType,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgType3LenValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1983,11 +2019,11 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "len",
-			RuleArg:       &RuleArg{Value: "10", Type: ArgTypeUint},
+			RuleArg:       &RuleArg{Value: "10", Type: ArgTypeInt},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeReferenceKindLenValidator",
-		err: &anError{Code: errRuleArgTypeReferenceKind,
+		err: &anError{Code: errRuleFuncRuleArgType,
 			VtorName:      "AnalysisTestBAD_RuleArgTypeReferenceKindLenValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
@@ -1997,7 +2033,74 @@ func TestAnalysisRun(t *testing.T) {
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 			RuleName:      "len",
-			RuleArg:       &RuleArg{Value: "y", Type: ArgTypeReference},
+			RuleArg:       &RuleArg{Value: "y", Type: ArgTypeField},
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleFuncRuleArgCountValidator",
+		err: &anError{Code: errRuleFuncRuleArgCount,
+			VtorName:      "AnalysisTestBAD_RuleFuncRuleArgCountValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  123,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"rulefunc1"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 123,
+			RuleName:      "rulefunc1",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleFuncRuleArgCount2Validator",
+		err: &anError{Code: errRuleFuncRuleArgCount,
+			VtorName:      "AnalysisTestBAD_RuleFuncRuleArgCount2Validator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  123,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"rulefunc1:a:b:c"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 123,
+			RuleName:      "rulefunc1",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleFuncFieldArgTypeValidator",
+		err: &anError{Code: errRuleFuncFieldArgType,
+			VtorName:      "AnalysisTestBAD_RuleFuncFieldArgTypeValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  123,
+			FieldName:     "F",
+			FieldType:     "int",
+			FieldTag:      tagutil.Tag{"is": {"rulefunc1:123"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 123,
+			RuleName:      "rulefunc1",
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleFuncRuleArgTypeValidator",
+		err: &anError{Code: errRuleFuncRuleArgType,
+			VtorName:      "AnalysisTestBAD_RuleFuncRuleArgTypeValidator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  123,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"rulefunc1:foo"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 123,
+			RuleName:      "rulefunc1",
+			RuleArg:       &RuleArg{Type: ArgTypeString, Value: "foo"},
+		},
+	}, {
+		name: "AnalysisTestBAD_RuleFuncRuleArgType2Validator",
+		err: &anError{Code: errRuleFuncRuleArgType,
+			VtorName:      "AnalysisTestBAD_RuleFuncRuleArgType2Validator",
+			VtorFileName:  "../testdata/analysis.go",
+			VtorFileLine:  123,
+			FieldName:     "F",
+			FieldType:     "string",
+			FieldTag:      tagutil.Tag{"is": {"rulefunc2:123:true:false:abc"}},
+			FieldFileName: "../testdata/analysis.go",
+			FieldFileLine: 123,
+			RuleName:      "rulefunc2",
+			RuleArg:       &RuleArg{Type: ArgTypeString, Value: "abc"},
 		},
 	}, {
 		name: "AnalysisTestOK_ErrorConstructorValidator",
@@ -2010,7 +2113,7 @@ func TestAnalysisRun(t *testing.T) {
 				Name: "F", Key: "F",
 				Tag:  tagutil.Tag{"is": []string{"required"}},
 				Type: Type{Kind: TypeKindString}, IsExported: true,
-				Rules: []*Rule{{Name: "required"}},
+				Rules: []*RuleTag{{Name: "required"}},
 			}},
 		},
 	}, {
@@ -2024,7 +2127,7 @@ func TestAnalysisRun(t *testing.T) {
 				Name: "F", Key: "F",
 				Tag:  tagutil.Tag{"is": []string{"required"}},
 				Type: Type{Kind: TypeKindString}, IsExported: true,
-				Rules: []*Rule{{Name: "required"}},
+				Rules: []*RuleTag{{Name: "required"}},
 			}},
 		},
 	}, {
@@ -2038,7 +2141,7 @@ func TestAnalysisRun(t *testing.T) {
 				Name: "F", Key: "F",
 				Tag:  tagutil.Tag{"is": []string{"required"}},
 				Type: Type{Kind: TypeKindString}, IsExported: true,
-				Rules: []*Rule{{Name: "required"}},
+				Rules: []*RuleTag{{Name: "required"}},
 			}},
 		},
 	}, {
@@ -2052,12 +2155,11 @@ func TestAnalysisRun(t *testing.T) {
 				Name: "F", Key: "F",
 				Tag:  tagutil.Tag{"is": []string{"required"}},
 				Type: Type{Kind: TypeKindString}, IsExported: true,
-				Rules: []*Rule{{Name: "required"}},
+				Rules: []*RuleTag{{Name: "required"}},
 			}},
 		},
 	}, {
-		name:     "AnalysisTestOK_Validator",
-		printerr: true,
+		name: "AnalysisTestOK_Validator",
 		want: &ValidatorStruct{
 			TypeName: "AnalysisTestOK_Validator",
 			ContextOption: &ContextOptionField{
@@ -2080,7 +2182,7 @@ func TestAnalysisRun(t *testing.T) {
 							Type: Type{Kind: TypeKindString}, IsExported: true,
 						}, {
 							Name: "SomeVersion", Key: "SomeVersion",
-							Type: Type{Kind: TypeKindString}, IsExported: true,
+							Type: Type{Kind: TypeKindInt}, IsExported: true,
 						}, {
 							Name: "SomeValue", Key: "SomeValue",
 							Type: Type{Kind: TypeKindString}, IsExported: true,
@@ -2088,92 +2190,92 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "f1", Key: "f1",
 							Tag:  tagutil.Tag{"is": []string{"required"}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "required"}},
+							Rules: []*RuleTag{{Name: "required"}},
 						}, {
 							Name: "f2", Key: "f2",
 							Tag:  tagutil.Tag{"is": []string{"required:@create"}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "required", Context: "create"}},
+							Rules: []*RuleTag{{Name: "required", Context: "create"}},
 						}, {
 							Name: "f3", Key: "f3",
 							Tag:  tagutil.Tag{"is": []string{"required:#key"}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "required", SetKey: "key"}},
+							Rules: []*RuleTag{{Name: "required", SetKey: "key"}},
 						}, {
 							Name: "f4", Key: "f4",
 							Tag:  tagutil.Tag{"is": []string{"required:@create:#key"}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "required", Context: "create", SetKey: "key"}},
+							Rules: []*RuleTag{{Name: "required", Context: "create", SetKey: "key"}},
 						}, {
 							Name: "f5", Key: "f5",
 							Tag:  tagutil.Tag{"is": []string{"email"}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "email"}},
+							Rules: []*RuleTag{{Name: "email"}},
 						}, {
 							Name: "f6", Key: "f6",
 							Tag:  tagutil.Tag{"is": []string{"url"}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "url"}},
+							Rules: []*RuleTag{{Name: "url"}},
 						}, {
 							Name: "f7", Key: "f7",
 							Tag:  tagutil.Tag{"is": []string{"uri"}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "uri"}},
+							Rules: []*RuleTag{{Name: "uri"}},
 						}, {
 							Name: "f8", Key: "f8",
 							Tag:  tagutil.Tag{"is": []string{"pan"}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "pan"}},
+							Rules: []*RuleTag{{Name: "pan"}},
 						}, {
 							Name: "f9", Key: "f9",
 							Tag:  tagutil.Tag{"is": []string{"cvv"}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "cvv"}},
+							Rules: []*RuleTag{{Name: "cvv"}},
 						}, {
 							Name: "F10", Key: "F10",
 							Tag:  tagutil.Tag{"is": []string{"ssn"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "ssn"}},
+							Rules: []*RuleTag{{Name: "ssn"}},
 						}, {
 							Name: "F11", Key: "F11",
 							Tag:  tagutil.Tag{"is": []string{"ein"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "ein"}},
+							Rules: []*RuleTag{{Name: "ein"}},
 						}, {
 							Name: "F12", Key: "F12",
 							Tag:  tagutil.Tag{"is": []string{"numeric"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "numeric"}},
+							Rules: []*RuleTag{{Name: "numeric"}},
 						}, {
 							Name: "F13", Key: "F13",
 							Tag:  tagutil.Tag{"is": []string{"hex"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "hex"}},
+							Rules: []*RuleTag{{Name: "hex"}},
 						}, {
 							Name: "F14", Key: "F14",
 							Tag:  tagutil.Tag{"is": []string{"hexcolor"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "hexcolor"}},
+							Rules: []*RuleTag{{Name: "hexcolor"}},
 						}, {
 							Name: "F15", Key: "F15",
 							Tag:  tagutil.Tag{"is": []string{"alphanum"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "alphanum"}},
+							Rules: []*RuleTag{{Name: "alphanum"}},
 						}, {
 							Name: "F16", Key: "F16",
 							Tag:  tagutil.Tag{"is": []string{"cidr"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "cidr"}},
+							Rules: []*RuleTag{{Name: "cidr"}},
 						}, {
 							Name: "F17", Key: "F17",
 							Tag:  tagutil.Tag{"is": []string{"phone"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "phone"}},
+							Rules: []*RuleTag{{Name: "phone"}},
 						}, {
 							Name: "F18", Key: "F18",
 							Tag:  tagutil.Tag{"is": []string{"phone:us:ca"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "phone", Args: []*RuleArg{
+							Rules: []*RuleTag{{Name: "phone", Args: []*RuleArg{
 								{Value: "us", Type: ArgTypeString},
 								{Value: "ca", Type: ArgTypeString},
 							}}},
@@ -2181,19 +2283,19 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "F19", Key: "F19",
 							Tag:  tagutil.Tag{"is": []string{"phone:&CountryCode"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "phone", Args: []*RuleArg{
-								{Value: "CountryCode", Type: ArgTypeReference},
+							Rules: []*RuleTag{{Name: "phone", Args: []*RuleArg{
+								{Value: "CountryCode", Type: ArgTypeField},
 							}}},
 						}, {
 							Name: "F20", Key: "F20",
 							Tag:  tagutil.Tag{"is": []string{"zip"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "zip"}},
+							Rules: []*RuleTag{{Name: "zip"}},
 						}, {
 							Name: "F21", Key: "F21",
 							Tag:  tagutil.Tag{"is": []string{"zip:deu:fin"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "zip", Args: []*RuleArg{
+							Rules: []*RuleTag{{Name: "zip", Args: []*RuleArg{
 								{Value: "deu", Type: ArgTypeString},
 								{Value: "fin", Type: ArgTypeString},
 							}}},
@@ -2201,237 +2303,237 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "F22", Key: "F22",
 							Tag:  tagutil.Tag{"is": []string{"zip:&CountryCode"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "zip", Args: []*RuleArg{
-								{Value: "CountryCode", Type: ArgTypeReference},
+							Rules: []*RuleTag{{Name: "zip", Args: []*RuleArg{
+								{Value: "CountryCode", Type: ArgTypeField},
 							}}},
 						}, {
 							Name: "F23", Key: "F23",
 							Tag:  tagutil.Tag{"is": []string{"uuid"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "uuid"}},
+							Rules: []*RuleTag{{Name: "uuid"}},
 						}, {
 							Name: "F24", Key: "F24",
 							Tag:  tagutil.Tag{"is": []string{"uuid:3"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "uuid", Args: []*RuleArg{
-								{Value: "3", Type: ArgTypeUint},
+							Rules: []*RuleTag{{Name: "uuid", Args: []*RuleArg{
+								{Value: "3", Type: ArgTypeInt},
 							}}},
 						}, {
 							Name: "F25", Key: "F25",
 							Tag:  tagutil.Tag{"is": []string{"uuid:v4"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "uuid", Args: []*RuleArg{
-								{Value: "v4", Type: ArgTypeString},
+							Rules: []*RuleTag{{Name: "uuid", Args: []*RuleArg{
+								{Value: "4", Type: ArgTypeInt},
 							}}},
 						}, {
 							Name: "F26", Key: "F26",
 							Tag:  tagutil.Tag{"is": []string{"uuid:&SomeVersion"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "uuid", Args: []*RuleArg{
-								{Value: "SomeVersion", Type: ArgTypeReference},
+							Rules: []*RuleTag{{Name: "uuid", Args: []*RuleArg{
+								{Value: "SomeVersion", Type: ArgTypeField},
 							}}},
 						}, {
 							Name: "F27", Key: "F27",
 							Tag:  tagutil.Tag{"is": []string{"ip"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "ip"}},
+							Rules: []*RuleTag{{Name: "ip"}},
 						}, {
 							Name: "F28", Key: "F28",
 							Tag:  tagutil.Tag{"is": []string{"ip:4"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "ip", Args: []*RuleArg{
-								{Value: "4", Type: ArgTypeUint},
+							Rules: []*RuleTag{{Name: "ip", Args: []*RuleArg{
+								{Value: "4", Type: ArgTypeInt},
 							}}},
 						}, {
 							Name: "F29", Key: "F29",
 							Tag:  tagutil.Tag{"is": []string{"ip:v6"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "ip", Args: []*RuleArg{
-								{Value: "v6", Type: ArgTypeString},
+							Rules: []*RuleTag{{Name: "ip", Args: []*RuleArg{
+								{Value: "6", Type: ArgTypeInt},
 							}}},
 						}, {
 							Name: "F30", Key: "F30",
 							Tag:  tagutil.Tag{"is": []string{"ip:&SomeVersion"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "ip", Args: []*RuleArg{
-								{Value: "SomeVersion", Type: ArgTypeReference},
+							Rules: []*RuleTag{{Name: "ip", Args: []*RuleArg{
+								{Value: "SomeVersion", Type: ArgTypeField},
 							}}},
 						}, {
 							Name: "F31", Key: "F31",
 							Tag:  tagutil.Tag{"is": []string{"mac"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "mac"}},
+							Rules: []*RuleTag{{Name: "mac"}},
 						}, {
 							Name: "F32", Key: "F32",
 							Tag:  tagutil.Tag{"is": []string{"mac:6"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "mac", Args: []*RuleArg{
-								{Value: "6", Type: ArgTypeUint},
+							Rules: []*RuleTag{{Name: "mac", Args: []*RuleArg{
+								{Value: "6", Type: ArgTypeInt},
 							}}},
 						}, {
 							Name: "F33", Key: "F33",
 							Tag:  tagutil.Tag{"is": []string{"mac:v8"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "mac", Args: []*RuleArg{
-								{Value: "v8", Type: ArgTypeString},
+							Rules: []*RuleTag{{Name: "mac", Args: []*RuleArg{
+								{Value: "8", Type: ArgTypeInt},
 							}}},
 						}, {
 							Name: "F34", Key: "F34",
 							Tag:  tagutil.Tag{"is": []string{"mac:&SomeVersion"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "mac", Args: []*RuleArg{
-								{Value: "SomeVersion", Type: ArgTypeReference},
+							Rules: []*RuleTag{{Name: "mac", Args: []*RuleArg{
+								{Value: "SomeVersion", Type: ArgTypeField},
 							}}},
 						}, {
 							Name: "F35", Key: "F35",
 							Tag:  tagutil.Tag{"is": []string{"iso:1234"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "iso", Args: []*RuleArg{
-								{Value: "1234", Type: ArgTypeUint},
+							Rules: []*RuleTag{{Name: "iso", Args: []*RuleArg{
+								{Value: "1234", Type: ArgTypeInt},
 							}}},
 						}, {
 							Name: "F36", Key: "F36",
 							Tag:  tagutil.Tag{"is": []string{"rfc:1234"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "rfc", Args: []*RuleArg{
-								{Value: "1234", Type: ArgTypeUint},
+							Rules: []*RuleTag{{Name: "rfc", Args: []*RuleArg{
+								{Value: "1234", Type: ArgTypeInt},
 							}}},
 						}, {
 							Name: "F37", Key: "F37",
 							Tag:  tagutil.Tag{"is": []string{`re:"^[a-z]+\[[0-9]+\]$"`}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "re", Args: []*RuleArg{
+							Rules: []*RuleTag{{Name: "re", Args: []*RuleArg{
 								{Value: `^[a-z]+\[[0-9]+\]$`, Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "F38", Key: "F38",
 							Tag:  tagutil.Tag{"is": []string{`re:"\w+"`}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "re", Args: []*RuleArg{
+							Rules: []*RuleTag{{Name: "re", Args: []*RuleArg{
 								{Value: `\w+`, Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "F39", Key: "F39",
 							Tag:  tagutil.Tag{"is": []string{`contains:foo bar`}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "contains", Args: []*RuleArg{
+							Rules: []*RuleTag{{Name: "contains", Args: []*RuleArg{
 								{Value: "foo bar", Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "F40", Key: "F40",
 							Tag:  tagutil.Tag{"is": []string{`contains:&SomeValue`}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*Rule{{Name: "contains", Args: []*RuleArg{
-								{Value: "SomeValue", Type: ArgTypeReference},
+							Rules: []*RuleTag{{Name: "contains", Args: []*RuleArg{
+								{Value: "SomeValue", Type: ArgTypeField},
 							}}},
 						}, {
 							Name: "f41", Key: "f41",
 							Tag:  tagutil.Tag{"is": []string{`prefix:foo bar`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "prefix", Args: []*RuleArg{
+							Rules: []*RuleTag{{Name: "prefix", Args: []*RuleArg{
 								{Value: "foo bar", Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "f42", Key: "f42",
 							Tag:  tagutil.Tag{"is": []string{`prefix:&SomeValue`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "prefix", Args: []*RuleArg{
-								{Value: "SomeValue", Type: ArgTypeReference},
+							Rules: []*RuleTag{{Name: "prefix", Args: []*RuleArg{
+								{Value: "SomeValue", Type: ArgTypeField},
 							}}},
 						}, {
 							Name: "f43", Key: "f43",
 							Tag:  tagutil.Tag{"is": []string{`suffix:foo bar`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "suffix", Args: []*RuleArg{
+							Rules: []*RuleTag{{Name: "suffix", Args: []*RuleArg{
 								{Value: "foo bar", Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "f44", Key: "f44",
 							Tag:  tagutil.Tag{"is": []string{`suffix:&SomeValue`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "suffix", Args: []*RuleArg{
-								{Value: "SomeValue", Type: ArgTypeReference},
+							Rules: []*RuleTag{{Name: "suffix", Args: []*RuleArg{
+								{Value: "SomeValue", Type: ArgTypeField},
 							}}},
 						}, {
 							Name: "f45", Key: "f45",
 							Tag:  tagutil.Tag{"is": []string{`eq:foo bar`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "eq", Args: []*RuleArg{
+							Rules: []*RuleTag{{Name: "eq", Args: []*RuleArg{
 								{Value: "foo bar", Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "f46", Key: "f46",
 							Tag:  tagutil.Tag{"is": []string{`eq:-123`}},
 							Type: Type{Kind: TypeKindInt}, IsExported: false,
-							Rules: []*Rule{{Name: "eq", Args: []*RuleArg{
-								{Value: "-123", Type: ArgTypeNint},
+							Rules: []*RuleTag{{Name: "eq", Args: []*RuleArg{
+								{Value: "-123", Type: ArgTypeInt},
 							}}},
 						}, {
 							Name: "f47", Key: "f47",
 							Tag:  tagutil.Tag{"is": []string{`eq:123.987`}},
 							Type: Type{Kind: TypeKindFloat64}, IsExported: false,
-							Rules: []*Rule{{Name: "eq", Args: []*RuleArg{
+							Rules: []*RuleTag{{Name: "eq", Args: []*RuleArg{
 								{Value: "123.987", Type: ArgTypeFloat},
 							}}},
 						}, {
 							Name: "f48", Key: "f48",
 							Tag:  tagutil.Tag{"is": []string{`eq:&SomeValue`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "eq", Args: []*RuleArg{
-								{Value: "SomeValue", Type: ArgTypeReference},
+							Rules: []*RuleTag{{Name: "eq", Args: []*RuleArg{
+								{Value: "SomeValue", Type: ArgTypeField},
 							}}},
 						}, {
 							Name: "f49", Key: "f49",
 							Tag:  tagutil.Tag{"is": []string{`ne:foo bar`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "ne", Args: []*RuleArg{
+							Rules: []*RuleTag{{Name: "ne", Args: []*RuleArg{
 								{Value: "foo bar", Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "f50", Key: "f50",
 							Tag:  tagutil.Tag{"is": []string{`ne:-123`}},
 							Type: Type{Kind: TypeKindInt}, IsExported: false,
-							Rules: []*Rule{{Name: "ne", Args: []*RuleArg{
-								{Value: "-123", Type: ArgTypeNint},
+							Rules: []*RuleTag{{Name: "ne", Args: []*RuleArg{
+								{Value: "-123", Type: ArgTypeInt},
 							}}},
 						}, {
 							Name: "f51", Key: "f51",
 							Tag:  tagutil.Tag{"is": []string{`ne:123.987`}},
 							Type: Type{Kind: TypeKindFloat64}, IsExported: false,
-							Rules: []*Rule{{Name: "ne", Args: []*RuleArg{
+							Rules: []*RuleTag{{Name: "ne", Args: []*RuleArg{
 								{Value: "123.987", Type: ArgTypeFloat},
 							}}},
 						}, {
 							Name: "f52", Key: "f52",
 							Tag:  tagutil.Tag{"is": []string{`ne:&SomeValue`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "ne", Args: []*RuleArg{
-								{Value: "SomeValue", Type: ArgTypeReference}}}},
+							Rules: []*RuleTag{{Name: "ne", Args: []*RuleArg{
+								{Value: "SomeValue", Type: ArgTypeField}}}},
 						}, {
 							Name: "f53", Key: "f53",
 							Tag:  tagutil.Tag{"is": []string{`gt:24`, `lt:128`}},
 							Type: Type{Kind: TypeKindUint8}, IsExported: false,
-							Rules: []*Rule{
+							Rules: []*RuleTag{
 								{Name: "gt", Args: []*RuleArg{
-									{Value: "24", Type: ArgTypeUint}}},
+									{Value: "24", Type: ArgTypeInt}}},
 								{Name: "lt", Args: []*RuleArg{
-									{Value: "128", Type: ArgTypeUint}}},
+									{Value: "128", Type: ArgTypeInt}}},
 							},
 						}, {
 							Name: "f54", Key: "f54",
 							Tag:  tagutil.Tag{"is": []string{`gt:-128`, `lt:-24`}},
 							Type: Type{Kind: TypeKindInt16}, IsExported: false,
-							Rules: []*Rule{
+							Rules: []*RuleTag{
 								{Name: "gt", Args: []*RuleArg{
-									{Value: "-128", Type: ArgTypeNint}}},
+									{Value: "-128", Type: ArgTypeInt}}},
 								{Name: "lt", Args: []*RuleArg{
-									{Value: "-24", Type: ArgTypeNint}}},
+									{Value: "-24", Type: ArgTypeInt}}},
 							},
 						}, {
 							Name: "f55", Key: "f55",
 							Tag:  tagutil.Tag{"is": []string{`gt:0.24`, `lt:1.28`}},
 							Type: Type{Kind: TypeKindFloat32}, IsExported: false,
-							Rules: []*Rule{
+							Rules: []*RuleTag{
 								{Name: "gt", Args: []*RuleArg{
 									{Value: "0.24", Type: ArgTypeFloat}}},
 								{Name: "lt", Args: []*RuleArg{
@@ -2441,27 +2543,27 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "f56", Key: "f56",
 							Tag:  tagutil.Tag{"is": []string{`gte:24`, `lte:128`}},
 							Type: Type{Kind: TypeKindUint8}, IsExported: false,
-							Rules: []*Rule{
+							Rules: []*RuleTag{
 								{Name: "gte", Args: []*RuleArg{
-									{Value: "24", Type: ArgTypeUint}}},
+									{Value: "24", Type: ArgTypeInt}}},
 								{Name: "lte", Args: []*RuleArg{
-									{Value: "128", Type: ArgTypeUint}}},
+									{Value: "128", Type: ArgTypeInt}}},
 							},
 						}, {
 							Name: "f57", Key: "f57",
 							Tag:  tagutil.Tag{"is": []string{`gte:-128`, `lte:-24`}},
 							Type: Type{Kind: TypeKindInt16}, IsExported: false,
-							Rules: []*Rule{
+							Rules: []*RuleTag{
 								{Name: "gte", Args: []*RuleArg{
-									{Value: "-128", Type: ArgTypeNint}}},
+									{Value: "-128", Type: ArgTypeInt}}},
 								{Name: "lte", Args: []*RuleArg{
-									{Value: "-24", Type: ArgTypeNint}}},
+									{Value: "-24", Type: ArgTypeInt}}},
 							},
 						}, {
 							Name: "f58", Key: "f58",
 							Tag:  tagutil.Tag{"is": []string{`gte:0.24`, `lte:1.28`}},
 							Type: Type{Kind: TypeKindFloat32}, IsExported: false,
-							Rules: []*Rule{
+							Rules: []*RuleTag{
 								{Name: "gte", Args: []*RuleArg{
 									{Value: "0.24", Type: ArgTypeFloat}}},
 								{Name: "lte", Args: []*RuleArg{
@@ -2471,27 +2573,27 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "f59", Key: "f59",
 							Tag:  tagutil.Tag{"is": []string{`min:24`, `max:128`}},
 							Type: Type{Kind: TypeKindUint8}, IsExported: false,
-							Rules: []*Rule{
+							Rules: []*RuleTag{
 								{Name: "min", Args: []*RuleArg{
-									{Value: "24", Type: ArgTypeUint}}},
+									{Value: "24", Type: ArgTypeInt}}},
 								{Name: "max", Args: []*RuleArg{
-									{Value: "128", Type: ArgTypeUint}}},
+									{Value: "128", Type: ArgTypeInt}}},
 							},
 						}, {
 							Name: "f60", Key: "f60",
 							Tag:  tagutil.Tag{"is": []string{`min:-128`, `max:-24`}},
 							Type: Type{Kind: TypeKindInt16}, IsExported: false,
-							Rules: []*Rule{
+							Rules: []*RuleTag{
 								{Name: "min", Args: []*RuleArg{
-									{Value: "-128", Type: ArgTypeNint}}},
+									{Value: "-128", Type: ArgTypeInt}}},
 								{Name: "max", Args: []*RuleArg{
-									{Value: "-24", Type: ArgTypeNint}}},
+									{Value: "-24", Type: ArgTypeInt}}},
 							},
 						}, {
 							Name: "f61", Key: "f61",
 							Tag:  tagutil.Tag{"is": []string{`min:0.24`, `max:1.28`}},
 							Type: Type{Kind: TypeKindFloat32}, IsExported: false,
-							Rules: []*Rule{
+							Rules: []*RuleTag{
 								{Name: "min", Args: []*RuleArg{
 									{Value: "0.24", Type: ArgTypeFloat}}},
 								{Name: "max", Args: []*RuleArg{
@@ -2501,23 +2603,23 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "f62", Key: "f62",
 							Tag:  tagutil.Tag{"is": []string{`rng:24:128`}},
 							Type: Type{Kind: TypeKindUint8}, IsExported: false,
-							Rules: []*Rule{{Name: "rng", Args: []*RuleArg{
-								{Value: "24", Type: ArgTypeUint},
-								{Value: "128", Type: ArgTypeUint}}},
+							Rules: []*RuleTag{{Name: "rng", Args: []*RuleArg{
+								{Value: "24", Type: ArgTypeInt},
+								{Value: "128", Type: ArgTypeInt}}},
 							},
 						}, {
 							Name: "f63", Key: "f63",
 							Tag:  tagutil.Tag{"is": []string{`rng:-128:-24`}},
 							Type: Type{Kind: TypeKindInt16}, IsExported: false,
-							Rules: []*Rule{{Name: "rng", Args: []*RuleArg{
-								{Value: "-128", Type: ArgTypeNint},
-								{Value: "-24", Type: ArgTypeNint}}},
+							Rules: []*RuleTag{{Name: "rng", Args: []*RuleArg{
+								{Value: "-128", Type: ArgTypeInt},
+								{Value: "-24", Type: ArgTypeInt}}},
 							},
 						}, {
 							Name: "f64", Key: "f64",
 							Tag:  tagutil.Tag{"is": []string{`rng:0.24:1.28`}},
 							Type: Type{Kind: TypeKindFloat32}, IsExported: false,
-							Rules: []*Rule{{Name: "rng", Args: []*RuleArg{
+							Rules: []*RuleTag{{Name: "rng", Args: []*RuleArg{
 								{Value: "0.24", Type: ArgTypeFloat},
 								{Value: "1.28", Type: ArgTypeFloat}}},
 							},
@@ -2525,62 +2627,62 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "f65", Key: "f65",
 							Tag:  tagutil.Tag{"is": []string{`len:28`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "len", Args: []*RuleArg{
-								{Value: "28", Type: ArgTypeUint}}},
+							Rules: []*RuleTag{{Name: "len", Args: []*RuleArg{
+								{Value: "28", Type: ArgTypeInt}}},
 							},
 						}, {
 							Name: "f66", Key: "f66",
 							Tag:  tagutil.Tag{"is": []string{`len:28`}},
 							Type: Type{Kind: TypeKindSlice, Elem: &Type{Kind: TypeKindInt}}, IsExported: false,
-							Rules: []*Rule{{Name: "len", Args: []*RuleArg{
-								{Value: "28", Type: ArgTypeUint}}},
+							Rules: []*RuleTag{{Name: "len", Args: []*RuleArg{
+								{Value: "28", Type: ArgTypeInt}}},
 							},
 						}, {
 							Name: "f67", Key: "f67",
 							Tag:  tagutil.Tag{"is": []string{`len:28`}},
 							Type: Type{Kind: TypeKindMap, Key: &Type{Kind: TypeKindString}, Elem: &Type{Kind: TypeKindInt}}, IsExported: false,
-							Rules: []*Rule{{Name: "len", Args: []*RuleArg{
-								{Value: "28", Type: ArgTypeUint}}},
+							Rules: []*RuleTag{{Name: "len", Args: []*RuleArg{
+								{Value: "28", Type: ArgTypeInt}}},
 							},
 						}, {
 							Name: "f68", Key: "f68",
 							Tag:  tagutil.Tag{"is": []string{`len:4:28`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "len", Args: []*RuleArg{
-								{Value: "4", Type: ArgTypeUint},
-								{Value: "28", Type: ArgTypeUint}}},
+							Rules: []*RuleTag{{Name: "len", Args: []*RuleArg{
+								{Value: "4", Type: ArgTypeInt},
+								{Value: "28", Type: ArgTypeInt}}},
 							},
 						}, {
 							Name: "f69", Key: "f69",
 							Tag:  tagutil.Tag{"is": []string{`len:4:28`}},
 							Type: Type{Kind: TypeKindSlice, Elem: &Type{Kind: TypeKindInt}}, IsExported: false,
-							Rules: []*Rule{{Name: "len", Args: []*RuleArg{
-								{Value: "4", Type: ArgTypeUint},
-								{Value: "28", Type: ArgTypeUint}}},
+							Rules: []*RuleTag{{Name: "len", Args: []*RuleArg{
+								{Value: "4", Type: ArgTypeInt},
+								{Value: "28", Type: ArgTypeInt}}},
 							},
 						}, {
 							Name: "f70", Key: "f70",
 							Tag:  tagutil.Tag{"is": []string{`len:4:28`}},
 							Type: Type{Kind: TypeKindMap, Key: &Type{Kind: TypeKindString}, Elem: &Type{Kind: TypeKindInt}}, IsExported: false,
-							Rules: []*Rule{{Name: "len", Args: []*RuleArg{
-								{Value: "4", Type: ArgTypeUint},
-								{Value: "28", Type: ArgTypeUint}}},
+							Rules: []*RuleTag{{Name: "len", Args: []*RuleArg{
+								{Value: "4", Type: ArgTypeInt},
+								{Value: "28", Type: ArgTypeInt}}},
 							},
 						}, {
 							Name: "f71", Key: "f71",
 							Tag:  tagutil.Tag{"is": []string{`len::28`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*Rule{{Name: "len", Args: []*RuleArg{
-								{Value: ""},
-								{Value: "28", Type: ArgTypeUint}}},
+							Rules: []*RuleTag{{Name: "len", Args: []*RuleArg{
+								{Value: "", Type: ArgTypeUnknown},
+								{Value: "28", Type: ArgTypeInt}}},
 							},
 						}, {
 							Name: "f72", Key: "f72",
 							Tag:  tagutil.Tag{"is": []string{`len:4:`}},
 							Type: Type{Kind: TypeKindSlice, Elem: &Type{Kind: TypeKindInt}}, IsExported: false,
-							Rules: []*Rule{{Name: "len", Args: []*RuleArg{
-								{Value: "4", Type: ArgTypeUint},
-								{Value: ""}}},
+							Rules: []*RuleTag{{Name: "len", Args: []*RuleArg{
+								{Value: "4", Type: ArgTypeInt},
+								{Value: "", Type: ArgTypeUnknown}}},
 							},
 						}, {
 							Name: "g1", Key: "g1",
@@ -2590,8 +2692,30 @@ func TestAnalysisRun(t *testing.T) {
 									Name: "f1", Key: "g1.f1",
 									Tag:  tagutil.Tag{"is": []string{`required`}},
 									Type: Type{Kind: TypeKindString}, IsExported: false,
-									Rules: []*Rule{{Name: "required"}},
+									Rules: []*RuleTag{{Name: "required"}},
 								}},
+							},
+						}, {
+							Name: "f73", Key: "f73",
+							Tag:  tagutil.Tag{"is": []string{`utf8`}},
+							Type: Type{Kind: TypeKindString}, IsExported: false,
+							Rules: []*RuleTag{{Name: "utf8"}},
+						}, {
+							Name: "f74", Key: "f74",
+							Tag: tagutil.Tag{"is": []string{`timecheck`, `ifacecheck`}},
+							Type: Type{
+								Kind:       TypeKindStruct,
+								Name:       "Time",
+								PkgPath:    "time",
+								PkgName:    "time",
+								PkgLocal:   "time",
+								IsImported: true,
+								IsExported: true,
+							},
+							IsExported: false,
+							Rules: []*RuleTag{
+								{Name: "timecheck"},
+								{Name: "ifacecheck"},
 							},
 						}},
 					},

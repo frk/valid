@@ -1,12 +1,14 @@
 package parser
 
 import (
+	"fmt"
 	"go/ast"
 	"go/token"
 	"go/types"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -137,6 +139,49 @@ func Parse(dir string, recursive bool, filter func(filePath string) bool) (out [
 	return out, nil
 }
 
+// ParseFunc parses the given package looking for the specified function and,
+// if successful returns the go/types.Func representation of that function.
+// The provided fpkg should be the import path of a single package, if, instead,
+// a pattern is provided then the result is undefined.
+func ParseFunc(fpkg, fname string) (*types.Func, error) {
+	pkgCache.Lock()
+	defer pkgCache.Unlock()
+
+	pkg, ok := pkgCache.m[fpkg]
+	if !ok {
+		cfg := &packages.Config{Mode: packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo}
+		pkgs, err := packages.Load(cfg, fpkg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load package %q for function %q: %v", fpkg, fname, err)
+		}
+
+		pkg = pkgs[0]
+		pkgCache.m[fpkg] = pkg
+	}
+
+	for _, syn := range pkg.Syntax {
+		for _, dec := range syn.Decls {
+			fd, ok := dec.(*ast.FuncDecl)
+			if !ok || fd.Recv != nil || !fd.Name.IsExported() {
+				continue
+			}
+
+			if fd.Name.Name == fname {
+				obj, ok := pkg.TypesInfo.Defs[fd.Name]
+				if !ok {
+					continue
+				}
+
+				if f, ok := obj.(*types.Func); ok {
+					return f, nil
+				}
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("could not find function %q in package %q", fname, fpkg)
+}
+
 // hasIgnoreDirective reports whether or not the given documentation contains the "isvalid:ignore" directive.
 func hasIgnoreDirective(doc *ast.CommentGroup) bool {
 	if doc != nil {
@@ -148,3 +193,8 @@ func hasIgnoreDirective(doc *ast.CommentGroup) bool {
 	}
 	return false
 }
+
+var pkgCache = struct {
+	sync.RWMutex
+	m map[string]*packages.Package
+}{m: make(map[string]*packages.Package)}

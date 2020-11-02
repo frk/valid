@@ -47,6 +47,17 @@ func (cmd *Command) Run() error {
 	aConf.FieldKeyBase = cmd.FieldKeyBase.Value
 	aConf.FieldKeySeparator = cmd.FieldKeySeparator.Value
 
+	// 0. pre-parsing & analysis of custom rule functions
+	for _, rc := range cmd.CustomRules {
+		f, err := parser.ParseFunc(rc.funcPkg, rc.funcName)
+		if err != nil {
+			return err
+		}
+		if err := aConf.AddRuleFunc(rc.Name, f); err != nil {
+			return err
+		}
+	}
+
 	// 1. parse
 	pkgs, err := parser.Parse(cmd.WorkingDirectory.Value, cmd.Recursive.Value, cmd.FileFilterFunc())
 	if err != nil {
@@ -74,7 +85,7 @@ func (cmd *Command) Run() error {
 			}
 
 			// 3. generate
-			if err := generator.Write(&out.buf, pkg.Name, out.targInfos); err != nil {
+			if err := generator.Generate(&out.buf, pkg.Name, out.targInfos); err != nil {
 				return err
 			}
 

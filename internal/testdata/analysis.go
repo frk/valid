@@ -165,7 +165,7 @@ type AnalysisTestBAD_TypeKindStringCIDRValidator struct {
 }
 
 type AnalysisTestBAD_TypeKindStringPhoneValidator struct {
-	F []byte `is:"phone"`
+	F uint `is:"phone"`
 }
 
 type AnalysisTestBAD_RuleArgTypePhoneValidator struct {
@@ -182,7 +182,7 @@ type AnalysisTestBAD_RuleArgTypeReferenceKindPhoneValidator struct {
 }
 
 type AnalysisTestBAD_TypeKindStringZipValidator struct {
-	F []byte `is:"zip"`
+	F uint `is:"zip"`
 }
 
 type AnalysisTestBAD_RuleArgTypeZipValidator struct {
@@ -195,11 +195,11 @@ type AnalysisTestBAD_RuleArgValueCountryCodeZipValidator struct {
 
 type AnalysisTestBAD_RuleArgTypeReferenceKindZipValidator struct {
 	F string `is:"zip:&x"`
-	x []byte
+	x uint
 }
 
 type AnalysisTestBAD_TypeKindStringUUIDValidator struct {
-	F []byte `is:"uuid"`
+	F uint16 `is:"uuid"`
 }
 
 type AnalysisTestBAD_RuleArgTypeUUIDValidator struct {
@@ -214,7 +214,7 @@ type AnalysisTestBAD_RuleArgTypeReferenceKindUUIDValidator struct {
 	F string `is:"uuid:&x:&y:&z"`
 	x int32
 	y uint16
-	z float32
+	z []byte
 }
 
 type AnalysisTestBAD_RuleArgValueConflictUUIDValidator struct {
@@ -226,7 +226,7 @@ type AnalysisTestBAD_RuleArgNumUUIDValidator struct {
 }
 
 type AnalysisTestBAD_TypeKindStringIPValidator struct {
-	F []byte `is:"ip"`
+	F uint8 `is:"ip"`
 }
 
 type AnalysisTestBAD_RuleArgTypeIPValidator struct {
@@ -252,7 +252,7 @@ type AnalysisTestBAD_RuleArgNumIPValidator struct {
 }
 
 type AnalysisTestBAD_TypeKindStringMACValidator struct {
-	F []byte `is:"mac"`
+	F uint32 `is:"mac"`
 }
 
 type AnalysisTestBAD_RuleArgTypeMACValidator struct {
@@ -278,7 +278,7 @@ type AnalysisTestBAD_RuleArgNumMACValidator struct {
 }
 
 type AnalysisTestBAD_TypeKindStringISOValidator struct {
-	F []byte `is:"iso:1234"`
+	F complex128 `is:"iso:1234"`
 }
 
 type AnalysisTestBAD_RuleArgValueISOStdISOValidator struct {
@@ -299,7 +299,7 @@ type AnalysisTestBAD_RuleArgNum2ISOValidator struct {
 }
 
 type AnalysisTestBAD_TypeKindStringRFCValidator struct {
-	F []byte `is:"rfc:1234"`
+	F uint64 `is:"rfc:1234"`
 }
 
 type AnalysisTestBAD_RuleArgValueRFCStdRFCValidator struct {
@@ -454,7 +454,7 @@ type AnalysisTestBAD_RuleArgTypeFloatGTValidator struct {
 
 type AnalysisTestBAD_RuleArgTypeReferenceKindGTValidator struct {
 	F int32 `is:"gt:&x"`
-	x uint32
+	x string
 }
 
 type AnalysisTestBAD_RuleArgNumLTValidator struct {
@@ -479,7 +479,7 @@ type AnalysisTestBAD_RuleArgTypeFloatLTValidator struct {
 
 type AnalysisTestBAD_RuleArgTypeReferenceKindLTValidator struct {
 	F int32 `is:"lt:&x"`
-	x uint32
+	x string
 }
 
 type AnalysisTestBAD_RuleArgNumGTEValidator struct {
@@ -504,7 +504,7 @@ type AnalysisTestBAD_RuleArgTypeFloatGTEValidator struct {
 
 type AnalysisTestBAD_RuleArgTypeReferenceKindGTEValidator struct {
 	F int32 `is:"gte:&x"`
-	x uint32
+	x string
 }
 
 type AnalysisTestBAD_RuleArgNumLTEValidator struct {
@@ -529,7 +529,7 @@ type AnalysisTestBAD_RuleArgTypeFloatLTEValidator struct {
 
 type AnalysisTestBAD_RuleArgTypeReferenceKindLTEValidator struct {
 	F int32 `is:"lte:&x"`
-	x uint32
+	x string
 }
 
 type AnalysisTestBAD_RuleArgNumMinValidator struct {
@@ -554,7 +554,7 @@ type AnalysisTestBAD_RuleArgTypeFloatMinValidator struct {
 
 type AnalysisTestBAD_RuleArgTypeReferenceKindMinValidator struct {
 	F int32 `is:"min:&x"`
-	x uint32
+	x string
 }
 
 type AnalysisTestBAD_RuleArgNumMaxValidator struct {
@@ -579,7 +579,7 @@ type AnalysisTestBAD_RuleArgTypeFloatMaxValidator struct {
 
 type AnalysisTestBAD_RuleArgTypeReferenceKindMaxValidator struct {
 	F int32 `is:"max:&x"`
-	x uint32
+	x string
 }
 
 type AnalysisTestBAD_RuleArgNumRngValidator struct {
@@ -652,4 +652,24 @@ type AnalysisTestBAD_RuleArgTypeReferenceKindLenValidator struct {
 	F []int8 `is:"len:&x:&y"`
 	x int32
 	y string
+}
+
+type AnalysisTestBAD_RuleFuncRuleArgCountValidator struct {
+	F string `is:"rulefunc1"`
+}
+
+type AnalysisTestBAD_RuleFuncRuleArgCount2Validator struct {
+	F string `is:"rulefunc1:a:b:c"`
+}
+
+type AnalysisTestBAD_RuleFuncFieldArgTypeValidator struct {
+	F int `is:"rulefunc1:123"`
+}
+
+type AnalysisTestBAD_RuleFuncRuleArgTypeValidator struct {
+	F string `is:"rulefunc1:foo"`
+}
+
+type AnalysisTestBAD_RuleFuncRuleArgType2Validator struct {
+	F string `is:"rulefunc2:123:true:false:abc"`
 }

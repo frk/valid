@@ -91,6 +91,11 @@ const (
 	errContextOptionFieldConflict
 	errContextOptionFieldRequired
 	errContextOptionFieldType
+	errRuleFuncParamCount
+	errRuleFuncResultType
+	errRuleFuncFieldArgType
+	errRuleFuncRuleArgCount
+	errRuleFuncRuleArgType
 )
 
 var error_template_string = `
@@ -261,6 +266,31 @@ var error_template_string = `
 
 {{ define "` + errContextOptionFieldType.name() + `" -}}
 {{Wb .FileAndLine}}: {{Y "Bad context field type."}}
+	TODO {{R .FieldName}} {{R .FieldType}}
+{{ end }}
+
+{{ define "` + errRuleFuncParamCount.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Bad rule func parameter/result count."}}
+	TODO {{R .FieldName}} {{R .FieldType}}
+{{ end }}
+
+{{ define "` + errRuleFuncResultType.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Bad rule func result type."}}
+	TODO {{R .FieldName}} {{R .FieldType}}
+{{ end }}
+
+{{ define "` + errRuleFuncFieldArgType.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Incompatible field type and rule func argument type."}}
+	TODO {{R .FieldName}} {{R .FieldType}}
+{{ end }}
+
+{{ define "` + errRuleFuncRuleArgCount.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Incompatible rule func parameter count and rule argument count."}}
+	TODO {{R .FieldName}} {{R .FieldType}}
+{{ end }}
+
+{{ define "` + errRuleFuncRuleArgType.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Incompatible rule func parameter type and rule argument type."}}
 	TODO {{R .FieldName}} {{R .FieldType}}
 {{ end }}
 ` // `

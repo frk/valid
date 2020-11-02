@@ -3,6 +3,7 @@ package analysis
 import (
 	"go/types"
 	"strconv"
+	"strings"
 
 	"github.com/frk/tagutil"
 )
@@ -21,13 +22,16 @@ type (
 		ContextOption *ContextOptionField
 	}
 
-	// StructField
+	// StructField describes a single struct field in a ValidatorStruct or
+	// in any of a ValidatorStruct's members that themselves are structs.
 	StructField struct {
 		// Name of the field.
 		Name string
-		// The key of the StructField (used for errors, reference args, etc.),
-		// the value of this is determined by the "field key" setting, if not
+		// The key of the StructField (used for errors, field args, etc.),
+		// the value of this is determined by the "field key" settings, if not
 		// specified by the user it will default to the value of the field's name.
+		//
+		// The Key of each field and subfield of a single ValidatorStruct will be unique.
 		Key string
 		// The field's type.
 		Type Type
@@ -39,10 +43,15 @@ type (
 		IsExported bool
 		// The list of validation rules, as parsed from the struct's tag,
 		// that need to be applied to the field.
-		Rules []*Rule
+		Rules []*RuleTag
 	}
 
-	// Type
+	// StructFieldSelector is a list of fields that represents a chain of
+	// selectors where, the 0th field is the "root" field and the len-1
+	// field is the "leaf" field.
+	StructFieldSelector []*StructField
+
+	// Type is the representation of a Go type.
 	Type struct {
 		// The name of a named type or empty string for unnamed types
 		Name string
@@ -93,18 +102,19 @@ type (
 		Name string
 	}
 
-	// Rule
-	Rule struct {
-		// Name of the rule
+	// RuleTag holds the information parsed from a "rule" tag (`is:"{rule}"`).
+	RuleTag struct {
+		// Name of the rule.
 		Name string
-		// The args of the rule
+		// The args of the rule.
 		Args []*RuleArg
 		// The context in which the rule should be applied.
 		Context string
-		SetKey  string
+		// XXX currently not implemented, may never be...
+		SetKey string
 	}
 
-	// RuleArg
+	// RuleArg represents a rule argument as parsed from a "rule" tag (`is:"{rule:arg}"`).
 	RuleArg struct {
 		// The type of the arg value.
 		Type ArgType
@@ -112,24 +122,57 @@ type (
 		Value string
 	}
 
-	// ArgReferenceInfo holds information on a RuleArg of kind ArgTypeReference.
-	ArgReferenceInfo struct {
-		// The Rule to which the reference RuleArg belongs.
-		Rule *Rule
-		// The StructField to which the reference RuleArg belongs.
-		StructField *StructField
-		// Selector of the StructField referenced by the RuleArg.
-		Selector []*StructField
+	// RuleSpec implementations specify the validity of a field-rule
+	// combo, as well as what code should be generated from a rule.
+	RuleSpec interface {
+		ruleSpec()
+
+		IsCustom() bool
 	}
 
-	// FieldVar holds the types.Var represenation and the raw tag of a struct field.
-	FieldVar struct {
-		// types.Var representation of the struct field.
-		Var *types.Var
-		// The raw string value of the field's tag.
-		Tag string
+	// RuleBasic represents a rule that uses the basic comparison
+	// operators for carrying out its validation.
+	RuleBasic struct {
+		// Used for type-checking a rule's associated RuleTag and StructField.
+		// For RuleBasic this field is expected to be non-nil.
+		check func(a *analysis, f *StructField, r *RuleTag) error
+	}
+
+	// RuleFunc represents a rule that uses functions for carrying out its
+	// validation.
+	RuleFunc struct {
+		// The name of the function.
+		FuncName string
+		// The function's package import path.
+		PkgPath string
+		// The types of the arguments to the function. Will always be of
+		// length at least 1 where the 0th argument represents the field
+		// to be validated.
+		ArgTypes []Type
+		// Indicates whether or not the function's signature is variadic.
+		IsVariadic bool
+		// Optional, indicates the boolean operator to be used between
+		// multiple calls of the function represented by RuleFunc.
+		// NOTE This can only be used with functions that take exactly
+		// two arguments and it should not be variadic.
+		BoolConn RuleFuncBoolConn
+		// Indicates that the generated code should use raw strings
+		// for any string arguments passed to the function.
+		UseRawStrings bool
+
+		// Optional, used for additional function-specific type
+		// checking of the associated RuleTag and StructField.
+		check func(a *analysis, f *StructField, r *RuleTag) error
+		// Indicates that this RuleFunc is a custom one.
+		iscustom bool
 	}
 )
+
+func (RuleBasic) ruleSpec()      {}
+func (RuleBasic) IsCustom() bool { return false }
+
+func (RuleFunc) ruleSpec()        {}
+func (f RuleFunc) IsCustom() bool { return f.iscustom }
 
 func (t Type) String() string {
 	if len(t.Name) > 0 {
@@ -174,19 +217,58 @@ func (t Type) String() string {
 	return "<unknown>"
 }
 
-func (t Type) Base() Type {
+func (t Type) PtrBase() Type {
 	for t.Kind == TypeKindPtr {
 		t = *t.Elem
 	}
 	return t
 }
 
-func (f *StructField) RulesCopy() []*Rule {
+// Reports whether the types represented by t and u are equal. Note that this
+// does not handle unnamed struct, interface (non-empty), func, and channel types.
+func (t Type) Equals(u Type) bool {
+	if t.Kind != u.Kind {
+		return false
+	}
+
+	if len(t.Name) > 0 || len(u.Name) > 0 {
+		return t.Name == u.Name && t.PkgPath == u.PkgPath
+	}
+	if t.Kind.IsBasic() {
+		return t.Kind == u.Kind
+	}
+
+	switch t.Kind {
+	case TypeKindArray:
+		return t.ArrayLen == u.ArrayLen && t.Elem.Equals(*u.Elem)
+	case TypeKindMap:
+		return t.Key.Equals(*u.Key) && t.Elem.Equals(*u.Elem)
+	case TypeKindSlice, TypeKindPtr:
+		return t.Elem.Equals(*u.Elem)
+	case TypeKindInterface:
+		return t.IsEmptyInterface && u.IsEmptyInterface
+	}
+	return false
+}
+
+// Reports whether or not a value of type t needs to be converted before
+// it can be assigned to a variable of type u.
+func (t Type) NeedsConversion(u Type) bool {
+	if u.Equals(t) {
+		return false
+	}
+	if u.IsEmptyInterface {
+		return false
+	}
+	return true
+}
+
+func (f *StructField) RulesCopy() []*RuleTag {
 	if f.Rules == nil {
 		return nil
 	}
 
-	rules := make([]*Rule, len(f.Rules))
+	rules := make([]*RuleTag, len(f.Rules))
 	copy(rules, f.Rules)
 	return rules
 }
@@ -220,20 +302,72 @@ func (f *StructField) HasRuleNotnil() bool {
 	return false
 }
 
-func (i ArgReferenceInfo) SelectorLast() *StructField {
-	return i.Selector[len(i.Selector)-1]
+func (s StructFieldSelector) Last() *StructField {
+	return s[len(s)-1]
+}
+
+func (a *RuleArg) IsUInt() bool {
+	return a.Type == ArgTypeInt && a.Value[0] != '-'
+}
+
+func (f *RuleFunc) PkgName() string {
+	if len(f.PkgPath) > 0 {
+		if i := strings.LastIndexByte(f.PkgPath, '/'); i > -1 {
+			return f.PkgPath[i+1:]
+		}
+		return f.PkgPath
+	}
+	return ""
+}
+
+// TypesForArgs returns an adjusted version of the RuleFunc's ArgTypes slice.
+// The returned Type slice will match in length the given slice of RuleArgs.
+func (f *RuleFunc) TypesForArgs(args []*RuleArg) (types []Type) {
+	types = append(types, f.ArgTypes[1:]...)
+	if f.IsVariadic {
+		last := f.ArgTypes[len(f.ArgTypes)-1].Elem
+		if len(types) > 0 {
+			types[len(types)-1] = *last
+		} else {
+			types = []Type{*last}
+		}
+
+		diff := len(args) - len(types)
+		for i := 0; i < diff; i++ {
+			types = append(types, *last)
+		}
+		return types
+	}
+
+	last := f.ArgTypes[len(f.ArgTypes)-1]
+	diff := len(args) - len(types)
+	for i := 0; i < diff; i++ {
+		types = append(types, last)
+	}
+	return types
 }
 
 // ArgType indicates the type of a rule arg value.
 type ArgType uint
 
 const (
-	ArgTypeString ArgType = iota // default is string, i.e. r.Value == "" (empty string)
-	ArgTypeNint                  // negative integer
-	ArgTypeUint                  // unsigned integer
-	ArgTypeFloat
+	ArgTypeUnknown ArgType = iota
 	ArgTypeBool
-	ArgTypeReference
+	ArgTypeInt
+	ArgTypeFloat
+	ArgTypeString
+	ArgTypeField
+)
+
+// RuleFuncBoolConn indicates the boolean connective to be used
+// between multiple alls of a single RuleFunc.
+type RuleFuncBoolConn uint
+
+const (
+	RuleFuncBoolNone RuleFuncBoolConn = iota
+	RuleFuncBoolNot
+	RuleFuncBoolAnd
+	RuleFuncBoolOr
 )
 
 // TypeKind indicates the specific kind of a Go type.
@@ -245,18 +379,22 @@ const (
 
 	_basic_kind_start
 	TypeKindBool
-	_numeric_kind_start
+	_numeric_kind_start // int/uint/float
+	_integer_kind_start // int
 	TypeKindInt
 	TypeKindInt8
 	TypeKindInt16
 	TypeKindInt32
 	TypeKindInt64
+	_integer_kind_end
+	_unsigned_kind_start // uint
 	TypeKindUint
 	TypeKindUint8
 	TypeKindUint16
 	TypeKindUint32
 	TypeKindUint64
 	TypeKindUintptr
+	_unsigned_kind_end
 	TypeKindFloat32
 	TypeKindFloat64
 	_numeric_kind_end
@@ -283,7 +421,18 @@ const (
 
 func (k TypeKind) IsBasic() bool { return _basic_kind_start < k && k < _basic_kind_end }
 
+// Reports whether or not k is of the numeric kind, note that this
+// does not include the complex64 and complex128 kinds.
 func (k TypeKind) IsNumeric() bool { return _numeric_kind_start < k && k < _numeric_kind_end }
+
+// Reports whether or not k is one of the int / uint types.
+func (k TypeKind) IsInteger() bool { return _integer_kind_start < k && k < _integer_kind_end }
+
+// Reports whether or not k is one of the uint types.
+func (k TypeKind) IsUnsigned() bool { return _unsigned_kind_start < k && k < _unsigned_kind_end }
+
+// Reports whether or not k is one of the float types.
+func (k TypeKind) IsFloat() bool { return TypeKindFloat32 == k || k == TypeKindFloat64 }
 
 // BasicString returns a string representation of k.
 func (k TypeKind) BasicString() string {
