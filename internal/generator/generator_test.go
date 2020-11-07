@@ -57,6 +57,7 @@ func TestGenerator(t *testing.T) {
 		"context_option",
 		"references",
 		"custom",
+		"hooks",
 	}
 
 	pkgs, err := parser.Parse("../testdata/generator", false, nil)

@@ -2165,6 +2165,8 @@ func TestAnalysisRun(t *testing.T) {
 			ContextOption: &ContextOptionField{
 				Name: "Context",
 			},
+			BeforeValidate: &MethodInfo{Name: "beforevalidate"},
+			AfterValidate:  &MethodInfo{Name: "AfterValidate"},
 			Fields: []*StructField{{
 				Name: "UserInput",
 				Tag:  tagutil.Tag{"isvalid": []string{"omitkey"}},

@@ -181,6 +181,12 @@ func (a *analysis) anError(e interface{}, f *StructField, r *RuleTag) error {
 func analyzeValidatorStruct(a *analysis, structType *types.Struct) (*ValidatorStruct, error) {
 	a.validator = new(ValidatorStruct)
 	a.validator.TypeName = a.named.Obj().Name()
+	if name := lookupBeforeValidate(a.named); len(name) > 0 {
+		a.validator.BeforeValidate = &MethodInfo{Name: name}
+	}
+	if name := lookupAfterValidate(a.named); len(name) > 0 {
+		a.validator.AfterValidate = &MethodInfo{Name: name}
+	}
 
 	typName := strings.ToLower(a.validator.TypeName)
 	if !strings.HasSuffix(typName, "validator") {

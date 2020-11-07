@@ -5,6 +5,14 @@ type AnalysisTestOK_Validator struct {
 	Context   string
 }
 
+func (v *AnalysisTestOK_Validator) beforevalidate() error {
+	return nil
+}
+
+func (v AnalysisTestOK_Validator) AfterValidate() error {
+	return nil
+}
+
 type AnalysisTestOK_ErrorConstructorValidator struct {
 	F string `is:"required"`
 	CustomErrorConstructor

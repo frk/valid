@@ -20,6 +20,10 @@ type (
 		ErrorHandler *ErrorHandlerField
 		// Info on the validator type's field named "context" (case insensitive), or nil.
 		ContextOption *ContextOptionField
+		// Info on the validator type's "beforevalidate" (case insensitive) method.
+		BeforeValidate *MethodInfo
+		// Info on the validator type's "aftervalidate" (case insensitive) method.
+		AfterValidate *MethodInfo
 	}
 
 	// StructField describes a single struct field in a ValidatorStruct or
@@ -99,6 +103,12 @@ type (
 	// field whose name is equal to "context" (case insensitive).
 	ContextOptionField struct {
 		// Name of the field (case preserved).
+		Name string
+	}
+
+	// MethodInfo represents the result of analysing a type's method.
+	MethodInfo struct {
+		// The name of the method (case preserved).
 		Name string
 	}
 

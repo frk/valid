@@ -58,6 +58,9 @@ type generator struct {
 	file *file
 	// The generated Validation method's receiver
 	recv GO.Ident
+
+	beforeValidate GO.StmtNode
+	afterValidate  GO.StmtNode
 }
 
 type TargetInfo struct {
@@ -77,6 +80,7 @@ func Generate(w io.Writer, pkgName string, targets []*TargetInfo) error {
 		buildMethodValidate(g)
 	}
 
+	// add an "init()" func if needed
 	if len(file.init) > 0 {
 		init := GO.FuncDecl{}
 		init.Name.Name = "init"
@@ -84,80 +88,33 @@ func Generate(w io.Writer, pkgName string, targets []*TargetInfo) error {
 		file.Decls = append([]GO.TopLevelDeclNode{init}, file.Decls...)
 	}
 
-	var imports = new(GO.ImportDecl)
-	if file.importErrors {
-		imports.Specs = append(imports.Specs, GO.ImportSpec{Path: "errors"})
-	}
-	if file.importFmt {
-		imports.Specs = append(imports.Specs, GO.ImportSpec{Path: "fmt"})
-	}
-
-	for _, imp := range file.impset {
-		spec := GO.ImportSpec{Path: GO.StringLit(imp.path)}
-		if imp.local {
-			spec.Name.Name = imp.name
-		}
-		imports.Specs = append(imports.Specs, spec)
-	}
-	groupImports(imports)
-
+	// final touch
 	file.PkgName = pkgName
 	file.Preamble = GO.LineComment{filePreamble}
-	file.Imports = []GO.ImportDeclNode{imports}
+	file.Imports = []GO.ImportDeclNode{newImportDeclNode(file)}
+
+	// let's go
 	return GO.Write(file.File, w)
-}
-
-func buildFile(pkgName string, targets []*TargetInfo) GO.File {
-	file := new(file)
-	for _, t := range targets {
-		g := new(generator)
-		g.info = t.Info
-		g.vs = t.ValidatorStruct
-		g.file = file
-
-		buildMethodValidate(g)
-	}
-
-	if len(file.init) > 0 {
-		init := GO.FuncDecl{}
-		init.Name.Name = "init"
-		init.Body.List = file.init
-		file.Decls = append([]GO.TopLevelDeclNode{init}, file.Decls...)
-	}
-
-	var imports = new(GO.ImportDecl)
-	if file.importErrors {
-		imports.Specs = append(imports.Specs, GO.ImportSpec{Path: "errors"})
-	}
-	if file.importFmt {
-		imports.Specs = append(imports.Specs, GO.ImportSpec{Path: "fmt"})
-	}
-
-	for _, imp := range file.impset {
-		spec := GO.ImportSpec{Path: GO.StringLit(imp.path)}
-		if imp.local {
-			spec.Name.Name = imp.name
-		}
-		imports.Specs = append(imports.Specs, spec)
-	}
-	groupImports(imports)
-
-	file.PkgName = pkgName
-	file.Preamble = GO.LineComment{filePreamble}
-	file.Imports = []GO.ImportDeclNode{imports}
-
-	return file.File
 }
 
 // Builds the "Validate() error" method for the target validator struct.
 func buildMethodValidate(g *generator) {
 	g.recv = GO.Ident{"v"}
+	prepareHookCalls(g)
+
 	prepareRuleArgFieldSelectors(g, g.vs.Fields)
 
 	body := []GO.StmtNode{}
+	if g.beforeValidate != nil {
+		body = append(body, g.beforeValidate)
+	}
 	for _, f := range g.vs.Fields {
 		buildFieldCode(g, f, g.recv, &body)
 	}
+	if g.afterValidate != nil {
+		body = append(body, g.afterValidate)
+	}
+
 	body = append(body, newFinalReturnStmt(g, g.recv))
 
 	method := GO.MethodDecl{}
@@ -168,6 +125,32 @@ func buildMethodValidate(g *generator) {
 	method.Body.List = body
 
 	g.file.Decls = append(g.file.Decls, method)
+}
+
+func prepareHookCalls(g *generator) {
+	if g.vs.BeforeValidate != nil {
+		var ERR = GO.Ident{"err"}
+		var NIL = GO.Ident{"nil"}
+
+		name := g.vs.BeforeValidate.Name
+		call := GO.CallExpr{Fun: GO.QualifiedIdent{g.recv.Name, name}}
+		assign := GO.AssignStmt{Token: GO.AssignDefine, Lhs: ERR, Rhs: call}
+		binary := GO.BinaryExpr{Op: GO.BinaryNeq, X: ERR, Y: NIL}
+		ifbody := GO.BlockStmt{[]GO.StmtNode{GO.ReturnStmt{ERR}}}
+		g.beforeValidate = GO.IfStmt{Init: assign, Cond: binary, Body: ifbody}
+	}
+
+	if g.vs.AfterValidate != nil {
+		var ERR = GO.Ident{"err"}
+		var NIL = GO.Ident{"nil"}
+
+		name := g.vs.AfterValidate.Name
+		call := GO.CallExpr{Fun: GO.QualifiedIdent{g.recv.Name, name}}
+		assign := GO.AssignStmt{Token: GO.AssignDefine, Lhs: ERR, Rhs: call}
+		binary := GO.BinaryExpr{Op: GO.BinaryNeq, X: ERR, Y: NIL}
+		body := GO.BlockStmt{[]GO.StmtNode{GO.ReturnStmt{ERR}}}
+		g.afterValidate = GO.IfStmt{Init: assign, Cond: binary, Body: body}
+	}
 }
 
 // prepares expressions for ...
@@ -765,6 +748,28 @@ func newFinalReturnStmt(g *generator, root GO.ExprNode) (stmt GO.ReturnStmt) {
 		stmt.Result = GO.Ident{"nil"}
 	}
 	return stmt
+}
+
+func newImportDeclNode(f *file) GO.ImportDeclNode {
+	var imports = new(GO.ImportDecl)
+
+	if f.importErrors {
+		imports.Specs = append(imports.Specs, GO.ImportSpec{Path: "errors"})
+	}
+	if f.importFmt {
+		imports.Specs = append(imports.Specs, GO.ImportSpec{Path: "fmt"})
+	}
+
+	for _, imp := range f.impset {
+		spec := GO.ImportSpec{Path: GO.StringLit(imp.path)}
+		if imp.local {
+			spec.Name.Name = imp.name
+		}
+		imports.Specs = append(imports.Specs, spec)
+	}
+
+	groupImports(imports)
+	return imports
 }
 
 // groupImports groups the imports into 3 groups separated by a new line, the

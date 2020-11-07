@@ -2,6 +2,7 @@ package analysis
 
 import (
 	"go/types"
+	"strings"
 )
 
 // methoder represents a type with methods. It is implicitly implemented
@@ -136,4 +137,46 @@ func isErrorAggregator(typ types.Type) bool {
 		}
 	}
 	return hasAddError && hasError
+}
+
+// lookupBeforeValidate scans the given type's method set for a method with the
+// name "beforevalidate" (case insesitive) and with the signature "func() error",
+// and if it finds a match it will return the method's name (case preserved),
+// and if there's no match it will return an empty string.
+func lookupBeforeValidate(named *types.Named) string {
+	for i := 0; i < named.NumMethods(); i++ {
+		if m := named.Method(i); strings.ToLower(m.Name()) == "beforevalidate" {
+			sig := m.Type().(*types.Signature)
+			p, r := sig.Params(), sig.Results()
+			if p.Len() != 0 || r.Len() != 1 {
+				return ""
+			}
+			if !isError(r.At(0).Type()) {
+				return ""
+			}
+			return m.Name()
+		}
+	}
+	return ""
+}
+
+// lookupAfterValidate scans the given type's method set for a method with the
+// name "aftervalidate" (case insesitive) and with the signature "func() error",
+// and if it finds a match it will return the method's name (case preserved),
+// and if there's no match it will return an empty string.
+func lookupAfterValidate(named *types.Named) string {
+	for i := 0; i < named.NumMethods(); i++ {
+		if m := named.Method(i); strings.ToLower(m.Name()) == "aftervalidate" {
+			sig := m.Type().(*types.Signature)
+			p, r := sig.Params(), sig.Results()
+			if p.Len() != 0 || r.Len() != 1 {
+				return ""
+			}
+			if !isError(r.At(0).Type()) {
+				return ""
+			}
+			return m.Name()
+		}
+	}
+	return ""
 }
