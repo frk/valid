@@ -2,6 +2,8 @@ package testdata
 
 import (
 	"time"
+
+	"github.com/frk/isvalid/internal/testdata/mypkg"
 )
 
 type UserInput struct {
@@ -109,22 +111,13 @@ type UserInput struct {
 	// custom rule...
 	f73 string    `is:"utf8"`
 	f74 time.Time `is:"timecheck,ifacecheck"`
-}
 
-type CustomErrorConstructor struct{}
-
-func (CustomErrorConstructor) Error(key string, val interface{}, rule string, args ...interface{}) error {
-	// ...
-	return nil
-}
-
-type CustomErrorAggregator struct{}
-
-func (CustomErrorAggregator) Error(key string, val interface{}, rule string, args ...interface{}) {
-	// ...
-}
-
-func (CustomErrorAggregator) Out() error {
-	// ...
-	return nil
+	// custom isValider
+	f75 mypkg.MyString  `is:"required"`
+	f76 mypkg.MyInt     `is:"required"`
+	f77 *mypkg.MyString `is:"-isvalid"`
+	f78 **mypkg.MyInt   `is:""`
+	f79 *interface {
+		IsValid() bool
+	}
 }

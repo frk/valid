@@ -1,5 +1,9 @@
 package testdata
 
+import (
+	"github.com/frk/isvalid/internal/testdata/mypkg"
+)
+
 type AnalysisTestOK_Validator struct {
 	UserInput *UserInput `isvalid:"omitkey"`
 	Context   string
@@ -15,12 +19,12 @@ func (v AnalysisTestOK_Validator) AfterValidate() error {
 
 type AnalysisTestOK_ErrorConstructorValidator struct {
 	F string `is:"required"`
-	CustomErrorConstructor
+	mypkg.MyErrorConstructor
 }
 
 type AnalysisTestOK_ErrorAggregatorValidator struct {
 	F      string `is:"required"`
-	erragg CustomErrorAggregator
+	erragg mypkg.MyErrorAggregator
 }
 
 type AnalysisTestOK_ContextValidator struct {
@@ -35,8 +39,8 @@ type AnalysisTestOK_Context2Validator struct {
 
 type AnalysisTestBAD_ErrorHandlerFieldConflictValidator struct {
 	F string `is:"required"`
-	CustomErrorConstructor
-	CustomErrorAggregator
+	mypkg.MyErrorConstructor
+	mypkg.MyErrorAggregator
 }
 
 type AnalysisTestBAD_ContextOptionFieldConflictValidator struct {

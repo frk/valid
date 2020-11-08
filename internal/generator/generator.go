@@ -205,7 +205,7 @@ func buildFieldCode(g *generator, field *analysis.StructField, root GO.ExprNode,
 		return
 	}
 
-	var required, notnil *analysis.RuleTag
+	var required, notnil *analysis.Rule
 	for i := 0; i < len(rules); i++ {
 		if r := rules[i]; r.Name == "required" || r.Name == "notnil" {
 			if r.Name == "required" {
@@ -227,7 +227,7 @@ func buildFieldCode(g *generator, field *analysis.StructField, root GO.ExprNode,
 	fieldType := field.Type
 	ruleElseIf := (fieldType.Kind != analysis.TypeKindPtr && len(subfields) == 0)
 
-	if fieldType.Kind == analysis.TypeKindPtr {
+	if fieldType.Kind == analysis.TypeKindPtr || fieldType.Kind == analysis.TypeKindInterface {
 		// logical op, and equality op
 		lop, eop := GO.BinaryLAnd, GO.BinaryNeq
 		if required != nil || notnil != nil {
@@ -243,6 +243,14 @@ func buildFieldCode(g *generator, field *analysis.StructField, root GO.ExprNode,
 			mainIf.Cond = GO.BinaryExpr{Op: lop, X: mainIf.Cond, Y: GO.BinaryExpr{Op: eop, X: fieldExpr, Y: nilId}}
 			fieldExpr = GO.PointerIndirectionExpr{fieldExpr}
 			fieldType = *fieldType.Elem
+		}
+	}
+
+	if fieldType.Kind == analysis.TypeKindInterface && required == nil && notnil == nil {
+		if mainIf.Cond != nil {
+			mainIf.Cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: mainIf.Cond, Y: GO.BinaryExpr{Op: GO.BinaryNeq, X: fieldExpr, Y: nilId}}
+		} else {
+			mainIf.Cond = GO.BinaryExpr{Op: GO.BinaryNeq, X: fieldExpr, Y: nilId}
 		}
 	}
 
@@ -365,10 +373,12 @@ func newExprForNotnil(g *generator, kind analysis.TypeKind, fieldExpr GO.ExprNod
 	return nil
 }
 
-func newIfStmt(g *generator, r *analysis.RuleTag, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+func newIfStmt(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
 	spec := g.info.RuleSpecMap[r.Name]
 
 	switch s := spec.(type) {
+	case analysis.RuleIsValid:
+		return newIfStmtForMethodIsValid(g, r, field, fieldExpr)
 	case analysis.RuleBasic:
 		if r.Name == "len" {
 			return newIfStmtForLength(g, r, field, fieldExpr)
@@ -486,7 +496,14 @@ func newExprForConstArg(g *generator, t analysis.Type, a *analysis.RuleArg, rf *
 	return nil
 }
 
-func newIfStmtForFunc(g *generator, rf analysis.RuleFunc, r *analysis.RuleTag, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+func newIfStmtForMethodIsValid(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+	sel := GO.SelectorExpr{X: fieldExpr, Sel: GO.Ident{"IsValid"}}
+	ifs.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: GO.CallExpr{Fun: sel}}
+	ifs.Body.Add(newReturnStmtForError(g, r, field, fieldExpr))
+	return ifs
+}
+
+func newIfStmtForFunc(g *generator, rf analysis.RuleFunc, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
 	imp := addImport(g, rf.PkgPath)
 	retStmt := newReturnStmtForError(g, r, field, fieldExpr)
 
@@ -513,7 +530,7 @@ func newIfStmtForFunc(g *generator, rf analysis.RuleFunc, r *analysis.RuleTag, f
 	return ifs
 }
 
-func newIfStmtForFuncChained(g *generator, rf analysis.RuleFunc, r *analysis.RuleTag, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+func newIfStmtForFuncChained(g *generator, rf analysis.RuleFunc, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
 	imp := addImport(g, rf.PkgPath)
 	retStmt := newReturnStmtForError(g, r, field, fieldExpr)
 
@@ -563,7 +580,7 @@ var basicRuleToLogicalOp = map[string]GO.BinaryOp{
 	"ne": GO.BinaryLOr,
 }
 
-func newIfStmtForBasicRule(g *generator, r *analysis.RuleTag, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+func newIfStmtForBasicRule(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
 	typ := field.Type
 	for typ.Kind == analysis.TypeKindPtr {
 		typ = *typ.Elem
@@ -585,7 +602,7 @@ func newIfStmtForBasicRule(g *generator, r *analysis.RuleTag, field *analysis.St
 	return ifs
 }
 
-func newIfStmtForRange(g *generator, r *analysis.RuleTag, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+func newIfStmtForRange(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
 	a1, a2 := r.Args[0], r.Args[1]
 
 	ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLOr,
@@ -596,7 +613,7 @@ func newIfStmtForRange(g *generator, r *analysis.RuleTag, field *analysis.Struct
 	return ifs
 }
 
-func newIfStmtForLength(g *generator, r *analysis.RuleTag, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+func newIfStmtForLength(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
 	typ := analysis.Type{Kind: analysis.TypeKindInt} // len(T) returns an int
 
 	if len(r.Args) == 1 {
@@ -621,7 +638,7 @@ func newIfStmtForLength(g *generator, r *analysis.RuleTag, field *analysis.Struc
 	return ifs
 }
 
-func newReturnStmtForError(g *generator, r *analysis.RuleTag, f *analysis.StructField, fieldExpr GO.ExprNode) GO.StmtNode {
+func newReturnStmtForError(g *generator, r *analysis.Rule, f *analysis.StructField, fieldExpr GO.ExprNode) GO.StmtNode {
 	// Build code for custom handler, if one exists.
 	if g.vs.ErrorHandler != nil {
 		args := make(GO.ExprList, 3)
@@ -660,7 +677,7 @@ func newReturnStmtForError(g *generator, r *analysis.RuleTag, f *analysis.Struct
 
 }
 
-func newExprForError(g *generator, f *analysis.StructField, r *analysis.RuleTag) (errExpr GO.ExprNode) {
+func newExprForError(g *generator, f *analysis.StructField, r *analysis.Rule) (errExpr GO.ExprNode) {
 	spec := g.info.RuleSpecMap[r.Name]
 	if spec.IsCustom() {
 		text := f.Key + " is not valid" // default error text for custom specs

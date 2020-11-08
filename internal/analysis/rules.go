@@ -18,8 +18,8 @@ var (
 	typeEmptyIface  = Type{Kind: TypeKindInterface, IsEmptyInterface: true}
 )
 
-func rulechecks(checks ...func(a *analysis, f *StructField, r *RuleTag) error) (check func(a *analysis, f *StructField, r *RuleTag) error) {
-	return func(a *analysis, f *StructField, r *RuleTag) error {
+func rulechecks(checks ...func(a *analysis, f *StructField, r *Rule) error) (check func(a *analysis, f *StructField, r *Rule) error) {
+	return func(a *analysis, f *StructField, r *Rule) error {
 		for _, chk := range checks {
 			if err := chk(a, f, r); err != nil {
 				return err
@@ -30,6 +30,10 @@ func rulechecks(checks ...func(a *analysis, f *StructField, r *RuleTag) error) (
 }
 
 var defaultRuleSpecMap = map[string]RuleSpec{
+	// speciél
+	"isvalid": RuleIsValid{},
+
+	// basic rules
 	"required": RuleBasic{check: isValidRuleRequired},
 	"notnil":   RuleBasic{check: isValidRuleNotnil},
 	"rng":      RuleBasic{check: isValidRuleRng},
@@ -107,7 +111,7 @@ var defaultRuleSpecMap = map[string]RuleSpec{
 		BoolConn: RuleFuncBoolAnd},
 }
 
-func isValidRuleRequired(a *analysis, f *StructField, r *RuleTag) error {
+func isValidRuleRequired(a *analysis, f *StructField, r *Rule) error {
 	// rule must have 0 args
 	if len(r.Args) != 0 {
 		return &anError{Code: errRuleFuncRuleArgCount}
@@ -115,7 +119,7 @@ func isValidRuleRequired(a *analysis, f *StructField, r *RuleTag) error {
 	return nil
 }
 
-func isValidRuleNotnil(a *analysis, f *StructField, r *RuleTag) error {
+func isValidRuleNotnil(a *analysis, f *StructField, r *Rule) error {
 	// rule must have 0 args
 	if len(r.Args) != 0 {
 		return &anError{Code: errRuleFuncRuleArgCount}
@@ -129,7 +133,7 @@ func isValidRuleNotnil(a *analysis, f *StructField, r *RuleTag) error {
 }
 
 // check that the rule's args are strings containing compilable regular expressions.
-func isValidRuleRegexp(a *analysis, f *StructField, r *RuleTag) error {
+func isValidRuleRegexp(a *analysis, f *StructField, r *Rule) error {
 	for _, a := range r.Args {
 		if a.Type != ArgTypeField {
 			if _, err := regexp.Compile(a.Value); err != nil {
@@ -141,7 +145,7 @@ func isValidRuleRegexp(a *analysis, f *StructField, r *RuleTag) error {
 }
 
 // check that the StructField and the RuleArgs represent a valid "value comparison" rule.
-func isValidRuleValueComparison(a *analysis, f *StructField, r *RuleTag) error {
+func isValidRuleValueComparison(a *analysis, f *StructField, r *Rule) error {
 	// rule must have at least 1 arg, no less
 	if len(r.Args) < 1 {
 		return &anError{Code: errRuleFuncRuleArgCount}
@@ -161,7 +165,7 @@ func isValidRuleValueComparison(a *analysis, f *StructField, r *RuleTag) error {
 }
 
 // check that the StructField and the RuleArgs represent a valid "number comparison" rule.
-func isValidRuleNumberComparison(a *analysis, f *StructField, r *RuleTag) error {
+func isValidRuleNumberComparison(a *analysis, f *StructField, r *Rule) error {
 	// rule can have exactly 1 arg, no more no less
 	if len(r.Args) != 1 {
 		return &anError{Code: errRuleFuncRuleArgCount}
@@ -186,7 +190,7 @@ func isValidRuleNumberComparison(a *analysis, f *StructField, r *RuleTag) error 
 }
 
 // check that the StructField and the RuleArgs represent a valid "len" rule.
-func isValidRuleLen(a *analysis, f *StructField, r *RuleTag) error {
+func isValidRuleLen(a *analysis, f *StructField, r *Rule) error {
 	// associated field's type must have length
 	if !hasTypeKind(f, TypeKindString, TypeKindArray, TypeKindSlice, TypeKindMap) {
 		return &anError{Code: errTypeLength}
@@ -233,7 +237,7 @@ func isValidRuleLen(a *analysis, f *StructField, r *RuleTag) error {
 }
 
 // check that the StructField and the RuleArgs represent a valid "rng" rule.
-func isValidRuleRng(a *analysis, f *StructField, r *RuleTag) error {
+func isValidRuleRng(a *analysis, f *StructField, r *Rule) error {
 	// rule must have exactly 2 args, no more no less
 	if len(r.Args) != 2 {
 		return &anError{Code: errRuleFuncRuleArgCount}
@@ -286,7 +290,7 @@ func isValidRuleRng(a *analysis, f *StructField, r *RuleTag) error {
 var rxUUIDVer = regexp.MustCompile(`^(?:v?[1-5])$`)
 
 // check that the RuleArgs represent a valid "uuid" rule.
-func isValidRuleUUID(a *analysis, f *StructField, r *RuleTag) error {
+func isValidRuleUUID(a *analysis, f *StructField, r *Rule) error {
 	// rule can have at most 5 args, no more
 	if len(r.Args) > 5 {
 		return &anError{Code: errRuleFuncRuleArgCount}
@@ -318,7 +322,7 @@ func isValidRuleUUID(a *analysis, f *StructField, r *RuleTag) error {
 var rxIPVer = regexp.MustCompile(`^(?:v?(?:4|6))$`)
 
 // checks that the rule args' values are valid IP versions.
-func isValidRuleIP(a *analysis, f *StructField, r *RuleTag) error {
+func isValidRuleIP(a *analysis, f *StructField, r *Rule) error {
 	// rule can have at most 2 args, no more
 	if len(r.Args) > 2 {
 		return &anError{Code: errRuleFuncRuleArgCount}
@@ -350,7 +354,7 @@ func isValidRuleIP(a *analysis, f *StructField, r *RuleTag) error {
 var rxMACVer = regexp.MustCompile(`^(?:v?(?:6|8))$`)
 
 // checks that the rule's args values are valid MAC versions.
-func isValidRuleMAC(a *analysis, f *StructField, r *RuleTag) error {
+func isValidRuleMAC(a *analysis, f *StructField, r *Rule) error {
 	// rule can have at most 2 args, no more
 	if len(r.Args) > 2 {
 		return &anError{Code: errRuleFuncRuleArgCount}
@@ -382,7 +386,7 @@ func isValidRuleMAC(a *analysis, f *StructField, r *RuleTag) error {
 var rxISO = regexp.MustCompile(`^(?:[1-9][0-9]*)$`) // non-zero unsigned int
 
 // checks that the rule's arg value is a supported ISO standard identifier.
-func isValidRuleISO(a *analysis, f *StructField, r *RuleTag) error {
+func isValidRuleISO(a *analysis, f *StructField, r *Rule) error {
 	for _, arg := range r.Args {
 		if arg.IsUInt() {
 			// TODO remove the regex and instead check against
@@ -400,7 +404,7 @@ func isValidRuleISO(a *analysis, f *StructField, r *RuleTag) error {
 var rxRFC = regexp.MustCompile(`^(?:[1-9][0-9]*)$`) // non-zero unsigned int
 
 // checks that the rule's arg value is a supported RFC standard identifier.
-func isValidRuleRFC(a *analysis, f *StructField, r *RuleTag) error {
+func isValidRuleRFC(a *analysis, f *StructField, r *Rule) error {
 	for _, arg := range r.Args {
 		if arg.IsUInt() {
 			// TODO remove the regex and instead check against
@@ -419,7 +423,7 @@ var rxCountryCode2 = regexp.MustCompile(`^(?i:a(?:d|e|f|g|i|l|m|o|q|r|s|t|u|w|x|
 var rxCountryCode3 = regexp.MustCompile(`^(?i:a(?:bw|fg|go|ia|la|lb|nd|re|rg|rm|sm|ta|tf|tg|us|ut|ze)|b(?:di|el|en|es|fa|gd|gr|hr|hs|ih|lm|lr|lz|mu|ol|ra|rb|rn|tn|vt|wa)|c(?:af|an|ck|he|hl|hn|iv|mr|od|og|ok|ol|om|pv|ri|ub|uw|xr|ym|yp|ze)|d(?:eu|ji|ma|nk|om|za)|e(?:cu|gy|ri|sh|sp|st|th)|f(?:in|ji|lk|ra|ro|sm)|g(?:ab|br|eo|gy|ha|ib|in|lp|mb|nb|nq|rc|rd|rl|tm|uf|um|uy)|h(?:kg|md|nd|rv|ti|un)|i(?:dn|mn|nd|ot|rl|rn|rq|sl|sr|ta)|j(?:am|ey|or|pn)|k(?:az|en|gz|hm|ir|na|or|wt)|l(?:ao|bn|br|by|ca|ie|ka|so|tu|ux|va)|m(?:ac|af|ar|co|da|dg|dv|ex|hl|kd|li|lt|mr|ne|ng|np|oz|rt|sr|tq|us|wi|ys|yt)|n(?:am|cl|er|fk|ga|ic|iu|ld|or|pl|ru|zl)|omn|p(?:ak|an|cn|er|hl|lw|ng|ol|ri|rk|rt|ry|se|yf)|qat|r(?:eu|ou|us|wa)|s(?:au|dn|en|gp|gs|hn|jm|lb|le|lv|mr|om|pm|rb|sd|tp|ur|vk|vn|we|wz|xm|yc|yr)|t(?:ca|cd|go|ha|jk|kl|km|ls|on|to|un|ur|uv|wn|za)|u(?:ga|kr|mi|ry|sa|zb)|v(?:at|ct|en|gb|ir|nm|ut)|w(?:lf|sm)|yem|z(?:af|mb|we)|)$`)
 
 // check that the rule's arg value is a valid country code.
-func isValidCountryCode(a *analysis, f *StructField, r *RuleTag) error {
+func isValidCountryCode(a *analysis, f *StructField, r *Rule) error {
 	for _, a := range r.Args {
 		if a.Type == ArgTypeString {
 			if !(len(a.Value) == 2 && rxCountryCode2.MatchString(a.Value)) &&
@@ -434,7 +438,7 @@ func isValidCountryCode(a *analysis, f *StructField, r *RuleTag) error {
 }
 
 // checks that the StructField's type is one of the int/uint/float types.
-func typeIsNumeric(a *analysis, f *StructField, r *RuleTag) error {
+func typeIsNumeric(a *analysis, f *StructField, r *Rule) error {
 	if !hasTypeKind(f, TypeKindInt, TypeKindInt8, TypeKindInt16, TypeKindInt32, TypeKindInt64,
 		TypeKindUint, TypeKindUint8, TypeKindUint16, TypeKindUint32, TypeKindUint64,
 		TypeKindFloat32, TypeKindFloat64) {

@@ -24,5 +24,11 @@ func (v EqualsValidator) Validate() error {
 			return errors.New("F3 must be equal to: \"foo\" or 123 or false or 3.14")
 		}
 	}
+	if v.F4 != nil && *v.F4 != nil && **v.F4 != nil {
+		f := **v.F4
+		if f != "foo" && f != 123 && f != false && f != 3.14 {
+			return errors.New("F4 must be equal to: \"foo\" or 123 or false or 3.14")
+		}
+	}
 	return nil
 }

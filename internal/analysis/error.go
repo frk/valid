@@ -57,8 +57,8 @@ func (e errorCode) name() string { return fmt.Sprintf("error_template_%d", e) }
 
 const (
 	_ errorCode = iota
-	_errCode_
 	errEmptyValidator
+	errRuleIsValidUnavailable
 	errRuleUnknown
 	errRuleContextUnknown
 	errRuleArgNum
@@ -99,14 +99,14 @@ const (
 )
 
 var error_template_string = `
-{{ define "` + _errCode_.name() + `" -}}
-{{.VtorFileAndLine}}: {{Y "empty validator"}}
-  > {{wu .VtorName}} must have at least one field to validate.
-{{ end }}
-
 {{ define "` + errEmptyValidator.name() + `" -}}
 {{.VtorFileAndLine}}: {{R .VtorName}}
   > must have at least one field to validate.
+{{ end }}
+
+{{ define "` + errRuleIsValidUnavailable.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "rule name not available."}}
+	TODO {{R .FieldName}}
 {{ end }}
 
 {{ define "` + errRuleUnknown.name() + `" -}}

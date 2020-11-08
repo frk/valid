@@ -23,6 +23,10 @@ type Config struct {
 // custom function MUST have at least one parameter item and, it MUST have
 // exactly one result item which MUST be of type bool.
 func (c *Config) AddRuleFunc(ruleName string, ruleFunc *types.Func) error {
+	if strings.ToLower(ruleName) == "isvalid" {
+		return &anError{Code: errRuleIsValidUnavailable}
+	}
+
 	sig := ruleFunc.Type().(*types.Signature)
 	p, r := sig.Params(), sig.Results()
 	if p.Len() < 1 || r.Len() != 1 {
@@ -132,7 +136,7 @@ type analysis struct {
 // used for error reporting only
 type needsContext struct {
 	field *StructField
-	rule  *RuleTag
+	rule  *Rule
 }
 
 // used for error reporting only
@@ -141,7 +145,7 @@ type fieldVar struct {
 	tag string
 }
 
-func (a *analysis) anError(e interface{}, f *StructField, r *RuleTag) error {
+func (a *analysis) anError(e interface{}, f *StructField, r *Rule) error {
 	var err *anError
 
 	switch v := e.(type) {
@@ -266,12 +270,12 @@ func analyzeStructFields(a *analysis, structType *types.Struct, selector []*Stru
 		}
 		f.Type = typ
 
-		if len(istag) > 0 {
-			if err := analyzeRules(a, f); err != nil {
-				return nil, err
-			}
-		} else if len(selector) == 0 { // root?
-			// Check for untagged, "special" root fields.
+		if err := analyzeRules(a, f); err != nil {
+			return nil, err
+		}
+
+		// Check for untagged, "special" root fields.
+		if len(istag) == 0 && len(selector) == 0 {
 			if isErrorConstructor(fvar.Type()) {
 				if err := analyzeErrorHandlerField(a, f, false); err != nil {
 					return nil, err
@@ -333,6 +337,7 @@ func analyzeType(a *analysis, selector []*StructField, t types.Type) (typ Type, 
 		typ.PkgLocal = pkg.Name()
 		typ.IsImported = isImportedType(a, named)
 		typ.IsExported = named.Obj().Exported()
+		typ.IsIsValider = isIsValider(t)
 		t = named.Underlying()
 	}
 
@@ -374,6 +379,7 @@ func analyzeType(a *analysis, selector []*StructField, t types.Type) (typ Type, 
 		typ.Elem = &elem
 	case *types.Interface:
 		typ.IsEmptyInterface = T.NumMethods() == 0
+		typ.IsIsValider = isIsValider(t)
 	case *types.Struct:
 		fields, err := analyzeStructFields(a, T, selector, !typ.IsImported)
 		if err != nil {
@@ -432,8 +438,31 @@ var rxFloat = regexp.MustCompile(`^(?:(?:-?0|[1-9][0-9]*)?\.[0-9]+)$`)
 var rxBool = regexp.MustCompile(`^(?:false|true)$`)
 
 func analyzeRules(a *analysis, f *StructField) error {
+	var isvalid *Rule
+	if typ := f.Type.PtrBase(); typ.IsIsValider {
+		isvalid = &Rule{Name: "isvalid"}
+	}
+
 	for _, s := range f.Tag["is"] {
-		r := parseRuleTag(s)
+		s = strings.TrimSpace(s)
+		if len(s) == 0 {
+			continue
+		}
+
+		// The "isvalid" tag option is not accepted, the corresponding
+		// rule RuleIsValid is inferred from the field's type instead.
+		if strings.ToLower(s) == "isvalid" {
+			continue
+		}
+
+		// The "-isvalid" tag option does not identify a specific rule,
+		// instead it indicates that RuleIsValid should be voided.
+		if strings.ToLower(s) == "-isvalid" {
+			isvalid = nil
+			continue
+		}
+
+		r := parseIsTagElem(s)
 		if len(r.Context) > 0 && a.needsContext == nil {
 			a.needsContext = &needsContext{f, r}
 		}
@@ -446,6 +475,11 @@ func analyzeRules(a *analysis, f *StructField) error {
 		}
 
 		f.Rules = append(f.Rules, r)
+	}
+
+	// add RuleIsValid as last
+	if isvalid != nil {
+		f.Rules = append(f.Rules, isvalid)
 	}
 	return nil
 }
@@ -492,9 +526,8 @@ func isImportedType(a *analysis, named *types.Named) bool {
 	return named != nil && named.Obj().Pkg().Path() != a.pkgPath
 }
 
-// parses the given string as the contents of a rule tag.
-func parseRuleTag(str string) *RuleTag {
-	str = strings.TrimSpace(str)
+// parses a single element of the `is` tag as a Rule and returns the result.
+func parseIsTagElem(str string) *Rule {
 	name := str
 	opts := ""
 
@@ -504,10 +537,10 @@ func parseRuleTag(str string) *RuleTag {
 	}
 
 	// if the opts string ends with ':' (e.g. `len:4:`) then append
-	// an empty RuleArg to the end of the RuleTag.Args slice.
+	// an empty RuleArg to the end of the Rule.Args slice.
 	var appendEmpty bool
 
-	r := &RuleTag{Name: name}
+	r := &Rule{Name: name}
 	for len(opts) > 0 {
 
 		var opt string
@@ -593,6 +626,8 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 			}
 
 			switch s := spec.(type) {
+			case RuleIsValid:
+				// do nothing
 			case RuleBasic:
 				if err := s.check(a, f, r); err != nil {
 					return a.anError(err, f, r)
@@ -614,7 +649,7 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 }
 
 // checks whether the rule func can be applied to its respective field.
-func typeCheckRuleFunc(a *analysis, f *StructField, r *RuleTag, rf RuleFunc) error {
+func typeCheckRuleFunc(a *analysis, f *StructField, r *Rule, rf RuleFunc) error {
 	if rf.BoolConn > RuleFuncBoolNone {
 		// func with bool connective but rule with no args, fail
 		if len(r.Args) < 1 {

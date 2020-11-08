@@ -58,7 +58,7 @@ func isError(typ types.Type) bool {
 	return pkg == nil && name == "error"
 }
 
-// isErrorConstructor reports whether or not the given type implements the "isvalid.ErrorConstructor" interface.
+// isErrorConstructor reports whether or not the given type implements the "ErrorConstructor" interface.
 func isErrorConstructor(typ types.Type) bool {
 	named, ok := typ.(*types.Named)
 	if !ok {
@@ -94,7 +94,7 @@ func isErrorConstructor(typ types.Type) bool {
 	return hasError
 }
 
-// isErrorAggregator reports whether or not the given type implements the "isvalid.ErrorAggregator" interface.
+// isErrorAggregator reports whether or not the given type implements the "ErrorAggregator" interface.
 func isErrorAggregator(typ types.Type) bool {
 	named, ok := typ.(*types.Named)
 	if !ok {
@@ -137,6 +137,34 @@ func isErrorAggregator(typ types.Type) bool {
 		}
 	}
 	return hasAddError && hasError
+}
+
+// isIsValider reports whether or not the given type satisfies the "IsValider" interface.
+func isIsValider(typ types.Type) bool {
+	var mm methoder
+	if named, ok := typ.(*types.Named); ok {
+		mm = named
+	} else if iface, ok := typ.(*types.Interface); ok {
+		mm = iface
+	} else {
+		return false
+	}
+
+	for i := 0; i < mm.NumMethods(); i++ {
+		m := mm.Method(i)
+		if m.Name() == "IsValid" {
+			sig := m.Type().(*types.Signature)
+			p, r := sig.Params(), sig.Results()
+			if p.Len() != 0 || r.Len() != 1 {
+				return false
+			}
+			if !isBool(r.At(0).Type()) {
+				return false
+			}
+			return true
+		}
+	}
+	return false
 }
 
 // lookupBeforeValidate scans the given type's method set for a method with the

@@ -76,8 +76,8 @@ func TestAnalysisRun(t *testing.T) {
 			VtorName:      "AnalysisTestBAD_ErrorHandlerFieldConflictValidator",
 			VtorFileName:  "../testdata/analysis.go",
 			VtorFileLine:  123,
-			FieldName:     "CustomErrorAggregator",
-			FieldType:     "CustomErrorAggregator",
+			FieldName:     "MyErrorAggregator",
+			FieldType:     "mypkg.MyErrorAggregator",
 			FieldFileName: "../testdata/analysis.go",
 			FieldFileLine: 123,
 		},
@@ -2107,13 +2107,13 @@ func TestAnalysisRun(t *testing.T) {
 		want: &ValidatorStruct{
 			TypeName: "AnalysisTestOK_ErrorConstructorValidator",
 			ErrorHandler: &ErrorHandlerField{
-				Name: "CustomErrorConstructor", IsAggregator: false,
+				Name: "MyErrorConstructor", IsAggregator: false,
 			},
 			Fields: []*StructField{{
 				Name: "F", Key: "F",
 				Tag:  tagutil.Tag{"is": []string{"required"}},
 				Type: Type{Kind: TypeKindString}, IsExported: true,
-				Rules: []*RuleTag{{Name: "required"}},
+				Rules: []*Rule{{Name: "required"}},
 			}},
 		},
 	}, {
@@ -2127,7 +2127,7 @@ func TestAnalysisRun(t *testing.T) {
 				Name: "F", Key: "F",
 				Tag:  tagutil.Tag{"is": []string{"required"}},
 				Type: Type{Kind: TypeKindString}, IsExported: true,
-				Rules: []*RuleTag{{Name: "required"}},
+				Rules: []*Rule{{Name: "required"}},
 			}},
 		},
 	}, {
@@ -2141,7 +2141,7 @@ func TestAnalysisRun(t *testing.T) {
 				Name: "F", Key: "F",
 				Tag:  tagutil.Tag{"is": []string{"required"}},
 				Type: Type{Kind: TypeKindString}, IsExported: true,
-				Rules: []*RuleTag{{Name: "required"}},
+				Rules: []*Rule{{Name: "required"}},
 			}},
 		},
 	}, {
@@ -2155,11 +2155,12 @@ func TestAnalysisRun(t *testing.T) {
 				Name: "F", Key: "F",
 				Tag:  tagutil.Tag{"is": []string{"required"}},
 				Type: Type{Kind: TypeKindString}, IsExported: true,
-				Rules: []*RuleTag{{Name: "required"}},
+				Rules: []*Rule{{Name: "required"}},
 			}},
 		},
 	}, {
-		name: "AnalysisTestOK_Validator",
+		name:     "AnalysisTestOK_Validator",
+		printerr: true,
 		want: &ValidatorStruct{
 			TypeName: "AnalysisTestOK_Validator",
 			ContextOption: &ContextOptionField{
@@ -2192,92 +2193,92 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "f1", Key: "f1",
 							Tag:  tagutil.Tag{"is": []string{"required"}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*RuleTag{{Name: "required"}},
+							Rules: []*Rule{{Name: "required"}},
 						}, {
 							Name: "f2", Key: "f2",
 							Tag:  tagutil.Tag{"is": []string{"required:@create"}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*RuleTag{{Name: "required", Context: "create"}},
+							Rules: []*Rule{{Name: "required", Context: "create"}},
 						}, {
 							Name: "f3", Key: "f3",
 							Tag:  tagutil.Tag{"is": []string{"required:#key"}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*RuleTag{{Name: "required", SetKey: "key"}},
+							Rules: []*Rule{{Name: "required", SetKey: "key"}},
 						}, {
 							Name: "f4", Key: "f4",
 							Tag:  tagutil.Tag{"is": []string{"required:@create:#key"}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*RuleTag{{Name: "required", Context: "create", SetKey: "key"}},
+							Rules: []*Rule{{Name: "required", Context: "create", SetKey: "key"}},
 						}, {
 							Name: "f5", Key: "f5",
 							Tag:  tagutil.Tag{"is": []string{"email"}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*RuleTag{{Name: "email"}},
+							Rules: []*Rule{{Name: "email"}},
 						}, {
 							Name: "f6", Key: "f6",
 							Tag:  tagutil.Tag{"is": []string{"url"}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*RuleTag{{Name: "url"}},
+							Rules: []*Rule{{Name: "url"}},
 						}, {
 							Name: "f7", Key: "f7",
 							Tag:  tagutil.Tag{"is": []string{"uri"}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*RuleTag{{Name: "uri"}},
+							Rules: []*Rule{{Name: "uri"}},
 						}, {
 							Name: "f8", Key: "f8",
 							Tag:  tagutil.Tag{"is": []string{"pan"}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*RuleTag{{Name: "pan"}},
+							Rules: []*Rule{{Name: "pan"}},
 						}, {
 							Name: "f9", Key: "f9",
 							Tag:  tagutil.Tag{"is": []string{"cvv"}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*RuleTag{{Name: "cvv"}},
+							Rules: []*Rule{{Name: "cvv"}},
 						}, {
 							Name: "F10", Key: "F10",
 							Tag:  tagutil.Tag{"is": []string{"ssn"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "ssn"}},
+							Rules: []*Rule{{Name: "ssn"}},
 						}, {
 							Name: "F11", Key: "F11",
 							Tag:  tagutil.Tag{"is": []string{"ein"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "ein"}},
+							Rules: []*Rule{{Name: "ein"}},
 						}, {
 							Name: "F12", Key: "F12",
 							Tag:  tagutil.Tag{"is": []string{"numeric"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "numeric"}},
+							Rules: []*Rule{{Name: "numeric"}},
 						}, {
 							Name: "F13", Key: "F13",
 							Tag:  tagutil.Tag{"is": []string{"hex"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "hex"}},
+							Rules: []*Rule{{Name: "hex"}},
 						}, {
 							Name: "F14", Key: "F14",
 							Tag:  tagutil.Tag{"is": []string{"hexcolor"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "hexcolor"}},
+							Rules: []*Rule{{Name: "hexcolor"}},
 						}, {
 							Name: "F15", Key: "F15",
 							Tag:  tagutil.Tag{"is": []string{"alphanum"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "alphanum"}},
+							Rules: []*Rule{{Name: "alphanum"}},
 						}, {
 							Name: "F16", Key: "F16",
 							Tag:  tagutil.Tag{"is": []string{"cidr"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "cidr"}},
+							Rules: []*Rule{{Name: "cidr"}},
 						}, {
 							Name: "F17", Key: "F17",
 							Tag:  tagutil.Tag{"is": []string{"phone"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "phone"}},
+							Rules: []*Rule{{Name: "phone"}},
 						}, {
 							Name: "F18", Key: "F18",
 							Tag:  tagutil.Tag{"is": []string{"phone:us:ca"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "phone", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "phone", Args: []*RuleArg{
 								{Value: "us", Type: ArgTypeString},
 								{Value: "ca", Type: ArgTypeString},
 							}}},
@@ -2285,19 +2286,19 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "F19", Key: "F19",
 							Tag:  tagutil.Tag{"is": []string{"phone:&CountryCode"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "phone", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "phone", Args: []*RuleArg{
 								{Value: "CountryCode", Type: ArgTypeField},
 							}}},
 						}, {
 							Name: "F20", Key: "F20",
 							Tag:  tagutil.Tag{"is": []string{"zip"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "zip"}},
+							Rules: []*Rule{{Name: "zip"}},
 						}, {
 							Name: "F21", Key: "F21",
 							Tag:  tagutil.Tag{"is": []string{"zip:deu:fin"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "zip", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "zip", Args: []*RuleArg{
 								{Value: "deu", Type: ArgTypeString},
 								{Value: "fin", Type: ArgTypeString},
 							}}},
@@ -2305,217 +2306,217 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "F22", Key: "F22",
 							Tag:  tagutil.Tag{"is": []string{"zip:&CountryCode"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "zip", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "zip", Args: []*RuleArg{
 								{Value: "CountryCode", Type: ArgTypeField},
 							}}},
 						}, {
 							Name: "F23", Key: "F23",
 							Tag:  tagutil.Tag{"is": []string{"uuid"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "uuid"}},
+							Rules: []*Rule{{Name: "uuid"}},
 						}, {
 							Name: "F24", Key: "F24",
 							Tag:  tagutil.Tag{"is": []string{"uuid:3"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "uuid", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "uuid", Args: []*RuleArg{
 								{Value: "3", Type: ArgTypeInt},
 							}}},
 						}, {
 							Name: "F25", Key: "F25",
 							Tag:  tagutil.Tag{"is": []string{"uuid:v4"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "uuid", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "uuid", Args: []*RuleArg{
 								{Value: "4", Type: ArgTypeInt},
 							}}},
 						}, {
 							Name: "F26", Key: "F26",
 							Tag:  tagutil.Tag{"is": []string{"uuid:&SomeVersion"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "uuid", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "uuid", Args: []*RuleArg{
 								{Value: "SomeVersion", Type: ArgTypeField},
 							}}},
 						}, {
 							Name: "F27", Key: "F27",
 							Tag:  tagutil.Tag{"is": []string{"ip"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "ip"}},
+							Rules: []*Rule{{Name: "ip"}},
 						}, {
 							Name: "F28", Key: "F28",
 							Tag:  tagutil.Tag{"is": []string{"ip:4"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "ip", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "ip", Args: []*RuleArg{
 								{Value: "4", Type: ArgTypeInt},
 							}}},
 						}, {
 							Name: "F29", Key: "F29",
 							Tag:  tagutil.Tag{"is": []string{"ip:v6"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "ip", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "ip", Args: []*RuleArg{
 								{Value: "6", Type: ArgTypeInt},
 							}}},
 						}, {
 							Name: "F30", Key: "F30",
 							Tag:  tagutil.Tag{"is": []string{"ip:&SomeVersion"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "ip", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "ip", Args: []*RuleArg{
 								{Value: "SomeVersion", Type: ArgTypeField},
 							}}},
 						}, {
 							Name: "F31", Key: "F31",
 							Tag:  tagutil.Tag{"is": []string{"mac"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "mac"}},
+							Rules: []*Rule{{Name: "mac"}},
 						}, {
 							Name: "F32", Key: "F32",
 							Tag:  tagutil.Tag{"is": []string{"mac:6"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "mac", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "mac", Args: []*RuleArg{
 								{Value: "6", Type: ArgTypeInt},
 							}}},
 						}, {
 							Name: "F33", Key: "F33",
 							Tag:  tagutil.Tag{"is": []string{"mac:v8"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "mac", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "mac", Args: []*RuleArg{
 								{Value: "8", Type: ArgTypeInt},
 							}}},
 						}, {
 							Name: "F34", Key: "F34",
 							Tag:  tagutil.Tag{"is": []string{"mac:&SomeVersion"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "mac", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "mac", Args: []*RuleArg{
 								{Value: "SomeVersion", Type: ArgTypeField},
 							}}},
 						}, {
 							Name: "F35", Key: "F35",
 							Tag:  tagutil.Tag{"is": []string{"iso:1234"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "iso", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "iso", Args: []*RuleArg{
 								{Value: "1234", Type: ArgTypeInt},
 							}}},
 						}, {
 							Name: "F36", Key: "F36",
 							Tag:  tagutil.Tag{"is": []string{"rfc:1234"}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "rfc", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "rfc", Args: []*RuleArg{
 								{Value: "1234", Type: ArgTypeInt},
 							}}},
 						}, {
 							Name: "F37", Key: "F37",
 							Tag:  tagutil.Tag{"is": []string{`re:"^[a-z]+\[[0-9]+\]$"`}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "re", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "re", Args: []*RuleArg{
 								{Value: `^[a-z]+\[[0-9]+\]$`, Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "F38", Key: "F38",
 							Tag:  tagutil.Tag{"is": []string{`re:"\w+"`}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "re", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "re", Args: []*RuleArg{
 								{Value: `\w+`, Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "F39", Key: "F39",
 							Tag:  tagutil.Tag{"is": []string{`contains:foo bar`}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "contains", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "contains", Args: []*RuleArg{
 								{Value: "foo bar", Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "F40", Key: "F40",
 							Tag:  tagutil.Tag{"is": []string{`contains:&SomeValue`}},
 							Type: Type{Kind: TypeKindString}, IsExported: true,
-							Rules: []*RuleTag{{Name: "contains", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "contains", Args: []*RuleArg{
 								{Value: "SomeValue", Type: ArgTypeField},
 							}}},
 						}, {
 							Name: "f41", Key: "f41",
 							Tag:  tagutil.Tag{"is": []string{`prefix:foo bar`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*RuleTag{{Name: "prefix", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "prefix", Args: []*RuleArg{
 								{Value: "foo bar", Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "f42", Key: "f42",
 							Tag:  tagutil.Tag{"is": []string{`prefix:&SomeValue`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*RuleTag{{Name: "prefix", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "prefix", Args: []*RuleArg{
 								{Value: "SomeValue", Type: ArgTypeField},
 							}}},
 						}, {
 							Name: "f43", Key: "f43",
 							Tag:  tagutil.Tag{"is": []string{`suffix:foo bar`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*RuleTag{{Name: "suffix", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "suffix", Args: []*RuleArg{
 								{Value: "foo bar", Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "f44", Key: "f44",
 							Tag:  tagutil.Tag{"is": []string{`suffix:&SomeValue`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*RuleTag{{Name: "suffix", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "suffix", Args: []*RuleArg{
 								{Value: "SomeValue", Type: ArgTypeField},
 							}}},
 						}, {
 							Name: "f45", Key: "f45",
 							Tag:  tagutil.Tag{"is": []string{`eq:foo bar`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*RuleTag{{Name: "eq", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "eq", Args: []*RuleArg{
 								{Value: "foo bar", Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "f46", Key: "f46",
 							Tag:  tagutil.Tag{"is": []string{`eq:-123`}},
 							Type: Type{Kind: TypeKindInt}, IsExported: false,
-							Rules: []*RuleTag{{Name: "eq", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "eq", Args: []*RuleArg{
 								{Value: "-123", Type: ArgTypeInt},
 							}}},
 						}, {
 							Name: "f47", Key: "f47",
 							Tag:  tagutil.Tag{"is": []string{`eq:123.987`}},
 							Type: Type{Kind: TypeKindFloat64}, IsExported: false,
-							Rules: []*RuleTag{{Name: "eq", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "eq", Args: []*RuleArg{
 								{Value: "123.987", Type: ArgTypeFloat},
 							}}},
 						}, {
 							Name: "f48", Key: "f48",
 							Tag:  tagutil.Tag{"is": []string{`eq:&SomeValue`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*RuleTag{{Name: "eq", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "eq", Args: []*RuleArg{
 								{Value: "SomeValue", Type: ArgTypeField},
 							}}},
 						}, {
 							Name: "f49", Key: "f49",
 							Tag:  tagutil.Tag{"is": []string{`ne:foo bar`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*RuleTag{{Name: "ne", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "ne", Args: []*RuleArg{
 								{Value: "foo bar", Type: ArgTypeString},
 							}}},
 						}, {
 							Name: "f50", Key: "f50",
 							Tag:  tagutil.Tag{"is": []string{`ne:-123`}},
 							Type: Type{Kind: TypeKindInt}, IsExported: false,
-							Rules: []*RuleTag{{Name: "ne", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "ne", Args: []*RuleArg{
 								{Value: "-123", Type: ArgTypeInt},
 							}}},
 						}, {
 							Name: "f51", Key: "f51",
 							Tag:  tagutil.Tag{"is": []string{`ne:123.987`}},
 							Type: Type{Kind: TypeKindFloat64}, IsExported: false,
-							Rules: []*RuleTag{{Name: "ne", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "ne", Args: []*RuleArg{
 								{Value: "123.987", Type: ArgTypeFloat},
 							}}},
 						}, {
 							Name: "f52", Key: "f52",
 							Tag:  tagutil.Tag{"is": []string{`ne:&SomeValue`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*RuleTag{{Name: "ne", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "ne", Args: []*RuleArg{
 								{Value: "SomeValue", Type: ArgTypeField}}}},
 						}, {
 							Name: "f53", Key: "f53",
 							Tag:  tagutil.Tag{"is": []string{`gt:24`, `lt:128`}},
 							Type: Type{Kind: TypeKindUint8}, IsExported: false,
-							Rules: []*RuleTag{
+							Rules: []*Rule{
 								{Name: "gt", Args: []*RuleArg{
 									{Value: "24", Type: ArgTypeInt}}},
 								{Name: "lt", Args: []*RuleArg{
@@ -2525,7 +2526,7 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "f54", Key: "f54",
 							Tag:  tagutil.Tag{"is": []string{`gt:-128`, `lt:-24`}},
 							Type: Type{Kind: TypeKindInt16}, IsExported: false,
-							Rules: []*RuleTag{
+							Rules: []*Rule{
 								{Name: "gt", Args: []*RuleArg{
 									{Value: "-128", Type: ArgTypeInt}}},
 								{Name: "lt", Args: []*RuleArg{
@@ -2535,7 +2536,7 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "f55", Key: "f55",
 							Tag:  tagutil.Tag{"is": []string{`gt:0.24`, `lt:1.28`}},
 							Type: Type{Kind: TypeKindFloat32}, IsExported: false,
-							Rules: []*RuleTag{
+							Rules: []*Rule{
 								{Name: "gt", Args: []*RuleArg{
 									{Value: "0.24", Type: ArgTypeFloat}}},
 								{Name: "lt", Args: []*RuleArg{
@@ -2545,7 +2546,7 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "f56", Key: "f56",
 							Tag:  tagutil.Tag{"is": []string{`gte:24`, `lte:128`}},
 							Type: Type{Kind: TypeKindUint8}, IsExported: false,
-							Rules: []*RuleTag{
+							Rules: []*Rule{
 								{Name: "gte", Args: []*RuleArg{
 									{Value: "24", Type: ArgTypeInt}}},
 								{Name: "lte", Args: []*RuleArg{
@@ -2555,7 +2556,7 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "f57", Key: "f57",
 							Tag:  tagutil.Tag{"is": []string{`gte:-128`, `lte:-24`}},
 							Type: Type{Kind: TypeKindInt16}, IsExported: false,
-							Rules: []*RuleTag{
+							Rules: []*Rule{
 								{Name: "gte", Args: []*RuleArg{
 									{Value: "-128", Type: ArgTypeInt}}},
 								{Name: "lte", Args: []*RuleArg{
@@ -2565,7 +2566,7 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "f58", Key: "f58",
 							Tag:  tagutil.Tag{"is": []string{`gte:0.24`, `lte:1.28`}},
 							Type: Type{Kind: TypeKindFloat32}, IsExported: false,
-							Rules: []*RuleTag{
+							Rules: []*Rule{
 								{Name: "gte", Args: []*RuleArg{
 									{Value: "0.24", Type: ArgTypeFloat}}},
 								{Name: "lte", Args: []*RuleArg{
@@ -2575,7 +2576,7 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "f59", Key: "f59",
 							Tag:  tagutil.Tag{"is": []string{`min:24`, `max:128`}},
 							Type: Type{Kind: TypeKindUint8}, IsExported: false,
-							Rules: []*RuleTag{
+							Rules: []*Rule{
 								{Name: "min", Args: []*RuleArg{
 									{Value: "24", Type: ArgTypeInt}}},
 								{Name: "max", Args: []*RuleArg{
@@ -2585,7 +2586,7 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "f60", Key: "f60",
 							Tag:  tagutil.Tag{"is": []string{`min:-128`, `max:-24`}},
 							Type: Type{Kind: TypeKindInt16}, IsExported: false,
-							Rules: []*RuleTag{
+							Rules: []*Rule{
 								{Name: "min", Args: []*RuleArg{
 									{Value: "-128", Type: ArgTypeInt}}},
 								{Name: "max", Args: []*RuleArg{
@@ -2595,7 +2596,7 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "f61", Key: "f61",
 							Tag:  tagutil.Tag{"is": []string{`min:0.24`, `max:1.28`}},
 							Type: Type{Kind: TypeKindFloat32}, IsExported: false,
-							Rules: []*RuleTag{
+							Rules: []*Rule{
 								{Name: "min", Args: []*RuleArg{
 									{Value: "0.24", Type: ArgTypeFloat}}},
 								{Name: "max", Args: []*RuleArg{
@@ -2605,7 +2606,7 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "f62", Key: "f62",
 							Tag:  tagutil.Tag{"is": []string{`rng:24:128`}},
 							Type: Type{Kind: TypeKindUint8}, IsExported: false,
-							Rules: []*RuleTag{{Name: "rng", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "rng", Args: []*RuleArg{
 								{Value: "24", Type: ArgTypeInt},
 								{Value: "128", Type: ArgTypeInt}}},
 							},
@@ -2613,7 +2614,7 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "f63", Key: "f63",
 							Tag:  tagutil.Tag{"is": []string{`rng:-128:-24`}},
 							Type: Type{Kind: TypeKindInt16}, IsExported: false,
-							Rules: []*RuleTag{{Name: "rng", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "rng", Args: []*RuleArg{
 								{Value: "-128", Type: ArgTypeInt},
 								{Value: "-24", Type: ArgTypeInt}}},
 							},
@@ -2621,7 +2622,7 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "f64", Key: "f64",
 							Tag:  tagutil.Tag{"is": []string{`rng:0.24:1.28`}},
 							Type: Type{Kind: TypeKindFloat32}, IsExported: false,
-							Rules: []*RuleTag{{Name: "rng", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "rng", Args: []*RuleArg{
 								{Value: "0.24", Type: ArgTypeFloat},
 								{Value: "1.28", Type: ArgTypeFloat}}},
 							},
@@ -2629,28 +2630,28 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "f65", Key: "f65",
 							Tag:  tagutil.Tag{"is": []string{`len:28`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*RuleTag{{Name: "len", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "len", Args: []*RuleArg{
 								{Value: "28", Type: ArgTypeInt}}},
 							},
 						}, {
 							Name: "f66", Key: "f66",
 							Tag:  tagutil.Tag{"is": []string{`len:28`}},
 							Type: Type{Kind: TypeKindSlice, Elem: &Type{Kind: TypeKindInt}}, IsExported: false,
-							Rules: []*RuleTag{{Name: "len", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "len", Args: []*RuleArg{
 								{Value: "28", Type: ArgTypeInt}}},
 							},
 						}, {
 							Name: "f67", Key: "f67",
 							Tag:  tagutil.Tag{"is": []string{`len:28`}},
 							Type: Type{Kind: TypeKindMap, Key: &Type{Kind: TypeKindString}, Elem: &Type{Kind: TypeKindInt}}, IsExported: false,
-							Rules: []*RuleTag{{Name: "len", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "len", Args: []*RuleArg{
 								{Value: "28", Type: ArgTypeInt}}},
 							},
 						}, {
 							Name: "f68", Key: "f68",
 							Tag:  tagutil.Tag{"is": []string{`len:4:28`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*RuleTag{{Name: "len", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "len", Args: []*RuleArg{
 								{Value: "4", Type: ArgTypeInt},
 								{Value: "28", Type: ArgTypeInt}}},
 							},
@@ -2658,7 +2659,7 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "f69", Key: "f69",
 							Tag:  tagutil.Tag{"is": []string{`len:4:28`}},
 							Type: Type{Kind: TypeKindSlice, Elem: &Type{Kind: TypeKindInt}}, IsExported: false,
-							Rules: []*RuleTag{{Name: "len", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "len", Args: []*RuleArg{
 								{Value: "4", Type: ArgTypeInt},
 								{Value: "28", Type: ArgTypeInt}}},
 							},
@@ -2666,7 +2667,7 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "f70", Key: "f70",
 							Tag:  tagutil.Tag{"is": []string{`len:4:28`}},
 							Type: Type{Kind: TypeKindMap, Key: &Type{Kind: TypeKindString}, Elem: &Type{Kind: TypeKindInt}}, IsExported: false,
-							Rules: []*RuleTag{{Name: "len", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "len", Args: []*RuleArg{
 								{Value: "4", Type: ArgTypeInt},
 								{Value: "28", Type: ArgTypeInt}}},
 							},
@@ -2674,7 +2675,7 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "f71", Key: "f71",
 							Tag:  tagutil.Tag{"is": []string{`len::28`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*RuleTag{{Name: "len", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "len", Args: []*RuleArg{
 								{Value: "", Type: ArgTypeUnknown},
 								{Value: "28", Type: ArgTypeInt}}},
 							},
@@ -2682,7 +2683,7 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "f72", Key: "f72",
 							Tag:  tagutil.Tag{"is": []string{`len:4:`}},
 							Type: Type{Kind: TypeKindSlice, Elem: &Type{Kind: TypeKindInt}}, IsExported: false,
-							Rules: []*RuleTag{{Name: "len", Args: []*RuleArg{
+							Rules: []*Rule{{Name: "len", Args: []*RuleArg{
 								{Value: "4", Type: ArgTypeInt},
 								{Value: "", Type: ArgTypeUnknown}}},
 							},
@@ -2694,17 +2695,16 @@ func TestAnalysisRun(t *testing.T) {
 									Name: "f1", Key: "g1.f1",
 									Tag:  tagutil.Tag{"is": []string{`required`}},
 									Type: Type{Kind: TypeKindString}, IsExported: false,
-									Rules: []*RuleTag{{Name: "required"}},
+									Rules: []*Rule{{Name: "required"}},
 								}},
 							},
 						}, {
 							Name: "f73", Key: "f73",
 							Tag:  tagutil.Tag{"is": []string{`utf8`}},
 							Type: Type{Kind: TypeKindString}, IsExported: false,
-							Rules: []*RuleTag{{Name: "utf8"}},
+							Rules: []*Rule{{Name: "utf8"}},
 						}, {
 							Name: "f74", Key: "f74",
-							Tag: tagutil.Tag{"is": []string{`timecheck`, `ifacecheck`}},
 							Type: Type{
 								Kind:       TypeKindStruct,
 								Name:       "Time",
@@ -2715,10 +2715,87 @@ func TestAnalysisRun(t *testing.T) {
 								IsExported: true,
 							},
 							IsExported: false,
-							Rules: []*RuleTag{
+							Tag:        tagutil.Tag{"is": []string{`timecheck`, `ifacecheck`}},
+							Rules: []*Rule{
 								{Name: "timecheck"},
 								{Name: "ifacecheck"},
 							},
+						}, {
+							Name: "f75", Key: "f75",
+							Type: Type{
+								Kind:        TypeKindString,
+								Name:        "MyString",
+								PkgPath:     "github.com/frk/isvalid/internal/testdata/mypkg",
+								PkgName:     "mypkg",
+								PkgLocal:    "mypkg",
+								IsImported:  true,
+								IsExported:  true,
+								IsIsValider: true,
+							},
+							Tag:   tagutil.Tag{"is": []string{`required`}},
+							Rules: []*Rule{{Name: "required"}, {Name: "isvalid"}},
+						}, {
+							Name: "f76", Key: "f76",
+							Type: Type{
+								Kind:        TypeKindInt,
+								Name:        "MyInt",
+								PkgPath:     "github.com/frk/isvalid/internal/testdata/mypkg",
+								PkgName:     "mypkg",
+								PkgLocal:    "mypkg",
+								IsImported:  true,
+								IsExported:  true,
+								IsIsValider: true,
+							},
+							Tag:   tagutil.Tag{"is": []string{`required`}},
+							Rules: []*Rule{{Name: "required"}, {Name: "isvalid"}},
+						}, {
+							Name: "f77", Key: "f77",
+							Type: Type{
+								Kind: TypeKindPtr,
+								Elem: &Type{
+									Kind:        TypeKindString,
+									Name:        "MyString",
+									PkgPath:     "github.com/frk/isvalid/internal/testdata/mypkg",
+									PkgName:     "mypkg",
+									PkgLocal:    "mypkg",
+									IsImported:  true,
+									IsExported:  true,
+									IsIsValider: true,
+								},
+							},
+							Tag:   tagutil.Tag{"is": []string{`-isvalid`}},
+							Rules: nil,
+						}, {
+							Name: "f78", Key: "f78",
+							Type: Type{
+								Kind: TypeKindPtr,
+								Elem: &Type{
+									Kind: TypeKindPtr,
+									Elem: &Type{
+										Kind:        TypeKindInt,
+										Name:        "MyInt",
+										PkgPath:     "github.com/frk/isvalid/internal/testdata/mypkg",
+										PkgName:     "mypkg",
+										PkgLocal:    "mypkg",
+										IsImported:  true,
+										IsExported:  true,
+										IsIsValider: true,
+									},
+								},
+							},
+							Tag:   tagutil.Tag{"is": []string{``}},
+							Rules: []*Rule{{Name: "isvalid"}},
+						}, {
+							Name: "f79", Key: "f79",
+							Type: Type{
+								Kind: TypeKindPtr,
+								Elem: &Type{
+									Kind:        TypeKindInterface,
+									IsIsValider: true,
+								},
+							},
+							Tag:   nil,
+							Rules: []*Rule{{Name: "isvalid"}},
 						}},
 					},
 				},

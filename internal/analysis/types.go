@@ -47,7 +47,7 @@ type (
 		IsExported bool
 		// The list of validation rules, as parsed from the struct's tag,
 		// that need to be applied to the field.
-		Rules []*RuleTag
+		Rules []*Rule
 	}
 
 	// StructFieldSelector is a list of fields that represents a chain of
@@ -71,6 +71,8 @@ type (
 		IsImported bool
 		// Indicates whether or not the field is exported.
 		IsExported bool
+		// Indicates that the type satisfies the IsValider interface.
+		IsIsValider bool
 		// If the base type's an array type, this field will hold the array's length.
 		ArrayLen int64
 		// Indicates whether or not the type is an empty interface type.
@@ -112,8 +114,8 @@ type (
 		Name string
 	}
 
-	// RuleTag holds the information parsed from a "rule" tag (`is:"{rule}"`).
-	RuleTag struct {
+	// Rule holds the information parsed from a "rule" tag (`is:"{rule}"`).
+	Rule struct {
 		// Name of the rule.
 		Name string
 		// The args of the rule.
@@ -140,12 +142,16 @@ type (
 		IsCustom() bool
 	}
 
-	// RuleBasic represents a rule that uses the basic comparison
-	// operators for carrying out its validation.
+	// RuleIsValid represents a rule that should produce the "f.IsValid()"
+	// method invocation for the field associated with the rule.
+	RuleIsValid struct{}
+
+	// RuleBasic represents a rule that should produce an expression using
+	// the basic comparison operators for carrying out its validation.
 	RuleBasic struct {
-		// Used for type-checking a rule's associated RuleTag and StructField.
+		// Used for type-checking a rule's associated Rule and StructField.
 		// For RuleBasic this field is expected to be non-nil.
-		check func(a *analysis, f *StructField, r *RuleTag) error
+		check func(a *analysis, f *StructField, r *Rule) error
 	}
 
 	// RuleFunc represents a rule that uses functions for carrying out its
@@ -171,12 +177,15 @@ type (
 		UseRawStrings bool
 
 		// Optional, used for additional function-specific type
-		// checking of the associated RuleTag and StructField.
-		check func(a *analysis, f *StructField, r *RuleTag) error
+		// checking of the associated Rule and StructField.
+		check func(a *analysis, f *StructField, r *Rule) error
 		// Indicates that this RuleFunc is a custom one.
 		iscustom bool
 	}
 )
+
+func (RuleIsValid) ruleSpec()      {}
+func (RuleIsValid) IsCustom() bool { return true }
 
 func (RuleBasic) ruleSpec()      {}
 func (RuleBasic) IsCustom() bool { return false }
@@ -273,12 +282,12 @@ func (t Type) NeedsConversion(u Type) bool {
 	return true
 }
 
-func (f *StructField) RulesCopy() []*RuleTag {
+func (f *StructField) RulesCopy() []*Rule {
 	if f.Rules == nil {
 		return nil
 	}
 
-	rules := make([]*RuleTag, len(f.Rules))
+	rules := make([]*Rule, len(f.Rules))
 	copy(rules, f.Rules)
 	return rules
 }

@@ -1,4 +1,3 @@
-// isvalid is a tool for generating struct field validation.
 package main
 
 import (
