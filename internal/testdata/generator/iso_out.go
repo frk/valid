@@ -12,19 +12,13 @@ func (v ISOValidator) Validate() error {
 	if !isvalid.ISO(v.F1, 1234) {
 		return errors.New("F1 must be a valid ISO: 1234")
 	}
-	if v.F2 != nil && *v.F2 != nil {
-		f := **v.F2
-		if !isvalid.ISO(f, 4321) {
-			return errors.New("F2 must be a valid ISO: 4321")
-		}
+	if v.F2 != nil && *v.F2 != nil && !isvalid.ISO(**v.F2, 4321) {
+		return errors.New("F2 must be a valid ISO: 4321")
 	}
 	if v.F3 == nil || *v.F3 == nil || len(**v.F3) == 0 {
 		return errors.New("F3 is required")
-	} else {
-		f := **v.F3
-		if !isvalid.ISO(f, 6) {
-			return errors.New("F3 must be a valid ISO: 6")
-		}
+	} else if !isvalid.ISO(**v.F3, 6) {
+		return errors.New("F3 must be a valid ISO: 6")
 	}
 	return nil
 }

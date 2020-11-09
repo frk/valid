@@ -18,19 +18,13 @@ func (v RegexpValidator) Validate() error {
 	if !isvalid.Match(v.F1, `foo`) {
 		return errors.New("F1 must match the regular expression: \"foo\"")
 	}
-	if v.F2 != nil {
-		f := *v.F2
-		if !isvalid.Match(f, `^[a-z]+\[[0-9]+\]$`) {
-			return errors.New("F2 must match the regular expression: \"^[a-z]+\\\\[[0-9]+\\\\]$\"")
-		}
+	if v.F2 != nil && !isvalid.Match(*v.F2, `^[a-z]+\[[0-9]+\]$`) {
+		return errors.New("F2 must match the regular expression: \"^[a-z]+\\\\[[0-9]+\\\\]$\"")
 	}
 	if v.F3 == nil || *v.F3 == nil || len(**v.F3) == 0 {
 		return errors.New("F3 is required")
-	} else {
-		f := **v.F3
-		if !isvalid.Match(f, `\w+`) {
-			return errors.New("F3 must match the regular expression: \"\\\\w+\"")
-		}
+	} else if !isvalid.Match(**v.F3, `\w+`) {
+		return errors.New("F3 must match the regular expression: \"\\\\w+\"")
 	}
 	return nil
 }

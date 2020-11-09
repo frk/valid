@@ -10,25 +10,16 @@ func (v EqualsValidator) Validate() error {
 	if v.F1 != "foo" {
 		return errors.New("F1 must be equal to: \"foo\"")
 	}
-	if v.F2 != nil {
-		f := *v.F2
-		if f != 123 && f != 0 && f != 321 {
-			return errors.New("F2 must be equal to: 123 or 0 or 321")
-		}
+	if v.F2 != nil && *v.F2 != 123 && *v.F2 != 0 && *v.F2 != 321 {
+		return errors.New("F2 must be equal to: 123 or 0 or 321")
 	}
 	if v.F3 == nil || *v.F3 == nil || **v.F3 == nil {
 		return errors.New("F3 is required")
-	} else {
-		f := **v.F3
-		if f != "foo" && f != 123 && f != false && f != 3.14 {
-			return errors.New("F3 must be equal to: \"foo\" or 123 or false or 3.14")
-		}
+	} else if **v.F3 != "foo" && **v.F3 != 123 && **v.F3 != false && **v.F3 != 3.14 {
+		return errors.New("F3 must be equal to: \"foo\" or 123 or false or 3.14")
 	}
-	if v.F4 != nil && *v.F4 != nil && **v.F4 != nil {
-		f := **v.F4
-		if f != "foo" && f != 123 && f != false && f != 3.14 {
-			return errors.New("F4 must be equal to: \"foo\" or 123 or false or 3.14")
-		}
+	if v.F4 != nil && *v.F4 != nil && **v.F4 != "foo" && **v.F4 != 123 && **v.F4 != false && **v.F4 != 3.14 {
+		return errors.New("F4 must be equal to: \"foo\" or 123 or false or 3.14")
 	}
 	return nil
 }

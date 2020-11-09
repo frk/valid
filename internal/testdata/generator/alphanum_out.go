@@ -12,19 +12,13 @@ func (v AlphanumValidator) Validate() error {
 	if !isvalid.Alphanum(v.F1) {
 		return errors.New("F1 must be an alphanumeric string")
 	}
-	if v.F2 != nil && *v.F2 != nil {
-		f := **v.F2
-		if !isvalid.Alphanum(f) {
-			return errors.New("F2 must be an alphanumeric string")
-		}
+	if v.F2 != nil && *v.F2 != nil && !isvalid.Alphanum(**v.F2) {
+		return errors.New("F2 must be an alphanumeric string")
 	}
 	if v.F3 == nil || *v.F3 == nil || len(**v.F3) == 0 {
 		return errors.New("F3 is required")
-	} else {
-		f := **v.F3
-		if !isvalid.Alphanum(f) {
-			return errors.New("F3 must be an alphanumeric string")
-		}
+	} else if !isvalid.Alphanum(**v.F3) {
+		return errors.New("F3 must be an alphanumeric string")
 	}
 	return nil
 }

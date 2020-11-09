@@ -17,13 +17,10 @@ func (v EnumValidator) Validate() error {
 	}
 	if v.F3 == nil || *v.F3 == nil || len(**v.F3) == 0 {
 		return errors.New("F3 is required")
-	} else {
-		f := **v.F3
-		if len(f) != 3 {
-			return errors.New("F3 must be of length: 3")
-		} else if f != gibfoo && f != gibbar && f != gibbaz && f != gibquux {
-			return errors.New("F3 is not valid")
-		}
+	} else if len(**v.F3) != 3 {
+		return errors.New("F3 must be of length: 3")
+	} else if **v.F3 != gibfoo && **v.F3 != gibbar && **v.F3 != gibbaz && **v.F3 != gibquux {
+		return errors.New("F3 is not valid")
 	}
 	return nil
 }

@@ -12,19 +12,13 @@ func (v EmailValidator) Validate() error {
 	if !isvalid.Email(v.F1) {
 		return errors.New("F1 must be a valid email")
 	}
-	if v.F2 != nil && *v.F2 != nil {
-		f := **v.F2
-		if !isvalid.Email(f) {
-			return errors.New("F2 must be a valid email")
-		}
+	if v.F2 != nil && *v.F2 != nil && !isvalid.Email(**v.F2) {
+		return errors.New("F2 must be a valid email")
 	}
 	if v.F3 == nil || *v.F3 == nil || len(**v.F3) == 0 {
 		return errors.New("F3 is required")
-	} else {
-		f := **v.F3
-		if !isvalid.Email(f) {
-			return errors.New("F3 must be a valid email")
-		}
+	} else if !isvalid.Email(**v.F3) {
+		return errors.New("F3 must be a valid email")
 	}
 	return nil
 }

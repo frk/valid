@@ -14,11 +14,8 @@ func (v ReferencesValidator) Validate() error {
 	if len(v.F1) > v.Max {
 		return fmt.Errorf("F1 must be of length at most: %v", v.Max)
 	}
-	if v.F2 != nil {
-		f := *v.F2
-		if f < v.Min || f > v.Max {
-			return fmt.Errorf("F2 must be between: %v and %v", v.Min, v.Max)
-		}
+	if v.F2 != nil && (*v.F2 < v.Min || *v.F2 > v.Max) {
+		return fmt.Errorf("F2 must be between: %v and %v", v.Min, v.Max)
 	}
 	if !isvalid.Phone(v.F3, v.SomeValue, "us", "jp") {
 		return errors.New("F3 must be a valid phone number")
@@ -33,11 +30,8 @@ func (v References2Validator) Validate() error {
 	if len(v.F1) > v.Max {
 		return v.ec.Error("F1", v.F1, "len", "", v.Max)
 	}
-	if v.F2 != nil {
-		f := *v.F2
-		if f < v.Min || f > v.Max {
-			return v.ec.Error("F2", f, "rng", v.Min, v.Max)
-		}
+	if v.F2 != nil && (*v.F2 < v.Min || *v.F2 > v.Max) {
+		return v.ec.Error("F2", *v.F2, "rng", v.Min, v.Max)
 	}
 	if !isvalid.Phone(v.F3, "us", "jp", v.SomeValue) {
 		return v.ec.Error("F3", v.F3, "phone", "us", "jp", v.SomeValue)
@@ -52,11 +46,8 @@ func (v References3Validator) Validate() error {
 	if len(v.F1) > v.Max {
 		v.ea.Error("F1", v.F1, "len", "", v.Max)
 	}
-	if v.F2 != nil {
-		f := *v.F2
-		if f < v.Min || f > v.Max {
-			v.ea.Error("F2", f, "rng", v.Min, v.Max)
-		}
+	if v.F2 != nil && (*v.F2 < v.Min || *v.F2 > v.Max) {
+		v.ea.Error("F2", *v.F2, "rng", v.Min, v.Max)
 	}
 	if !isvalid.Phone(v.F3, "us", v.SomeValue, "jp") {
 		v.ea.Error("F3", v.F3, "phone", "us", v.SomeValue, "jp")

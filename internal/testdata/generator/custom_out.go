@@ -12,17 +12,11 @@ func (v CustomValidator) Validate() error {
 	if !mypkg.MyRule(v.F1) {
 		return errors.New("F1 is not valid")
 	}
-	if v.F2 != nil {
-		f := *v.F2
-		if !mypkg.MyRule2(f) {
-			return errors.New("F2 is not valid")
-		}
+	if v.F2 != nil && !mypkg.MyRule2(*v.F2) {
+		return errors.New("F2 is not valid")
 	}
-	if v.F3 != nil && *v.F3 != nil {
-		f := **v.F3
-		if !mypkg.MyRule2(f, "foo", "bar", "baz") {
-			return errors.New("F3 is not valid")
-		}
+	if v.F3 != nil && *v.F3 != nil && !mypkg.MyRule2(**v.F3, "foo", "bar", "baz") {
+		return errors.New("F3 is not valid")
 	}
 	if !mypkg.MyRule3(v.F4, 123, 32.54, "foo", true) {
 		return errors.New("F4 is not valid")

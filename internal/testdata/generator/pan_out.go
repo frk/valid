@@ -12,19 +12,13 @@ func (v PANValidator) Validate() error {
 	if !isvalid.PAN(v.F1) {
 		return errors.New("F1 must be a valid PAN")
 	}
-	if v.F2 != nil && *v.F2 != nil {
-		f := **v.F2
-		if !isvalid.PAN(f) {
-			return errors.New("F2 must be a valid PAN")
-		}
+	if v.F2 != nil && *v.F2 != nil && !isvalid.PAN(**v.F2) {
+		return errors.New("F2 must be a valid PAN")
 	}
 	if v.F3 == nil || *v.F3 == nil || len(**v.F3) == 0 {
 		return errors.New("F3 is required")
-	} else {
-		f := **v.F3
-		if !isvalid.PAN(f) {
-			return errors.New("F3 must be a valid PAN")
-		}
+	} else if !isvalid.PAN(**v.F3) {
+		return errors.New("F3 must be a valid PAN")
 	}
 	return nil
 }

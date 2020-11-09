@@ -11,19 +11,13 @@ func (v ContainsValidator) Validate() error {
 	if !strings.Contains(v.F1, "foo") {
 		return errors.New("F1 must contain substring: \"foo\"")
 	}
-	if v.F2 != nil {
-		f := *v.F2
-		if !strings.Contains(f, "bar") {
-			return errors.New("F2 must contain substring: \"bar\"")
-		}
+	if v.F2 != nil && !strings.Contains(*v.F2, "bar") {
+		return errors.New("F2 must contain substring: \"bar\"")
 	}
 	if v.F3 == nil || *v.F3 == nil || len(**v.F3) == 0 {
 		return errors.New("F3 is required")
-	} else {
-		f := **v.F3
-		if !strings.Contains(f, "foo") && !strings.Contains(f, "bar") && !strings.Contains(f, "baz") {
-			return errors.New("F3 must contain substring: \"foo\" or \"bar\" or \"baz\"")
-		}
+	} else if !strings.Contains(**v.F3, "foo") && !strings.Contains(**v.F3, "bar") && !strings.Contains(**v.F3, "baz") {
+		return errors.New("F3 must contain substring: \"foo\" or \"bar\" or \"baz\"")
 	}
 	return nil
 }

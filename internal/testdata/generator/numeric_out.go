@@ -12,19 +12,13 @@ func (v NumericValidator) Validate() error {
 	if !isvalid.Numeric(v.F1) {
 		return errors.New("F1 must contain only digits [0-9]")
 	}
-	if v.F2 != nil && *v.F2 != nil {
-		f := **v.F2
-		if !isvalid.Numeric(f) {
-			return errors.New("F2 must contain only digits [0-9]")
-		}
+	if v.F2 != nil && *v.F2 != nil && !isvalid.Numeric(**v.F2) {
+		return errors.New("F2 must contain only digits [0-9]")
 	}
 	if v.F3 == nil || *v.F3 == nil || len(**v.F3) == 0 {
 		return errors.New("F3 is required")
-	} else {
-		f := **v.F3
-		if !isvalid.Numeric(f) {
-			return errors.New("F3 must contain only digits [0-9]")
-		}
+	} else if !isvalid.Numeric(**v.F3) {
+		return errors.New("F3 must contain only digits [0-9]")
 	}
 	return nil
 }

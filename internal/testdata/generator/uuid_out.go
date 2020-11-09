@@ -12,19 +12,13 @@ func (v UUIDValidator) Validate() error {
 	if !isvalid.UUID(v.F1) {
 		return errors.New("F1 must be a valid UUID")
 	}
-	if v.F2 != nil && *v.F2 != nil {
-		f := **v.F2
-		if !isvalid.UUID(f, 4) {
-			return errors.New("F2 must be a valid UUID")
-		}
+	if v.F2 != nil && *v.F2 != nil && !isvalid.UUID(**v.F2, 4) {
+		return errors.New("F2 must be a valid UUID")
 	}
 	if v.F3 == nil || *v.F3 == nil || len(**v.F3) == 0 {
 		return errors.New("F3 is required")
-	} else {
-		f := **v.F3
-		if !isvalid.UUID(f, 3, 1, 5) {
-			return errors.New("F3 must be a valid UUID")
-		}
+	} else if !isvalid.UUID(**v.F3, 3, 1, 5) {
+		return errors.New("F3 must be a valid UUID")
 	}
 	return nil
 }

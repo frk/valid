@@ -12,17 +12,11 @@ func (v IsValiderValidator) Validate() error {
 	} else if !v.F1.IsValid() {
 		return errors.New("F1 is not valid")
 	}
-	if v.F2 != nil && *v.F2 != nil && **v.F2 != nil {
-		f := ***v.F2
-		if !f.IsValid() {
-			return errors.New("F2 is not valid")
-		}
+	if v.F2 != nil && *v.F2 != nil && **v.F2 != nil && !(***v.F2).IsValid() {
+		return errors.New("F2 is not valid")
 	}
-	if v.F3 != nil && *v.F3 != nil {
-		f := *v.F3
-		if !f.IsValid() {
-			return errors.New("F3 is not valid")
-		}
+	if v.F3 != nil && !(*v.F3).IsValid() {
+		return errors.New("F3 is not valid")
 	}
 	return nil
 }

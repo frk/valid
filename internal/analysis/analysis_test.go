@@ -2127,8 +2127,8 @@ func TestAnalysisRun(t *testing.T) {
 			BeforeValidate: &MethodInfo{Name: "beforevalidate"},
 			AfterValidate:  &MethodInfo{Name: "AfterValidate"},
 			Fields: []*StructField{{
-				Name: "UserInput",
-				Tag:  tagutil.Tag{"isvalid": []string{"omitkey"}},
+				Name: "UserInput", MaxFieldDepth: 2,
+				Tag: tagutil.Tag{"isvalid": []string{"omitkey"}},
 				Type: Type{
 					Kind: TypeKindPtr,
 					Elem: &Type{
@@ -2646,7 +2646,7 @@ func TestAnalysisRun(t *testing.T) {
 								{Value: "", Type: ArgTypeUnknown}}},
 							},
 						}, {
-							Name: "g1", Key: "g1",
+							Name: "g1", Key: "g1", MaxFieldDepth: 1,
 							IsExported: false,
 							Type: Type{Kind: TypeKindStruct,
 								Fields: []*StructField{{
@@ -2811,6 +2811,74 @@ func TestAnalysisRun(t *testing.T) {
 							},
 							Tag:   tagutil.Tag{"is": []string{`enum:@create`}},
 							Rules: []*Rule{{Name: "enum", Context: "create"}},
+						}, {
+							Name: "f84", Key: "f84",
+							Type: Type{
+								Kind: TypeKindSlice,
+								Elem: &Type{Kind: TypeKindString},
+							},
+							Tag:   tagutil.Tag{"is": []string{`[]email`}},
+							Rules: []*Rule{{Elem: &Rule{Name: "email"}}},
+						}, {
+							Name: "f85", Key: "f85",
+							Type: Type{
+								Kind: TypeKindMap,
+								Key:  &Type{Kind: TypeKindString},
+								Elem: &Type{Kind: TypeKindString},
+							},
+							Tag:   tagutil.Tag{"is": []string{`[email]`}},
+							Rules: []*Rule{{Key: &Rule{Name: "email"}}},
+						}, {
+							Name: "f86", Key: "f86",
+							Type: Type{
+								Kind: TypeKindMap,
+								Key:  &Type{Kind: TypeKindString},
+								Elem: &Type{Kind: TypeKindString},
+							},
+							Tag: tagutil.Tag{"is": []string{`[phone:us:ca]zip:ca:us`}},
+							Rules: []*Rule{{
+								Key: &Rule{Name: "phone", Args: []*RuleArg{
+									{Value: "us", Type: ArgTypeString},
+									{Value: "ca", Type: ArgTypeString},
+								}},
+								Elem: &Rule{Name: "zip", Args: []*RuleArg{
+									{Value: "ca", Type: ArgTypeString},
+									{Value: "us", Type: ArgTypeString},
+								}},
+							}},
+						}, {
+							Name: "f87", Key: "f87", MaxFieldDepth: 1,
+							Type: Type{
+								Kind: TypeKindMap,
+								Key:  &Type{Kind: TypeKindString},
+								Elem: &Type{Kind: TypeKindPtr, Elem: &Type{
+									Kind: TypeKindStruct,
+									Fields: []*StructField{{
+										Name: "f1", Key: "f87.f1",
+										Type: Type{Kind: TypeKindString},
+										Tag:  tagutil.Tag{"is": []string{`len:2:32`}},
+										Rules: []*Rule{{Name: "len", Args: []*RuleArg{
+											{Value: "2", Type: ArgTypeInt},
+											{Value: "32", Type: ArgTypeInt},
+										}}},
+									}, {
+										Name: "f2", Key: "f87.f2",
+										Type: Type{Kind: TypeKindString},
+										Tag:  tagutil.Tag{"is": []string{`len:2:32`}},
+										Rules: []*Rule{{Name: "len", Args: []*RuleArg{
+											{Value: "2", Type: ArgTypeInt},
+											{Value: "32", Type: ArgTypeInt},
+										}}},
+									}, {
+										Name: "f3", Key: "f87.f3",
+										Type:  Type{Kind: TypeKindString},
+										Tag:   tagutil.Tag{"is": []string{`phone`}},
+										Rules: []*Rule{{Name: "phone"}},
+									}},
+								}},
+							},
+							Tag:   tagutil.Tag{"is": []string{`[email]`}},
+							Rules: []*Rule{{Key: &Rule{Name: "email"}}},
 						}},
 					},
 				},
@@ -2876,6 +2944,46 @@ func TestAnalysisRun(t *testing.T) {
 
 			if tt.printerr && err != nil {
 				fmt.Println(err)
+			}
+		})
+	}
+}
+
+func TestContainsRules(t *testing.T) {
+	tests := []struct {
+		name string
+	}{
+		{name: "ContainsRulesTest1Validator"},
+		{name: "ContainsRulesTest2Validator"},
+		{name: "ContainsRulesTest3Validator"},
+		{name: "ContainsRulesTest4Validator"},
+		{name: "ContainsRulesTest5Validator"},
+	}
+
+	anConf := Config{FieldKeySeparator: "."}
+	pkgs, err := parser.Parse("../testdata/containsrules", false, nil, &anConf.AST)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkg := pkgs[0]
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			target := lookupTarget(tt.name, pkg, t)
+			vs, err := anConf.Analyze(pkg.Fset, target.Named, target.Pos, &Info{})
+			if err != nil {
+				t.Errorf("Error: %v", err)
+			} else if len(vs.Fields) != 2 {
+				t.Errorf("Bad number of fields: want=2 got=%d", len(vs.Fields))
+			} else {
+				for _, f := range vs.Fields {
+					if f.Name == "yes" && !f.ContainsRules() {
+						t.Errorf("%q does not contain rules.", f.Name)
+					}
+					if f.Name == "no" && f.ContainsRules() {
+						t.Errorf("%q does contain rules.", f.Name)
+					}
+				}
 			}
 		})
 	}

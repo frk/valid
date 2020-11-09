@@ -84,7 +84,7 @@ const (
 	errTypeNil
 	errTypeLength
 	errTypeNumeric
-	errTypeKindString
+	errTypeKind
 	errFieldKeyUnknown
 	errFieldKeyConflict
 	errErrorHandlerFieldConflict
@@ -233,11 +233,6 @@ var error_template_string = `
 
 {{ define "` + errTypeNumeric.name() + `" -}}
 {{Wb .FileAndLine}}: {{Y "Field type is not numeric."}}
-	TODO {{R .FieldName}}
-{{ end }}
-
-{{ define "` + errTypeKindString.name() + `" -}}
-{{Wb .FileAndLine}}: {{Y "Field type is not string"}}
 	TODO {{R .FieldName}}
 {{ end }}
 

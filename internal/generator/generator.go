@@ -59,6 +59,7 @@ type generator struct {
 	// The generated Validation method's receiver
 	recv GO.Ident
 
+	fragments      []*fragment
 	beforeValidate GO.StmtNode
 	afterValidate  GO.StmtNode
 }
@@ -97,20 +98,26 @@ func Generate(w io.Writer, pkgName string, targets []*TargetInfo) error {
 	return GO.Write(file.File, w)
 }
 
+// set of common nodes
+var (
+	ERR   = GO.Ident{"err"}
+	NIL   = GO.Ident{"nil"}
+	ERROR = GO.Ident{"error"}
+)
+
 // Builds the "Validate() error" method for the target validator struct.
 func buildMethodValidate(g *generator) {
 	g.recv = GO.Ident{"v"}
 	prepareHookCalls(g)
-
-	prepareRuleArgFieldSelectors(g, g.vs.Fields)
+	prepareFragments(g)
 
 	body := []GO.StmtNode{}
 	if g.beforeValidate != nil {
 		body = append(body, g.beforeValidate)
 	}
-	for _, f := range g.vs.Fields {
-		buildFieldCode(g, f, g.recv, &body)
-	}
+
+	buildFragments(g, &body)
+
 	if g.afterValidate != nil {
 		body = append(body, g.afterValidate)
 	}
@@ -121,7 +128,7 @@ func buildMethodValidate(g *generator) {
 	method.Recv.Name = g.recv
 	method.Recv.Type = GO.Ident{g.vs.TypeName}
 	method.Name.Name = "Validate"
-	method.Type.Results = GO.ParamList{{Type: GO.Ident{"error"}}}
+	method.Type.Results = GO.ParamList{{Type: ERROR}}
 	method.Body.List = body
 
 	g.file.Decls = append(g.file.Decls, method)
@@ -129,9 +136,6 @@ func buildMethodValidate(g *generator) {
 
 func prepareHookCalls(g *generator) {
 	if g.vs.BeforeValidate != nil {
-		var ERR = GO.Ident{"err"}
-		var NIL = GO.Ident{"nil"}
-
 		name := g.vs.BeforeValidate.Name
 		call := GO.CallExpr{Fun: GO.QualifiedIdent{g.recv.Name, name}}
 		assign := GO.AssignStmt{Token: GO.AssignDefine, Lhs: ERR, Rhs: call}
@@ -141,9 +145,6 @@ func prepareHookCalls(g *generator) {
 	}
 
 	if g.vs.AfterValidate != nil {
-		var ERR = GO.Ident{"err"}
-		var NIL = GO.Ident{"nil"}
-
 		name := g.vs.AfterValidate.Name
 		call := GO.CallExpr{Fun: GO.QualifiedIdent{g.recv.Name, name}}
 		assign := GO.AssignStmt{Token: GO.AssignDefine, Lhs: ERR, Rhs: call}
@@ -153,246 +154,395 @@ func prepareHookCalls(g *generator) {
 	}
 }
 
-// prepares expressions for ...
-// TODO
-// - arg.Value -> <selector-field-expression>
-// - slice of "protective" expressions that check for nil pointers
-//	- the pointer dereferencing & field selector combo will be set as the <selector-field-expression>
-//	- if more than one pointer depth and/or one field depth, assign the base as the <selector-field-expression>
-// NOTE - need to keep track if <selector-field-expression> can or cannot be nil
-//	- if yes, then before it is used in the expression of a RULE, it needs to be checked against nil
-func prepareRuleArgFieldSelectors(g *generator, fields []*analysis.StructField) {
-	for _, f := range fields {
-		for _, r := range f.Rules {
-			for _, a := range r.Args {
-				if a.Type == analysis.ArgTypeField {
-					// a.Value == is the unique key
-					// a.Selector
-				}
-			}
+type fragment struct {
+	// The field for which the code is being prepared.
+	f *analysis.StructField
+	// The current value's type.
+	typ analysis.Type
+	// Set if the field's rule set contains "required", otherwise nil.
+	required *analysis.Rule
+	// Set if the field's rule set contains "notnil", otherwise nil.
+	notnil *analysis.Rule
+	// Holds the rest of the rules that should be applied directly to the current value.
+	rules []*analysis.Rule
+	// Set if the field's type is a map.
+	key *fragment
+	// Set if the field's type is a map, slice, or an array.
+	elem *fragment
+	// Populated if field's type is a struct.
+	fields []*fragment
+
+	// The current value's expression.
+	x GO.ExprNode
+	// nil guard
+	ng GO.ExprNode
+	// sub-block
+	sb []GO.StmtNode
+	// required rule
+	ifrq *GO.IfStmt
+	// notnil rule
+	ifnn *GO.IfStmt
+	// base rules
+	ifbase []GO.IfStmt
+	// key-elem rules
+	ifkeyelem []GO.IfStmt
+}
+
+func prepareFragments(g *generator) {
+	for _, f := range g.vs.Fields {
+		if !f.ContainsRules() {
+			continue
 		}
 
-		// If this fields is a struct, or a pointer(s) to a struct, descend.
-		if t := f.Type.PtrBase(); t.Kind == analysis.TypeKindStruct {
-			prepareRuleArgFieldSelectors(g, t.Fields)
+		expr := GO.SelectorExpr{X: g.recv, Sel: GO.Ident{f.Name}}
+		frag := &fragment{f: f, typ: f.Type, x: expr}
+
+		prepareFragment(g, frag, f.Rules)
+		g.fragments = append(g.fragments, frag)
+	}
+}
+
+func prepareFragment(g *generator, frag *fragment, rules []*analysis.Rule) {
+	// first split rules:
+	var keyrules []*analysis.Rule
+	var elemrules []*analysis.Rule
+	for _, r := range rules {
+		if r.Name == "required" {
+			frag.required = r
+		} else if r.Name == "notnil" {
+			frag.notnil = r
+		} else if r.Key == nil && r.Elem == nil {
+			frag.rules = append(frag.rules, r)
+		} else {
+			if r.Key != nil {
+				keyrules = append(keyrules, r.Key)
+			}
+			if r.Elem != nil {
+				elemrules = append(elemrules, r.Elem)
+			}
+		}
+	}
+
+	prepareFragmentNilGuard(g, frag)
+	prepareFieldRequired(g, frag)
+	prepareFieldNotnil(g, frag)
+	prepareFieldSubBlock(g, frag)
+	prepareFieldBaseRules(g, frag)
+
+	switch frag.typ.Kind {
+	case analysis.TypeKindSlice, analysis.TypeKindArray:
+		if len(elemrules) > 0 {
+			expr := GO.Ident{"e"}
+			elem := &fragment{f: frag.f, typ: *frag.typ.Elem, x: expr}
+			prepareFragment(g, elem, elemrules)
+			frag.elem = elem
+		}
+	case analysis.TypeKindMap:
+		if len(keyrules) > 0 {
+			expr := GO.Ident{"k"}
+			key := &fragment{f: frag.f, typ: *frag.typ.Key, x: expr}
+			prepareFragment(g, key, keyrules)
+			frag.key = key
+		}
+		if len(elemrules) > 0 {
+			expr := GO.Ident{"e"}
+			elem := &fragment{f: frag.f, typ: *frag.typ.Elem, x: expr}
+			prepareFragment(g, elem, elemrules)
+			frag.elem = elem
+		}
+	case analysis.TypeKindStruct:
+		for _, f := range frag.typ.Fields {
+			if !f.ContainsRules() {
+				continue
+			}
+
+			expr := GO.SelectorExpr{X: frag.x, Sel: GO.Ident{f.Name}}
+			next := &fragment{f: f, typ: f.Type, x: expr}
+
+			prepareFragment(g, next, f.Rules)
+			frag.fields = append(frag.fields, next)
+
 		}
 	}
 }
 
-func buildFieldCode(g *generator, field *analysis.StructField, root GO.ExprNode, body *[]GO.StmtNode) {
-	rules := field.RulesCopy()
-	subfields := field.SubFields()
-	if len(rules) == 0 && len(subfields) == 0 { // nothing to do?
-		return
+func prepareFragmentNilGuard(g *generator, frag *fragment) {
+	if frag.typ.Kind != analysis.TypeKindPtr {
+		return // nothing to do
 	}
 
-	fieldExpr := GO.ExprNode(GO.SelectorExpr{X: root, Sel: GO.Ident{field.Name}})
-
-	// special case: no if-stmt necessary for this field, but possibly subfields
-	if field.Type.Kind != analysis.TypeKindPtr && len(rules) == 0 && len(subfields) > 0 {
-		root := GO.Ident{"f"}
-		block := []GO.StmtNode{}
-		for _, f := range subfields {
-			buildFieldCode(g, f, root, &block)
-		}
-
-		if len(block) > 0 {
-			assign := GO.AssignStmt{Token: GO.AssignDefine, Lhs: root, Rhs: fieldExpr}
-			block = append([]GO.StmtNode{assign}, block...)
-
-			*body = append(*body, GO.BlockStmt{block})
-		}
-		return
+	// logical op, and equality op
+	lop, eop := GO.BinaryLAnd, GO.BinaryNeq
+	if frag.required != nil || frag.notnil != nil {
+		lop, eop = GO.BinaryLOr, GO.BinaryEql
 	}
 
-	var required, notnil *analysis.Rule
-	for i := 0; i < len(rules); i++ {
-		if r := rules[i]; r.Name == "required" || r.Name == "notnil" {
-			if r.Name == "required" {
-				required = r
-			} else if r.Name == "notnil" {
-				notnil = r
-			}
+	cond := GO.BinaryExpr{Op: eop, X: frag.x, Y: NIL}
+	frag.x = GO.PointerIndirectionExpr{frag.x}
+	frag.typ = *frag.typ.Elem
 
-			// delete (from https://github.com/golang/go/wiki/SliceTricks)
-			copy(rules[i:], rules[i+1:])
-			rules[len(rules)-1] = nil
-			rules = rules[:len(rules)-1]
+	// handle multiple pointers
+	for frag.typ.Kind == analysis.TypeKindPtr {
+		binx := GO.BinaryExpr{Op: eop, X: frag.x, Y: NIL}
 
-		}
+		cond = GO.BinaryExpr{Op: lop, X: cond, Y: binx}
+		frag.x = GO.PointerIndirectionExpr{frag.x}
+		frag.typ = *frag.typ.Elem
 	}
 
-	mainIf := GO.IfStmt{}
-	nilId := GO.Ident{"nil"}
-	fieldType := field.Type
-	ruleElseIf := (fieldType.Kind != analysis.TypeKindPtr && len(subfields) == 0)
+	frag.ng = cond
+}
 
-	if fieldType.Kind == analysis.TypeKindPtr || fieldType.Kind == analysis.TypeKindInterface {
-		// logical op, and equality op
-		lop, eop := GO.BinaryLAnd, GO.BinaryNeq
-		if required != nil || notnil != nil {
-			lop, eop = GO.BinaryLOr, GO.BinaryEql
-		}
-
-		mainIf.Cond = GO.BinaryExpr{Op: eop, X: fieldExpr, Y: nilId}
-		fieldExpr = GO.PointerIndirectionExpr{fieldExpr}
-		fieldType = *fieldType.Elem
-
-		// handle multiple pointers
-		for fieldType.Kind == analysis.TypeKindPtr {
-			mainIf.Cond = GO.BinaryExpr{Op: lop, X: mainIf.Cond, Y: GO.BinaryExpr{Op: eop, X: fieldExpr, Y: nilId}}
-			fieldExpr = GO.PointerIndirectionExpr{fieldExpr}
-			fieldType = *fieldType.Elem
-		}
+func prepareFieldRequired(g *generator, frag *fragment) {
+	if frag.required == nil {
+		return // nothing to do
 	}
 
-	if fieldType.Kind == analysis.TypeKindInterface && required == nil && notnil == nil {
-		if mainIf.Cond != nil {
-			mainIf.Cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: mainIf.Cond, Y: GO.BinaryExpr{Op: GO.BinaryNeq, X: fieldExpr, Y: nilId}}
-		} else {
-			mainIf.Cond = GO.BinaryExpr{Op: GO.BinaryNeq, X: fieldExpr, Y: nilId}
-		}
+	cond := newExprForRequired(g, frag)
+	if cond != nil && frag.ng != nil {
+		cond = GO.BinaryExpr{Op: GO.BinaryLOr, X: frag.ng, Y: cond}
+	} else if frag.ng != nil {
+		cond = frag.ng
 	}
 
-	if required != nil || notnil != nil {
-		var ruleExpr GO.ExprNode
-		var retStmt GO.StmtNode
-		var context string
-		if required != nil {
-			ruleExpr = newExprForRequired(g, fieldType.Kind, fieldExpr)
-			retStmt = newReturnStmtForError(g, required, field, fieldExpr)
-			context = required.Context
-		} else if notnil != nil {
-			ruleExpr = newExprForNotnil(g, fieldType.Kind, fieldExpr)
-			retStmt = newReturnStmtForError(g, notnil, field, fieldExpr)
-			context = notnil.Context
-		}
+	if len(frag.required.Context) > 0 {
+		opt := GO.SelectorExpr{X: g.recv, Sel: GO.Ident{g.vs.ContextOption.Name}}
+		bin := GO.BinaryExpr{Op: GO.BinaryEql, X: opt, Y: GO.StringLit(frag.required.Context)}
+		cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: cond, Y: bin}
+	}
 
-		// context
-		if len(context) > 0 {
+	frag.ifrq = &GO.IfStmt{Cond: cond}
+	frag.ifrq.Body.Add(newReturnStmtForError(g, frag, frag.required))
+}
+
+func prepareFieldNotnil(g *generator, frag *fragment) {
+	if frag.notnil == nil {
+		return // nothing to do
+	}
+
+	cond := newExprForNotnil(g, frag)
+	if cond != nil && frag.ng != nil {
+		cond = GO.BinaryExpr{Op: GO.BinaryLOr, X: frag.ng, Y: cond}
+	} else if frag.ng != nil {
+		cond = frag.ng
+	}
+
+	if len(frag.notnil.Context) > 0 {
+		opt := GO.SelectorExpr{X: g.recv, Sel: GO.Ident{g.vs.ContextOption.Name}}
+		bin := GO.BinaryExpr{Op: GO.BinaryEql, X: opt, Y: GO.StringLit(frag.notnil.Context)}
+		cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: cond, Y: bin}
+	}
+
+	frag.ifnn = &GO.IfStmt{Cond: cond}
+	frag.ifnn.Body.Add(newReturnStmtForError(g, frag, frag.notnil))
+}
+
+func prepareFieldSubBlock(g *generator, frag *fragment) {
+	// no nil-guard and the deepest nested field is less than 2 nodes away
+	// TODO MaxFieldDepth is atm uninterrupted, i.e. it doesn't care
+	// if there are pointers, slices, maps etc. between the fields's types.
+	// This needs to be update to stop the depth count at those types.
+	if frag.ng == nil && frag.f.MaxFieldDepth < 2 {
+		return // nothing to do
+	}
+
+	// no subfields and there's a "notnil" or "required" rule then we do not
+	// need a sub-block, instead we want to chain the "notnil"/"required" IfStmt
+	// with the IfStmt produced from ifbase.
+	if len(frag.typ.Fields) == 0 && (frag.ifnn != nil || frag.ifrq != nil) {
+		return // nothing to do
+	}
+
+	// no subfields and there's at most 1 rule, no sub-block
+	if len(frag.typ.Fields) == 0 && len(frag.rules) < 2 {
+		return // nothing to do
+	}
+
+	v := GO.Ident{"f"}
+	a := GO.AssignStmt{Token: GO.AssignDefine, Lhs: v, Rhs: frag.x}
+
+	frag.x = v
+	frag.sb = append(frag.sb, a)
+}
+
+func prepareFieldBaseRules(g *generator, frag *fragment) {
+	for _, r := range frag.rules {
+		ifs := newIfStmt(g, frag, r)
+		if len(r.Context) > 0 {
 			opt := GO.SelectorExpr{X: g.recv, Sel: GO.Ident{g.vs.ContextOption.Name}}
-			bin := GO.BinaryExpr{Op: GO.BinaryEql, X: opt, Y: GO.StringLit(context)}
-			ruleExpr = GO.BinaryExpr{Op: GO.BinaryLAnd, X: ruleExpr, Y: bin}
+			bin := GO.BinaryExpr{Op: GO.BinaryEql, X: opt, Y: GO.StringLit(r.Context)}
+			ifs.Cond = GO.ParenExpr{GO.BinaryExpr{Op: GO.BinaryLAnd, X: ifs.Cond, Y: bin}}
 		}
 
-		if ruleExpr != nil {
-			if mainIf.Cond != nil {
-				mainIf.Cond = GO.BinaryExpr{Op: GO.BinaryLOr, X: mainIf.Cond, Y: ruleExpr}
-			} else {
-				mainIf.Cond = ruleExpr
-			}
-		}
+		frag.ifbase = append(frag.ifbase, ifs)
+	}
+}
 
-		if retStmt != nil {
-			mainIf.Body.Add(retStmt)
+func buildFragments(g *generator, body *[]GO.StmtNode) {
+	for _, f := range g.fragments {
+		if s := buildFragmentStmtNode(g, f); s != nil {
+			*body = append(*body, s)
 		}
 	}
+}
 
-	if len(rules) > 0 || len(subfields) > 0 {
-		block := []GO.StmtNode{}
-		if mainIf.Cond != nil && !ruleElseIf {
-			fieldVar := GO.Ident{"f"}
-			assign := GO.AssignStmt{Token: GO.AssignDefine, Lhs: fieldVar, Rhs: fieldExpr}
-			block = append(block, assign)
+func buildFragmentStmtNode(g *generator, frag *fragment) GO.StmtNode {
+	// block for subfields
+	var stmtlist GO.StmtList
+	for _, f := range frag.fields {
+		if s := buildFragmentStmtNode(g, f); s != nil {
+			stmtlist = append(stmtlist, s)
+		}
+	}
+	if len(stmtlist) > 0 {
+		return buildFieldSubBlock(g, frag, stmtlist)
+	}
 
-			fieldExpr = fieldVar
+	// ifstmt for base rules
+	ifs := buildFieldIfStmt(g, frag)
+	if ifs.Cond != nil {
+		return buildFieldSubBlock(g, frag, ifs)
+	}
+
+	if frag.key != nil || frag.elem != nil {
+		node := buildFragmentForStmt(g, frag)
+		if node.Clause != nil {
+			return buildFieldSubBlock(g, frag, node)
 		}
 
-		if len(rules) > 0 {
-			ruleIf, elseIf := GO.IfStmt{}, (*GO.IfStmt)(nil)
-			for _, r := range rules {
-				rIf := newIfStmt(g, r, field, fieldExpr)
+		// TODO needs to be combined with ifstmt from above ...
+		//      - say slice must be "len:1:5" and the each elem must be "email"
+	}
+	return nil
+}
 
-				// context
-				if len(r.Context) > 0 {
-					opt := GO.SelectorExpr{X: g.recv, Sel: GO.Ident{g.vs.ContextOption.Name}}
-					bin := GO.BinaryExpr{Op: GO.BinaryEql, X: opt, Y: GO.StringLit(r.Context)}
-					rIf.Cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: rIf.Cond, Y: bin}
-				}
+func buildFieldSubBlock(g *generator, fc *fragment, stmt GO.StmtNode) GO.StmtNode {
+	if fc.sb == nil {
+		return stmt
+	}
 
-				if elseIf != nil {
-					elseIf.Else = &rIf
-					elseIf = &rIf
-				} else if ruleIf.Cond != nil {
-					ruleIf.Else = &rIf
-					elseIf = &rIf
-				} else {
-					ruleIf = rIf
-				}
-			}
+	block := GO.BlockStmt{append(fc.sb, stmt)}
+	if fc.ifrq != nil {
+		ifs := *fc.ifrq
+		ifs.Else = block
+		return ifs
+	} else if fc.ifnn != nil {
+		ifs := *fc.ifnn
+		ifs.Else = block
+		return ifs
+	} else if fc.ng != nil {
+		return GO.IfStmt{Cond: fc.ng, Body: block}
+	}
+	return block
+}
 
-			if mainIf.Cond != nil && !ruleElseIf {
-				block = append(block, ruleIf)
-			} else if mainIf.Cond != nil {
-				mainIf.Else = ruleIf
-			} else {
-				mainIf = ruleIf
-			}
-		}
+func buildFieldIfStmt(g *generator, fc *fragment) GO.IfStmt {
+	var root GO.IfStmt
 
-		// loop over subfields
-		if len(subfields) > 0 {
-			for _, f := range subfields {
-				buildFieldCode(g, f, fieldExpr, &block)
-			}
-		}
+	// merge "required" or "notnil" IfStmt with the ifbase slice
+	var iflist []GO.IfStmt
+	if fc.ifrq != nil {
+		iflist = []GO.IfStmt{*fc.ifrq}
+	} else if fc.ifnn != nil {
+		iflist = []GO.IfStmt{*fc.ifnn}
+	}
+	iflist = append(iflist, fc.ifbase...)
 
-		if (required != nil || notnil != nil) && !ruleElseIf {
-			mainIf.Else = GO.BlockStmt{block}
+	// chain the if-statements
+	for i := len(iflist) - 1; i >= 0; i-- {
+		ifs := iflist[i]
+		if root.Cond == nil {
+			root = ifs
 		} else {
-			mainIf.Body.Add(block...)
+			ifs.Else = root
+			root = ifs
 		}
 	}
 
-	*body = append(*body, mainIf)
+	// if "nilguard" present but no "required" and no "notnil" then if we have
+	// only a single rule we can merge its conditional with that of the "nilguard",
+	// note that this works only with single rules, multiple rules would end up
+	// in else-ifs without the nilguard and could cause panic.
+	if (fc.ng != nil && fc.ifrq == nil && fc.ifnn == nil) && len(fc.ifbase) == 1 {
+		root.Cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: fc.ng, Y: root.Cond}
+	}
+
+	return root
 }
 
-func newExprForRequired(g *generator, kind analysis.TypeKind, fieldExpr GO.ExprNode) GO.ExprNode {
-	switch kind {
+// frag is the field containing the slice/array/map
+// frag.key will hold fragment for a map key
+// frag.elem will hold fragment for a slice/array/map elem
+func buildFragmentForStmt(g *generator, frag *fragment) (fs GO.ForStmt) {
+	rc := GO.ForRangeClause{X: frag.x, Define: true}
+	switch frag.typ.Kind {
+	case analysis.TypeKindSlice, analysis.TypeKindArray:
+		rc.Key = GO.Ident{"_"}
+		rc.Value = GO.Ident{"e"}
+	case analysis.TypeKindMap:
+		rc.Key = GO.Ident{"k"}
+		rc.Value = GO.Ident{"e"}
+	default:
+		panic("shouldn't reach")
+	}
+	fs.Clause = rc
+
+	if frag.typ.Kind == analysis.TypeKindMap {
+		if sn := buildFragmentStmtNode(g, frag.key); sn != nil {
+			fs.Body.List = append(fs.Body.List, sn)
+		}
+	}
+	if sn := buildFragmentStmtNode(g, frag.elem); sn != nil {
+		fs.Body.List = append(fs.Body.List, sn)
+	}
+	return fs
+}
+
+func newExprForRequired(g *generator, frag *fragment) GO.ExprNode {
+	switch frag.typ.Kind {
 	case analysis.TypeKindString, analysis.TypeKindMap, analysis.TypeKindSlice:
-		return GO.BinaryExpr{Op: GO.BinaryEql, X: GO.CallLenExpr{fieldExpr}, Y: GO.IntLit(0)}
+		return GO.BinaryExpr{Op: GO.BinaryEql, X: GO.CallLenExpr{frag.x}, Y: GO.IntLit(0)}
 	case analysis.TypeKindInt, analysis.TypeKindInt8, analysis.TypeKindInt16, analysis.TypeKindInt32, analysis.TypeKindInt64:
-		return GO.BinaryExpr{Op: GO.BinaryEql, X: fieldExpr, Y: GO.IntLit(0)}
+		return GO.BinaryExpr{Op: GO.BinaryEql, X: frag.x, Y: GO.IntLit(0)}
 	case analysis.TypeKindUint, analysis.TypeKindUint8, analysis.TypeKindUint16, analysis.TypeKindUint32, analysis.TypeKindUint64:
-		return GO.BinaryExpr{Op: GO.BinaryEql, X: fieldExpr, Y: GO.IntLit(0)}
+		return GO.BinaryExpr{Op: GO.BinaryEql, X: frag.x, Y: GO.IntLit(0)}
 	case analysis.TypeKindFloat32, analysis.TypeKindFloat64:
-		return GO.BinaryExpr{Op: GO.BinaryEql, X: fieldExpr, Y: GO.ValueLit("0.0")}
+		return GO.BinaryExpr{Op: GO.BinaryEql, X: frag.x, Y: GO.ValueLit("0.0")}
 	case analysis.TypeKindBool:
-		return GO.BinaryExpr{Op: GO.BinaryEql, X: fieldExpr, Y: GO.ValueLit("false")}
-	case analysis.TypeKindInterface:
-		return GO.BinaryExpr{Op: GO.BinaryEql, X: fieldExpr, Y: GO.Ident{"nil"}}
+		return GO.BinaryExpr{Op: GO.BinaryEql, X: frag.x, Y: GO.ValueLit("false")}
+	case analysis.TypeKindPtr, analysis.TypeKindInterface:
+		return GO.BinaryExpr{Op: GO.BinaryEql, X: frag.x, Y: NIL}
 	}
 	return nil
 }
 
-func newExprForNotnil(g *generator, kind analysis.TypeKind, fieldExpr GO.ExprNode) GO.ExprNode {
-	switch kind {
-	case analysis.TypeKindInterface, analysis.TypeKindMap, analysis.TypeKindSlice:
-		return GO.BinaryExpr{Op: GO.BinaryEql, X: fieldExpr, Y: GO.Ident{"nil"}}
+func newExprForNotnil(g *generator, frag *fragment) GO.ExprNode {
+	switch frag.typ.Kind {
+	case analysis.TypeKindPtr, analysis.TypeKindSlice, analysis.TypeKindMap, analysis.TypeKindInterface:
+		return GO.BinaryExpr{Op: GO.BinaryEql, X: frag.x, Y: NIL}
 	}
 	return nil
 }
 
-func newIfStmt(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+func newIfStmt(g *generator, frag *fragment, r *analysis.Rule) (ifs GO.IfStmt) {
 	spec := g.info.RuleSpecMap[r.Name]
-
 	switch s := spec.(type) {
 	case analysis.RuleIsValid:
-		return newIfStmtForIsValid(g, r, field, fieldExpr)
+		return newIfStmtForIsValid(g, frag, r)
 	case analysis.RuleEnum:
-		return newIfStmtForEnum(g, r, field, fieldExpr)
+		return newIfStmtForEnum(g, frag, r)
 	case analysis.RuleBasic:
 		if r.Name == "len" {
-			return newIfStmtForLength(g, r, field, fieldExpr)
+			return newIfStmtForLength(g, frag, r)
 		} else if r.Name == "rng" {
-			return newIfStmtForRange(g, r, field, fieldExpr)
+			return newIfStmtForRange(g, frag, r)
 		}
-		return newIfStmtForBasic(g, r, field, fieldExpr)
+		return newIfStmtForBasic(g, frag, r)
 	case analysis.RuleFunc:
 		if s.BoolConn > analysis.RuleFuncBoolNone {
-			return newIfStmtForFuncChained(g, s, r, field, fieldExpr)
+			return newIfStmtForFuncChained(g, frag, r, s)
 		}
-		return newIfStmtForFunc(g, s, r, field, fieldExpr)
+		return newIfStmtForFunc(g, frag, r, s)
 	}
 
 	panic("shouldn't reach")
@@ -458,7 +608,7 @@ func newExprForConstArg(g *generator, t analysis.Type, a *analysis.RuleArg, rf *
 		case analysis.TypeKindBool:
 			x = GO.ValueLit("false")
 		case analysis.TypeKindPtr, analysis.TypeKindInterface, analysis.TypeKindMap, analysis.TypeKindSlice:
-			x = GO.Ident{"nil"}
+			x = NIL
 		}
 		return x
 
@@ -498,15 +648,19 @@ func newExprForConstArg(g *generator, t analysis.Type, a *analysis.RuleArg, rf *
 	return nil
 }
 
-func newIfStmtForIsValid(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
-	sel := GO.SelectorExpr{X: fieldExpr, Sel: GO.Ident{"IsValid"}}
+func newIfStmtForIsValid(g *generator, frag *fragment, r *analysis.Rule) (ifs GO.IfStmt) {
+	x := frag.x
+	if frag.f.Type.Kind == analysis.TypeKindPtr {
+		x = GO.ParenExpr{x}
+	}
+	sel := GO.SelectorExpr{X: x, Sel: GO.Ident{"IsValid"}}
 	ifs.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: GO.CallExpr{Fun: sel}}
-	ifs.Body.Add(newReturnStmtForError(g, r, field, fieldExpr))
+	ifs.Body.Add(newReturnStmtForError(g, frag, r))
 	return ifs
 }
 
-func newIfStmtForEnum(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
-	typ := field.Type.PtrBase()
+func newIfStmtForEnum(g *generator, frag *fragment, r *analysis.Rule) (ifs GO.IfStmt) {
+	typ := frag.f.Type.PtrBase()
 	ident := typ.PkgPath + "." + typ.Name
 	enums := g.info.EnumMap[ident]
 
@@ -517,7 +671,7 @@ func newIfStmtForEnum(g *generator, r *analysis.Rule, field *analysis.StructFiel
 			id = GO.QualifiedIdent{imp.name, e.Name}
 		}
 
-		cond := GO.BinaryExpr{Op: GO.BinaryNeq, X: fieldExpr, Y: id}
+		cond := GO.BinaryExpr{Op: GO.BinaryNeq, X: frag.x, Y: id}
 		if ifs.Cond != nil {
 			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: ifs.Cond, Y: cond}
 		} else {
@@ -525,17 +679,17 @@ func newIfStmtForEnum(g *generator, r *analysis.Rule, field *analysis.StructFiel
 		}
 	}
 
-	ifs.Body.Add(newReturnStmtForError(g, r, field, fieldExpr))
+	ifs.Body.Add(newReturnStmtForError(g, frag, r))
 	return ifs
 }
 
-func newIfStmtForFunc(g *generator, rf analysis.RuleFunc, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+func newIfStmtForFunc(g *generator, frag *fragment, r *analysis.Rule, rf analysis.RuleFunc) (ifs GO.IfStmt) {
 	imp := addImport(g, rf.PkgPath)
-	retStmt := newReturnStmtForError(g, r, field, fieldExpr)
+	retStmt := newReturnStmtForError(g, frag, r)
 
 	fn := GO.QualifiedIdent{imp.name, rf.FuncName}
-	call := GO.CallExpr{Fun: fn, Args: GO.ArgsList{List: fieldExpr}}
-	args := GO.ExprList{fieldExpr}
+	call := GO.CallExpr{Fun: fn, Args: GO.ArgsList{List: frag.x}}
+	args := GO.ExprList{frag.x}
 
 	argtypes := rf.TypesForArgs(r.Args)
 	for i, a := range r.Args {
@@ -556,14 +710,14 @@ func newIfStmtForFunc(g *generator, rf analysis.RuleFunc, r *analysis.Rule, fiel
 	return ifs
 }
 
-func newIfStmtForFuncChained(g *generator, rf analysis.RuleFunc, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+func newIfStmtForFuncChained(g *generator, frag *fragment, r *analysis.Rule, rf analysis.RuleFunc) (ifs GO.IfStmt) {
 	imp := addImport(g, rf.PkgPath)
-	retStmt := newReturnStmtForError(g, r, field, fieldExpr)
+	retStmt := newReturnStmtForError(g, frag, r)
 
 	argtypes := rf.TypesForArgs(r.Args)
 	for i, a := range r.Args {
 		call := GO.CallExpr{Fun: GO.QualifiedIdent{imp.name, rf.FuncName}}
-		call.Args.List = GO.ExprList{fieldExpr, newExprForArg(g, argtypes[i], a, &rf)}
+		call.Args.List = GO.ExprList{frag.x, newExprForArg(g, argtypes[i], a, &rf)}
 
 		switch rf.BoolConn {
 		case analysis.RuleFuncBoolNot: // x || x || x....
@@ -590,24 +744,8 @@ func newIfStmtForFuncChained(g *generator, rf analysis.RuleFunc, r *analysis.Rul
 	return ifs
 }
 
-var basicRuleToBinaryOp = map[string]GO.BinaryOp{
-	"eq":  GO.BinaryNeq,
-	"ne":  GO.BinaryEql,
-	"gt":  GO.BinaryLeq,
-	"lt":  GO.BinaryGeq,
-	"gte": GO.BinaryLss,
-	"lte": GO.BinaryGtr,
-	"min": GO.BinaryLss,
-	"max": GO.BinaryGtr,
-}
-
-var basicRuleToLogicalOp = map[string]GO.BinaryOp{
-	"eq": GO.BinaryLAnd,
-	"ne": GO.BinaryLOr,
-}
-
-func newIfStmtForBasic(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
-	typ := field.Type
+func newIfStmtForBasic(g *generator, frag *fragment, r *analysis.Rule) (ifs GO.IfStmt) {
+	typ := frag.f.Type
 	for typ.Kind == analysis.TypeKindPtr {
 		typ = *typ.Elem
 	}
@@ -616,7 +754,7 @@ func newIfStmtForBasic(g *generator, r *analysis.Rule, field *analysis.StructFie
 	logop := basicRuleToLogicalOp[r.Name]
 
 	for _, a := range r.Args {
-		cond := GO.BinaryExpr{Op: binop, X: fieldExpr, Y: newExprForArg(g, typ, a, nil)}
+		cond := GO.BinaryExpr{Op: binop, X: frag.x, Y: newExprForArg(g, typ, a, nil)}
 		if ifs.Cond != nil {
 			ifs.Cond = GO.BinaryExpr{Op: logop, X: ifs.Cond, Y: cond}
 		} else {
@@ -624,52 +762,53 @@ func newIfStmtForBasic(g *generator, r *analysis.Rule, field *analysis.StructFie
 		}
 	}
 
-	ifs.Body.Add(newReturnStmtForError(g, r, field, fieldExpr))
+	ifs.Body.Add(newReturnStmtForError(g, frag, r))
 	return ifs
 }
 
-func newIfStmtForRange(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+func newIfStmtForRange(g *generator, frag *fragment, r *analysis.Rule) (ifs GO.IfStmt) {
 	a1, a2 := r.Args[0], r.Args[1]
 
 	ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLOr,
-		X: GO.BinaryExpr{Op: GO.BinaryLss, X: fieldExpr, Y: newExprForArg(g, field.Type.PtrBase(), a1, nil)},
-		Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: fieldExpr, Y: newExprForArg(g, field.Type.PtrBase(), a2, nil)}}
-
-	ifs.Body.Add(newReturnStmtForError(g, r, field, fieldExpr))
+		X: GO.BinaryExpr{Op: GO.BinaryLss, X: frag.x, Y: newExprForArg(g, frag.f.Type.PtrBase(), a1, nil)},
+		Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: frag.x, Y: newExprForArg(g, frag.f.Type.PtrBase(), a2, nil)}}
+	ifs.Cond = GO.ParenExpr{ifs.Cond}
+	ifs.Body.Add(newReturnStmtForError(g, frag, r))
 	return ifs
 }
 
-func newIfStmtForLength(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+func newIfStmtForLength(g *generator, frag *fragment, r *analysis.Rule) (ifs GO.IfStmt) {
 	typ := analysis.Type{Kind: analysis.TypeKindInt} // len(T) returns an int
 
 	if len(r.Args) == 1 {
 		a := r.Args[0]
-		ifs.Cond = GO.BinaryExpr{Op: GO.BinaryNeq, X: GO.CallLenExpr{fieldExpr}, Y: newExprForArg(g, typ, a, nil)}
-		ifs.Body.Add(newReturnStmtForError(g, r, field, fieldExpr))
+		ifs.Cond = GO.BinaryExpr{Op: GO.BinaryNeq, X: GO.CallLenExpr{frag.x}, Y: newExprForArg(g, typ, a, nil)}
+		ifs.Body.Add(newReturnStmtForError(g, frag, r))
 	} else { // len(r.Args) == 2 is assumed
 		a1, a2 := r.Args[0], r.Args[1]
 		if len(a1.Value) > 0 && len(a2.Value) == 0 {
-			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLss, X: GO.CallLenExpr{fieldExpr}, Y: newExprForArg(g, typ, a1, nil)}
-			ifs.Body.Add(newReturnStmtForError(g, r, field, fieldExpr))
+			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLss, X: GO.CallLenExpr{frag.x}, Y: newExprForArg(g, typ, a1, nil)}
+			ifs.Body.Add(newReturnStmtForError(g, frag, r))
 		} else if len(a1.Value) == 0 && len(a2.Value) > 0 {
-			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{fieldExpr}, Y: newExprForArg(g, typ, a2, nil)}
-			ifs.Body.Add(newReturnStmtForError(g, r, field, fieldExpr))
+			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{frag.x}, Y: newExprForArg(g, typ, a2, nil)}
+			ifs.Body.Add(newReturnStmtForError(g, frag, r))
 		} else {
 			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLOr,
-				X: GO.BinaryExpr{Op: GO.BinaryLss, X: GO.CallLenExpr{fieldExpr}, Y: newExprForArg(g, typ, a1, nil)},
-				Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{fieldExpr}, Y: newExprForArg(g, typ, a2, nil)}}
-			ifs.Body.Add(newReturnStmtForError(g, r, field, fieldExpr))
+				X: GO.BinaryExpr{Op: GO.BinaryLss, X: GO.CallLenExpr{frag.x}, Y: newExprForArg(g, typ, a1, nil)},
+				Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{frag.x}, Y: newExprForArg(g, typ, a2, nil)}}
+			ifs.Cond = GO.ParenExpr{ifs.Cond}
+			ifs.Body.Add(newReturnStmtForError(g, frag, r))
 		}
 	}
 	return ifs
 }
 
-func newReturnStmtForError(g *generator, r *analysis.Rule, f *analysis.StructField, fieldExpr GO.ExprNode) GO.StmtNode {
+func newReturnStmtForError(g *generator, frag *fragment, r *analysis.Rule) GO.StmtNode {
 	// Build code for custom handler, if one exists.
 	if g.vs.ErrorHandler != nil {
 		args := make(GO.ExprList, 3)
-		args[0] = GO.StringLit(f.Key)
-		args[1] = fieldExpr
+		args[0] = GO.StringLit(frag.f.Key)
+		args[1] = frag.x
 		args[2] = GO.StringLit(r.Name)
 
 		for _, a := range r.Args {
@@ -699,14 +838,14 @@ func newReturnStmtForError(g *generator, r *analysis.Rule, f *analysis.StructFie
 	}
 
 	// If no custom handler exists, then return the default error message.
-	return GO.ReturnStmt{newExprForError(g, f, r)}
+	return GO.ReturnStmt{newExprForError(g, frag, r)}
 
 }
 
-func newExprForError(g *generator, f *analysis.StructField, r *analysis.Rule) (errExpr GO.ExprNode) {
+func newExprForError(g *generator, frag *fragment, r *analysis.Rule) (errExpr GO.ExprNode) {
 	spec := g.info.RuleSpecMap[r.Name]
 	if spec.IsCustom() {
-		text := f.Key + " is not valid" // default error text for custom specs
+		text := frag.f.Key + " is not valid" // default error text for custom specs
 
 		errText := GO.ValueLit(strconv.Quote(text))
 		g.file.importErrors = true
@@ -730,8 +869,8 @@ func newExprForError(g *generator, f *analysis.StructField, r *analysis.Rule) (e
 
 	// Get the error config.
 	conf := errorConfigMap[r.Name][altform]
-	text := f.Key + " " + conf.text // primary error text
-	typ := f.Type.PtrBase()
+	text := frag.f.Key + " " + conf.text // primary error text
+	typ := frag.f.Type.PtrBase()
 
 	var refs GO.ExprList
 	if !conf.omitArgs {
@@ -788,14 +927,13 @@ func newFinalReturnStmt(g *generator, root GO.ExprNode) (stmt GO.ReturnStmt) {
 		eh := GO.SelectorExpr{X: root, Sel: GO.Ident{g.vs.ErrorHandler.Name}}
 		stmt.Result = GO.CallExpr{Fun: GO.SelectorExpr{X: eh, Sel: GO.Ident{"Out"}}}
 	} else {
-		stmt.Result = GO.Ident{"nil"}
+		stmt.Result = NIL
 	}
 	return stmt
 }
 
 func newImportDeclNode(f *file) GO.ImportDeclNode {
-	var imports = new(GO.ImportDecl)
-
+	imports := new(GO.ImportDecl)
 	if f.importErrors {
 		imports.Specs = append(imports.Specs, GO.ImportSpec{Path: "errors"})
 	}
@@ -810,7 +948,6 @@ func newImportDeclNode(f *file) GO.ImportDeclNode {
 		}
 		imports.Specs = append(imports.Specs, spec)
 	}
-
 	groupImports(imports)
 	return imports
 }
@@ -875,6 +1012,22 @@ func addImport(g *generator, path string) *impspec {
 
 	g.file.impset = append(g.file.impset, imp)
 	return imp
+}
+
+var basicRuleToBinaryOp = map[string]GO.BinaryOp{
+	"eq":  GO.BinaryNeq,
+	"ne":  GO.BinaryEql,
+	"gt":  GO.BinaryLeq,
+	"lt":  GO.BinaryGeq,
+	"gte": GO.BinaryLss,
+	"lte": GO.BinaryGtr,
+	"min": GO.BinaryLss,
+	"max": GO.BinaryGtr,
+}
+
+var basicRuleToLogicalOp = map[string]GO.BinaryOp{
+	"eq": GO.BinaryLAnd,
+	"ne": GO.BinaryLOr,
 }
 
 // error message configuation

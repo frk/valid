@@ -94,8 +94,8 @@ func (c Config) Analyze(fset *token.FileSet, named *types.Named, pos token.Pos, 
 	return vs, nil
 }
 
-// Info holds information related to an analyzed ValidatorStruct. If the analysis
-// returns an error, the collected information will be incomplete.
+// Info holds information related to the analysis and inteded to be used by the generator.
+// If the analysis returns an error, the collected information will be incomplete.
 type Info struct {
 	// The FileSet associated with the analyzed ValidatorStruct.
 	FileSet *token.FileSet
@@ -273,11 +273,13 @@ func analyzeStructFields(a *analysis, structType *types.Struct, selector []*Stru
 		// map keys to selectors
 		a.info.SelectorMap[f.Key] = append(StructFieldSelector{}, fsel...)
 
-		typ, err := analyzeType(a, fsel, fvar.Type())
+		maxdepth := 0
+		typ, err := analyzeType(a, fsel, fvar.Type(), &maxdepth)
 		if err != nil {
 			return nil, err
 		}
 		f.Type = typ
+		f.MaxFieldDepth = maxdepth
 
 		if err := analyzeRules(a, f); err != nil {
 			return nil, err
@@ -337,7 +339,7 @@ func analyzeContextOptionField(a *analysis, f *StructField) error {
 	return nil
 }
 
-func analyzeType(a *analysis, selector []*StructField, t types.Type) (typ Type, err error) {
+func analyzeType(a *analysis, selector []*StructField, t types.Type, maxdepth *int) (typ Type, err error) {
 	if named, ok := t.(*types.Named); ok {
 		pkg := named.Obj().Pkg()
 		typ.Name = named.Obj().Name()
@@ -357,31 +359,31 @@ func analyzeType(a *analysis, selector []*StructField, t types.Type) (typ Type, 
 		typ.IsRune = T.Name() == "rune"
 		typ.IsByte = T.Name() == "byte"
 	case *types.Slice:
-		elem, err := analyzeType(a, selector, T.Elem())
+		elem, err := analyzeType(a, selector, T.Elem(), maxdepth)
 		if err != nil {
 			return Type{}, err
 		}
 		typ.Elem = &elem
 	case *types.Array:
-		elem, err := analyzeType(a, selector, T.Elem())
+		elem, err := analyzeType(a, selector, T.Elem(), maxdepth)
 		if err != nil {
 			return Type{}, err
 		}
 		typ.Elem = &elem
 		typ.ArrayLen = T.Len()
 	case *types.Map:
-		key, err := analyzeType(a, selector, T.Key())
+		key, err := analyzeType(a, selector, T.Key(), maxdepth)
 		if err != nil {
 			return Type{}, err
 		}
-		elem, err := analyzeType(a, selector, T.Elem())
+		elem, err := analyzeType(a, selector, T.Elem(), maxdepth)
 		if err != nil {
 			return Type{}, err
 		}
 		typ.Key = &key
 		typ.Elem = &elem
 	case *types.Pointer:
-		elem, err := analyzeType(a, selector, T.Elem())
+		elem, err := analyzeType(a, selector, T.Elem(), maxdepth)
 		if err != nil {
 			return Type{}, err
 		}
@@ -390,11 +392,23 @@ func analyzeType(a *analysis, selector []*StructField, t types.Type) (typ Type, 
 		typ.IsEmptyInterface = T.NumMethods() == 0
 		typ.IsIsValider = isIsValider(t)
 	case *types.Struct:
+
 		fields, err := analyzeStructFields(a, T, selector, !typ.IsImported)
 		if err != nil {
 			return Type{}, err
 		}
 		typ.Fields = fields
+
+		// get the maxdepth
+		if len(fields) > 0 {
+			max := 0
+			for _, f := range fields {
+				if f.MaxFieldDepth > max {
+					max = f.MaxFieldDepth
+				}
+			}
+			*maxdepth = max + 1
+		}
 	}
 
 	return typ, nil
@@ -466,7 +480,7 @@ func analyzeRules(a *analysis, f *StructField) error {
 		isvalid = &Rule{Name: "isvalid"}
 	}
 
-	// do all the rest...
+	// do the rest...
 	for _, s := range f.Tag["is"] {
 		s = strings.TrimSpace(s)
 		if s == "-isvalid" { // already handled above?
@@ -495,10 +509,8 @@ func analyzeRules(a *analysis, f *StructField) error {
 		}
 
 		// make sure a spec is registered for the rule
-		if _, ok := a.conf.ruleSpecMap[r.Name]; !ok {
-			if _, ok := defaultRuleSpecMap[r.Name]; !ok {
-				return a.anError(errRuleUnknown, f, r)
-			}
+		if err := checkRuleExists(a, f, r); err != nil {
+			return err
 		}
 
 		f.Rules = append(f.Rules, r)
@@ -507,6 +519,29 @@ func analyzeRules(a *analysis, f *StructField) error {
 	// append "backup" if present
 	if isvalid != nil {
 		f.Rules = append(f.Rules, isvalid)
+	}
+	return nil
+}
+
+func checkRuleExists(a *analysis, f *StructField, r *Rule) error {
+	if r.Key != nil || r.Elem != nil {
+		if r.Key != nil {
+			if err := checkRuleExists(a, f, r.Key); err != nil {
+				return err
+			}
+		}
+		if r.Elem != nil {
+			if err := checkRuleExists(a, f, r.Elem); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	if _, ok := a.conf.ruleSpecMap[r.Name]; !ok {
+		if _, ok := defaultRuleSpecMap[r.Name]; !ok {
+			return a.anError(errRuleUnknown, f, r)
+		}
 	}
 	return nil
 }
@@ -555,19 +590,37 @@ func isImportedType(a *analysis, named *types.Named) bool {
 
 // parses a single element of the `is` tag as a Rule and returns the result.
 func parseIsTagElem(str string) *Rule {
-	name := str
-	opts := ""
+	r := new(Rule)
 
-	if i := strings.IndexByte(str, ':'); i > -1 {
-		name = str[:i]
-		opts = str[i+1:]
+	// do elem stuff?
+	if len(str) > 0 && str[0] == '[' {
+		// TODO handle quoted stuff
+		if i := strings.IndexByte(str, ']'); i > -1 {
+			str1 := str[1:i]
+			str2 := str[i+1:]
+
+			if len(str1) > 0 {
+				r.Key = parseIsTagElem(str1)
+			}
+			if len(str2) > 0 {
+				r.Elem = parseIsTagElem(str2)
+			}
+			return r
+		} else {
+			// TODO should fail or?
+		}
 	}
+
+	opts := ""
+	if i := strings.IndexByte(str, ':'); i > -1 {
+		opts = str[i+1:]
+		str = str[:i]
+	}
+	r.Name = str
 
 	// if the opts string ends with ':' (e.g. `len:4:`) then append
 	// an empty RuleArg to the end of the Rule.Args slice.
 	var appendEmpty bool
-
-	r := &Rule{Name: name}
 	for len(opts) > 0 {
 
 		var opt string
@@ -629,6 +682,26 @@ func parseIsTagElem(str string) *Rule {
 // Checks all fields and their rules, and whether each rule can be applied
 // to its respective field without causing a compiler error.
 func typeCheckRules(a *analysis, fields []*StructField) error {
+
+	// walk recursively traverses the hierarchy of the given type and
+	// invokes typeCheckRules on all struct fields it encounters.
+	var walk func(a *analysis, typ Type) error
+	walk = func(a *analysis, typ Type) error {
+		typ = typ.PtrBase()
+		switch typ.Kind {
+		case TypeKindStruct:
+			return typeCheckRules(a, typ.Fields)
+		case TypeKindArray, TypeKindSlice:
+			return walk(a, *typ.Elem)
+		case TypeKindMap:
+			if err := walk(a, *typ.Key); err != nil {
+				return err
+			}
+			return walk(a, *typ.Elem)
+		}
+		return nil
+	}
+
 	for _, f := range fields {
 		for _, r := range f.Rules {
 			// Ensure that the Value of a RuleArg of type ArgTypeField
@@ -643,45 +716,81 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 				}
 			}
 
-			// Ensure a spec for the specified rule exists.
-			spec, ok := a.conf.ruleSpecMap[r.Name]
-			if !ok {
-				spec, ok = defaultRuleSpecMap[r.Name]
-				if !ok {
-					return a.anError(errRuleUnknown, f, r)
-				}
-			}
-
-			switch s := spec.(type) {
-			case RuleIsValid:
-				// do nothing
-			case RuleEnum:
-				if err := typeCheckRuleEnum(a, f, r); err != nil {
-					return a.anError(err, f, r)
-				}
-			case RuleBasic:
-				if err := s.check(a, f, r); err != nil {
-					return a.anError(err, f, r)
-				}
-			case RuleFunc:
-				if err := typeCheckRuleFunc(a, f, r, s); err != nil {
-					return a.anError(err, f, r)
-				}
+			if err := typeCheckRuleSpec(a, r, f.Type, f); err != nil {
+				return err
 			}
 		}
 
-		if subfields := f.SubFields(); subfields != nil {
-			if err := typeCheckRules(a, subfields); err != nil {
-				return err
-			}
+		// TODO test type-checking for things like:
+		// - (nested) slice-of-structs
+		// - (nested) array-of-structs
+		// - (nested) map-of-structs-to-structs
+		if err := walk(a, f.Type); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-// checks whether the rule enum can be applied to its respective field.
-func typeCheckRuleEnum(a *analysis, f *StructField, r *Rule) error {
-	typ := f.Type.PtrBase()
+// typeCheckRuleSpec looks up the RuleSpec for the given Rule and applies its
+// corresponding type-checking to the provided Type. (f is used for error reporting)
+func typeCheckRuleSpec(a *analysis, r *Rule, t Type, f *StructField) error {
+	if r.Key != nil || r.Elem != nil {
+		t = t.PtrBase()
+		if r.Key != nil {
+			if t.Kind != TypeKindMap {
+				return a.anError(errTypeKind, f, r)
+			}
+
+			if err := typeCheckRuleSpec(a, r.Key, *t.Key, f); err != nil {
+				return err
+			}
+		}
+		if r.Elem != nil {
+			if t.Kind != TypeKindArray && t.Kind != TypeKindSlice && t.Kind != TypeKindMap {
+				return a.anError(errTypeKind, f, r)
+			}
+
+			if err := typeCheckRuleSpec(a, r.Elem, *t.Elem, f); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	// Ensure a spec for the specified rule exists.
+	spec, ok := a.conf.ruleSpecMap[r.Name]
+	if !ok {
+		spec, ok = defaultRuleSpecMap[r.Name]
+		if !ok {
+			return a.anError(errRuleUnknown, f, r)
+		}
+	}
+
+	switch s := spec.(type) {
+	case RuleIsValid:
+		// do nothing
+	case RuleEnum:
+		if err := typeCheckRuleEnum(a, t, r, f); err != nil {
+			return err
+		}
+	case RuleBasic:
+		if err := s.check(a, r, t, f); err != nil {
+			return err
+		}
+	case RuleFunc:
+		if err := typeCheckRuleFunc(a, r, s, t, f); err != nil {
+			return a.anError(err, f, r)
+		}
+	}
+
+	return nil
+}
+
+// typeCheckRuleEnum checks whether the given Type can be used together
+// with a RuleEnum. (r & f are used for error reporting)
+func typeCheckRuleEnum(a *analysis, t Type, r *Rule, f *StructField) error {
+	typ := t.PtrBase()
 	if len(typ.Name) == 0 {
 		return a.anError(errRuleEnumTypeUnnamed, f, r)
 	}
@@ -691,23 +800,19 @@ func typeCheckRuleEnum(a *analysis, f *StructField, r *Rule) error {
 		return nil
 	}
 
-	var enums []Const
-
+	enums := []Const{}
 	consts := parser.FindConstantsByType(typ.PkgPath, typ.Name, a.conf.AST)
 	for _, c := range consts {
 		name := c.Name()
 		pkgpath := c.Pkg().Path()
-
 		// blank, skip
 		if name == "_" {
 			continue
 		}
-
 		// imported but not exported, skip
 		if a.pkgPath != pkgpath && !c.Exported() {
 			continue
 		}
-
 		enums = append(enums, Const{Name: name, PkgPath: pkgpath})
 	}
 	if len(enums) == 0 {
@@ -719,7 +824,7 @@ func typeCheckRuleEnum(a *analysis, f *StructField, r *Rule) error {
 }
 
 // checks whether the rule func can be applied to its respective field.
-func typeCheckRuleFunc(a *analysis, f *StructField, r *Rule, rf RuleFunc) error {
+func typeCheckRuleFunc(a *analysis, r *Rule, rf RuleFunc, t Type, f *StructField) error {
 	if rf.BoolConn > RuleFuncBoolNone {
 		// func with bool connective but rule with no args, fail
 		if len(r.Args) < 1 {
@@ -737,7 +842,7 @@ func typeCheckRuleFunc(a *analysis, f *StructField, r *Rule, rf RuleFunc) error 
 	}
 
 	// field type cannot be converted to func 0th arg type, fail
-	fldType, argType := f.Type.PtrBase(), rf.ArgTypes[0]
+	fldType, argType := t.PtrBase(), rf.ArgTypes[0]
 	if rf.IsVariadic && len(rf.ArgTypes) == 1 {
 		argType = *argType.Elem
 	}
@@ -747,7 +852,7 @@ func typeCheckRuleFunc(a *analysis, f *StructField, r *Rule, rf RuleFunc) error 
 
 	// optional check returns error, fail
 	if rf.check != nil {
-		if err := rf.check(a, f, r); err != nil {
+		if err := rf.check(a, r, t, f); err != nil {
 			return err
 		}
 	}
@@ -919,11 +1024,17 @@ func fieldKeyFromNameBase(selector []*StructField) (key string) {
 	return f.Name
 }
 
+func fieldKeyFromTagBase(selector []*StructField, tag string) (key string) {
+	f := selector[len(selector)-1]
+	key = f.Tag.First(tag)
+	if len(key) == 0 {
+		key = f.Name
+	}
+	return key
+}
+
 func fieldKeyFromName(selector []*StructField, sep string) (key string) {
 	for _, f := range selector {
-		if f.IsEmbedded {
-			continue
-		}
 		if f.Tag.Contains("isvalid", "omitkey") {
 			continue
 		}
@@ -935,20 +1046,8 @@ func fieldKeyFromName(selector []*StructField, sep string) (key string) {
 	return key
 }
 
-func fieldKeyFromTagBase(selector []*StructField, tag string) (key string) {
-	f := selector[len(selector)-1]
-	key = f.Tag.First(tag)
-	if len(key) == 0 {
-		key = f.Name
-	}
-	return key
-}
-
 func fieldKeyFromTag(selector []*StructField, tag, sep string) (key string) {
 	for _, f := range selector {
-		if f.IsEmbedded {
-			continue
-		}
 		if f.Tag.Contains("isvalid", "omitkey") {
 			continue
 		}

@@ -126,6 +126,16 @@ type UserInput struct {
 	f81 mypkg.MyKind  `is:"enum"`
 	f82 **someKind    `is:"enum"`
 	f83 *mypkg.MyKind `is:"enum:@create"`
+
+	// elements & keys
+	f84 []string          `is:"[]email"`
+	f85 map[string]string `is:"[email]"`
+	f86 map[string]string `is:"[phone:us:ca]zip:ca:us"`
+	f87 map[string]*struct {
+		f1 string `is:"len:2:32"`
+		f2 string `is:"len:2:32"`
+		f3 string `is:"phone"`
+	} `is:"[email]"`
 }
 
 // local enum

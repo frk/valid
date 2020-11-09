@@ -10,19 +10,13 @@ func (v RangeValidator) Validate() error {
 	if v.F1 < 3.14 || v.F1 > 42 {
 		return errors.New("F1 must be between: 3.14 and 42")
 	}
-	if v.F2 != nil {
-		f := *v.F2
-		if f < 8 || f > 256 {
-			return errors.New("F2 must be between: 8 and 256")
-		}
+	if v.F2 != nil && (*v.F2 < 8 || *v.F2 > 256) {
+		return errors.New("F2 must be between: 8 and 256")
 	}
 	if v.F3 == nil || *v.F3 == nil || **v.F3 == 0 {
 		return errors.New("F3 is required")
-	} else {
-		f := **v.F3
-		if f < 1 || f > 2 {
-			return errors.New("F3 must be between: 1 and 2")
-		}
+	} else if **v.F3 < 1 || **v.F3 > 2 {
+		return errors.New("F3 must be between: 1 and 2")
 	}
 	return nil
 }

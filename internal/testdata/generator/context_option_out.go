@@ -10,11 +10,8 @@ func (v ContextOptionValidator) Validate() error {
 	if len(v.F1) == 0 && v.context == "new" {
 		return errors.New("F1 is required")
 	}
-	if v.F2 != nil {
-		f := *v.F2
-		if len(f) > 21 && v.context == "update" {
-			return errors.New("F2 must be of length at most: 21")
-		}
+	if v.F2 != nil && (len(*v.F2) > 21 && v.context == "update") {
+		return errors.New("F2 must be of length at most: 21")
 	}
 	return nil
 }

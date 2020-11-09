@@ -16,6 +16,17 @@ import (
 
 func TestGenerator(t *testing.T) {
 	tests := []string{
+		"nothing_to_validate",
+		"base_fields_with_rules",
+		"nested_fields_with_rules",
+		"base_fields_with_rules_and_nilguard",
+		"base_fields_with_rules_and_notnil",
+		"base_fields_with_rules_and_required",
+		"nested_fields_with_rules_and_nilguard",
+		"nested_fields_with_rules_and_notnil",
+		"nested_fields_with_rules_and_required",
+		/////////////
+
 		"required",
 		"notnil",
 		"email",
@@ -60,6 +71,7 @@ func TestGenerator(t *testing.T) {
 		"hooks",
 		"isvalider",
 		"enum",
+		"slice",
 	}
 
 	customrules := [][3]string{

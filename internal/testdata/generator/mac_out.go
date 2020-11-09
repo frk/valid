@@ -12,19 +12,13 @@ func (v MACValidator) Validate() error {
 	if !isvalid.MAC(v.F1) {
 		return errors.New("F1 must be a valid MAC")
 	}
-	if v.F2 != nil && *v.F2 != nil {
-		f := **v.F2
-		if !isvalid.MAC(f, 6) {
-			return errors.New("F2 must be a valid MAC")
-		}
+	if v.F2 != nil && *v.F2 != nil && !isvalid.MAC(**v.F2, 6) {
+		return errors.New("F2 must be a valid MAC")
 	}
 	if v.F3 == nil || *v.F3 == nil || len(**v.F3) == 0 {
 		return errors.New("F3 is required")
-	} else {
-		f := **v.F3
-		if !isvalid.MAC(f, 6, 8) {
-			return errors.New("F3 must be a valid MAC")
-		}
+	} else if !isvalid.MAC(**v.F3, 6, 8) {
+		return errors.New("F3 must be a valid MAC")
 	}
 	return nil
 }

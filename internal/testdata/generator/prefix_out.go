@@ -11,19 +11,13 @@ func (v PrefixValidator) Validate() error {
 	if !strings.HasPrefix(v.F1, "foo") {
 		return errors.New("F1 must be prefixed with: \"foo\"")
 	}
-	if v.F2 != nil {
-		f := *v.F2
-		if !strings.HasPrefix(f, "bar") {
-			return errors.New("F2 must be prefixed with: \"bar\"")
-		}
+	if v.F2 != nil && !strings.HasPrefix(*v.F2, "bar") {
+		return errors.New("F2 must be prefixed with: \"bar\"")
 	}
 	if v.F3 == nil || *v.F3 == nil || len(**v.F3) == 0 {
 		return errors.New("F3 is required")
-	} else {
-		f := **v.F3
-		if !strings.HasPrefix(f, "foo") && !strings.HasPrefix(f, "bar") && !strings.HasPrefix(f, "baz") {
-			return errors.New("F3 must be prefixed with: \"foo\" or \"bar\" or \"baz\"")
-		}
+	} else if !strings.HasPrefix(**v.F3, "foo") && !strings.HasPrefix(**v.F3, "bar") && !strings.HasPrefix(**v.F3, "baz") {
+		return errors.New("F3 must be prefixed with: \"foo\" or \"bar\" or \"baz\"")
 	}
 	return nil
 }

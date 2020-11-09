@@ -11,19 +11,13 @@ func (v SuffixValidator) Validate() error {
 	if !strings.HasSuffix(v.F1, "foo") {
 		return errors.New("F1 must be suffixed with: \"foo\"")
 	}
-	if v.F2 != nil {
-		f := *v.F2
-		if !strings.HasSuffix(f, "bar") {
-			return errors.New("F2 must be suffixed with: \"bar\"")
-		}
+	if v.F2 != nil && !strings.HasSuffix(*v.F2, "bar") {
+		return errors.New("F2 must be suffixed with: \"bar\"")
 	}
 	if v.F3 == nil || *v.F3 == nil || len(**v.F3) == 0 {
 		return errors.New("F3 is required")
-	} else {
-		f := **v.F3
-		if !strings.HasSuffix(f, "foo") && !strings.HasSuffix(f, "bar") && !strings.HasSuffix(f, "baz") {
-			return errors.New("F3 must be suffixed with: \"foo\" or \"bar\" or \"baz\"")
-		}
+	} else if !strings.HasSuffix(**v.F3, "foo") && !strings.HasSuffix(**v.F3, "bar") && !strings.HasSuffix(**v.F3, "baz") {
+		return errors.New("F3 must be suffixed with: \"foo\" or \"bar\" or \"baz\"")
 	}
 	return nil
 }

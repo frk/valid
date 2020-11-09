@@ -48,6 +48,9 @@ type (
 		// The list of validation rules, as parsed from the struct's tag,
 		// that need to be applied to the field.
 		Rules []*Rule
+
+		// TODO
+		MaxFieldDepth int
 	}
 
 	// StructFieldSelector is a list of fields that represents a chain of
@@ -91,9 +94,11 @@ type (
 		Fields []*StructField
 	}
 
-	// Const
+	// Const represents the identifier of a declared constant.
 	Const struct {
-		Name    string
+		// Name of the constant.
+		Name string
+		// The import path of the package to which the constant belongs.
 		PkgPath string
 	}
 
@@ -128,6 +133,11 @@ type (
 		Args []*RuleArg
 		// The context in which the rule should be applied.
 		Context string
+		// ...
+		Key *Rule
+		// ...
+		Elem *Rule
+
 		// XXX currently not implemented, may never be...
 		SetKey string
 	}
@@ -159,9 +169,9 @@ type (
 	// RuleBasic represents a rule that should produce an expression using
 	// the basic comparison operators for carrying out its validation.
 	RuleBasic struct {
-		// Used for type-checking a rule's associated Rule and StructField.
-		// For RuleBasic this field is expected to be non-nil.
-		check func(a *analysis, f *StructField, r *Rule) error
+		// Used for type-checking a Rule and its associated StructField's
+		// type. For RuleBasic this field is expected to be non-nil.
+		check func(a *analysis, r *Rule, t Type, f *StructField) error
 	}
 
 	// RuleFunc represents a rule that uses functions for carrying out its
@@ -187,24 +197,69 @@ type (
 		UseRawStrings bool
 
 		// Optional, used for additional function-specific type
-		// checking of the associated Rule and StructField.
-		check func(a *analysis, f *StructField, r *Rule) error
+		// checking of the associated Rule and its StructField's type.
+		check func(a *analysis, r *Rule, t Type, f *StructField) error
 		// Indicates that this RuleFunc is a custom one.
 		iscustom bool
 	}
 )
 
-func (RuleIsValid) ruleSpec()      {}
+// ContainsRules reports whether or not the StructField f, or any of
+// the StructFields in the type hierarchy of f, contain validation rules.
+func (f *StructField) ContainsRules() bool {
+	if len(f.Rules) > 0 {
+		return true
+	}
+
+	// walk recursively traverses the hierarchy of the given type and
+	// invokes ContainsRules on any struct fields it encounters.
+	var walk func(Type) bool
+	walk = func(typ Type) bool {
+		typ = typ.PtrBase()
+		switch typ.Kind {
+		case TypeKindStruct:
+			for _, f := range typ.Fields {
+				if f.ContainsRules() {
+					return true
+				}
+			}
+			return false
+		case TypeKindArray, TypeKindSlice:
+			return walk(*typ.Elem)
+		case TypeKindMap:
+			if walk(*typ.Key) {
+				return true
+			}
+			return walk(*typ.Elem)
+		}
+		return false
+	}
+	return walk(f.Type)
+}
+
+func (RuleIsValid) ruleSpec() {}
+func (RuleEnum) ruleSpec()    {}
+func (RuleBasic) ruleSpec()   {}
+func (RuleFunc) ruleSpec()    {}
+
 func (RuleIsValid) IsCustom() bool { return true }
+func (RuleEnum) IsCustom() bool    { return true }
+func (RuleBasic) IsCustom() bool   { return false }
+func (f RuleFunc) IsCustom() bool  { return f.iscustom }
 
-func (RuleEnum) ruleSpec()      {}
-func (RuleEnum) IsCustom() bool { return true }
+// PtrBase ...
+func (t Type) PtrBase() Type {
+	for t.Kind == TypeKindPtr {
+		t = *t.Elem
+	}
+	return t
+}
 
-func (RuleBasic) ruleSpec()      {}
-func (RuleBasic) IsCustom() bool { return false }
-
-func (RuleFunc) ruleSpec()        {}
-func (f RuleFunc) IsCustom() bool { return f.iscustom }
+// Reports whether or not t represents a type that can be indexed (array/slice/map).
+func (t Type) CanIndex() bool {
+	return t.Kind == TypeKindArray || t.Kind == TypeKindSlice || t.Kind == TypeKindMap ||
+		(t.Kind == TypeKindPtr && t.Elem.Kind == TypeKindArray)
+}
 
 func (t Type) String() string {
 	if len(t.Name) > 0 {
@@ -249,13 +304,6 @@ func (t Type) String() string {
 	return "<unknown>"
 }
 
-func (t Type) PtrBase() Type {
-	for t.Kind == TypeKindPtr {
-		t = *t.Elem
-	}
-	return t
-}
-
 // Reports whether the types represented by t and u are equal. Note that this
 // does not handle unnamed struct, interface (non-empty), func, and channel types.
 func (t Type) Equals(u Type) bool {
@@ -295,21 +343,8 @@ func (t Type) NeedsConversion(u Type) bool {
 	return true
 }
 
-func (f *StructField) RulesCopy() []*Rule {
-	if f.Rules == nil {
-		return nil
-	}
-
-	rules := make([]*Rule, len(f.Rules))
-	copy(rules, f.Rules)
-	return rules
-}
-
 func (f *StructField) SubFields() []*StructField {
-	typ := f.Type
-	for typ.Kind == TypeKindPtr {
-		typ = *typ.Elem // deref pointer
-	}
+	typ := f.Type.PtrBase()
 	if typ.Kind == TypeKindStruct {
 		return typ.Fields
 	}

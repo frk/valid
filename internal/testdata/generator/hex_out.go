@@ -12,19 +12,13 @@ func (v HexValidator) Validate() error {
 	if !isvalid.Hex(v.F1) {
 		return errors.New("F1 must be a valid hexadecimal string")
 	}
-	if v.F2 != nil && *v.F2 != nil {
-		f := **v.F2
-		if !isvalid.Hex(f) {
-			return errors.New("F2 must be a valid hexadecimal string")
-		}
+	if v.F2 != nil && *v.F2 != nil && !isvalid.Hex(**v.F2) {
+		return errors.New("F2 must be a valid hexadecimal string")
 	}
 	if v.F3 == nil || *v.F3 == nil || len(**v.F3) == 0 {
 		return errors.New("F3 is required")
-	} else {
-		f := **v.F3
-		if !isvalid.Hex(f) {
-			return errors.New("F3 must be a valid hexadecimal string")
-		}
+	} else if !isvalid.Hex(**v.F3) {
+		return errors.New("F3 must be a valid hexadecimal string")
 	}
 	return nil
 }

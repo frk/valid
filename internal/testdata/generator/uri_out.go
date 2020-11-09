@@ -12,19 +12,13 @@ func (v URIValidator) Validate() error {
 	if !isvalid.URI(v.F1) {
 		return errors.New("F1 must be a valid URI")
 	}
-	if v.F2 != nil && *v.F2 != nil {
-		f := **v.F2
-		if !isvalid.URI(f) {
-			return errors.New("F2 must be a valid URI")
-		}
+	if v.F2 != nil && *v.F2 != nil && !isvalid.URI(**v.F2) {
+		return errors.New("F2 must be a valid URI")
 	}
 	if v.F3 == nil || *v.F3 == nil || len(**v.F3) == 0 {
 		return errors.New("F3 is required")
-	} else {
-		f := **v.F3
-		if !isvalid.URI(f) {
-			return errors.New("F3 must be a valid URI")
-		}
+	} else if !isvalid.URI(**v.F3) {
+		return errors.New("F3 must be a valid URI")
 	}
 	return nil
 }
