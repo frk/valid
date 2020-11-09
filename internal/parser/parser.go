@@ -46,10 +46,31 @@ type Package struct {
 	Files []*File
 }
 
+type AST struct {
+	pkgs []*packages.Package
+}
+
+func (a *AST) add(pkgs ...*packages.Package) {
+	if a == nil {
+		return
+	}
+
+loop:
+	for _, pkg := range pkgs {
+		for i := range a.pkgs {
+			if pkg.PkgPath == a.pkgs[i].PkgPath {
+				// skip if already in slice
+				continue loop
+			}
+		}
+		a.pkgs = append(a.pkgs, pkg)
+	}
+}
+
 // Parse parses Go packages at the given dir / pattern. Only packages that contain
 // files with type declarations that match the standard "isvalid" targets will be
 // included in the returned slice.
-func Parse(dir string, recursive bool, filter func(filePath string) bool) (out []*Package, err error) {
+func Parse(dir string, recursive bool, filter func(filePath string) bool, a *AST) (out []*Package, err error) {
 	// resolve absolute dir path
 	if dir, err = filepath.Abs(dir); err != nil {
 		return nil, err
@@ -136,6 +157,7 @@ func Parse(dir string, recursive bool, filter func(filePath string) bool) (out [
 		}
 	}
 
+	a.add(pkgs...)
 	return out, nil
 }
 
@@ -143,7 +165,7 @@ func Parse(dir string, recursive bool, filter func(filePath string) bool) (out [
 // if successful returns the go/types.Func representation of that function.
 // The provided fpkg should be the import path of a single package, if, instead,
 // a pattern is provided then the result is undefined.
-func ParseFunc(fpkg, fname string) (*types.Func, error) {
+func ParseFunc(fpkg, fname string, a *AST) (*types.Func, error) {
 	pkgCache.Lock()
 	defer pkgCache.Unlock()
 
@@ -173,6 +195,7 @@ func ParseFunc(fpkg, fname string) (*types.Func, error) {
 				}
 
 				if f, ok := obj.(*types.Func); ok {
+					a.add(pkg)
 					return f, nil
 				}
 			}
@@ -180,6 +203,76 @@ func ParseFunc(fpkg, fname string) (*types.Func, error) {
 	}
 
 	return nil, fmt.Errorf("could not find function %q in package %q", fname, fpkg)
+}
+
+// FindConstantsByType looks for and returns all declared constants of the
+// type identified by pkgpath and name in the given AST.
+func FindConstantsByType(pkgpath, name string, a AST) (consts []*types.Const) {
+	done := map[string]struct{}{}
+	for _, pkg := range a.pkgs {
+		cc := findConstantsByType(pkgpath, name, pkg, done)
+		consts = append(consts, cc...)
+	}
+	return consts
+}
+
+// findConstantsByType recursively looks for and returns all declared constants of
+// the type identified by pkgpath and name in the given pkg and all its imported pkgs.
+func findConstantsByType(pkgpath, name string, pkg *packages.Package, done map[string]struct{}) (consts []*types.Const) {
+	// already done, exit
+	if _, ok := done[pkg.PkgPath]; ok {
+		return nil
+	}
+
+	// does not import & is not the target package, exit
+	if _, ok := pkg.Imports[pkgpath]; !ok && pkgpath != pkg.PkgPath {
+		return nil
+	}
+
+	for _, syn := range pkg.Syntax {
+		for _, dec := range syn.Decls {
+			gd, ok := dec.(*ast.GenDecl)
+			if !ok || gd.Tok != token.CONST {
+				continue
+			}
+
+			for _, spec := range gd.Specs {
+				valueSpec, ok := spec.(*ast.ValueSpec)
+				if !ok {
+					continue
+				}
+
+				for _, id := range valueSpec.Names {
+					obj, ok := pkg.TypesInfo.Defs[id]
+					if !ok {
+						continue
+					}
+
+					if c, ok := obj.(*types.Const); ok {
+						named, ok := c.Type().(*types.Named)
+						if !ok {
+							continue
+						}
+
+						tn := named.Obj()
+						if tn.Name() != name || tn.Pkg().Path() != pkgpath {
+							continue
+						}
+
+						consts = append(consts, c)
+					}
+				}
+			}
+		}
+
+	}
+	done[pkg.PkgPath] = struct{}{}
+
+	for _, p := range pkg.Imports {
+		cc := findConstantsByType(pkgpath, name, p, done)
+		consts = append(consts, cc...)
+	}
+	return consts
 }
 
 // hasIgnoreDirective reports whether or not the given documentation contains the "isvalid:ignore" directive.

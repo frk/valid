@@ -378,14 +378,16 @@ func newIfStmt(g *generator, r *analysis.Rule, field *analysis.StructField, fiel
 
 	switch s := spec.(type) {
 	case analysis.RuleIsValid:
-		return newIfStmtForMethodIsValid(g, r, field, fieldExpr)
+		return newIfStmtForIsValid(g, r, field, fieldExpr)
+	case analysis.RuleEnum:
+		return newIfStmtForEnum(g, r, field, fieldExpr)
 	case analysis.RuleBasic:
 		if r.Name == "len" {
 			return newIfStmtForLength(g, r, field, fieldExpr)
 		} else if r.Name == "rng" {
 			return newIfStmtForRange(g, r, field, fieldExpr)
 		}
-		return newIfStmtForBasicRule(g, r, field, fieldExpr)
+		return newIfStmtForBasic(g, r, field, fieldExpr)
 	case analysis.RuleFunc:
 		if s.BoolConn > analysis.RuleFuncBoolNone {
 			return newIfStmtForFuncChained(g, s, r, field, fieldExpr)
@@ -496,9 +498,33 @@ func newExprForConstArg(g *generator, t analysis.Type, a *analysis.RuleArg, rf *
 	return nil
 }
 
-func newIfStmtForMethodIsValid(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+func newIfStmtForIsValid(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
 	sel := GO.SelectorExpr{X: fieldExpr, Sel: GO.Ident{"IsValid"}}
 	ifs.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: GO.CallExpr{Fun: sel}}
+	ifs.Body.Add(newReturnStmtForError(g, r, field, fieldExpr))
+	return ifs
+}
+
+func newIfStmtForEnum(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+	typ := field.Type.PtrBase()
+	ident := typ.PkgPath + "." + typ.Name
+	enums := g.info.EnumMap[ident]
+
+	for _, e := range enums {
+		id := GO.ExprNode(GO.Ident{e.Name})
+		if g.info.PkgPath != e.PkgPath {
+			imp := addImport(g, e.PkgPath)
+			id = GO.QualifiedIdent{imp.name, e.Name}
+		}
+
+		cond := GO.BinaryExpr{Op: GO.BinaryNeq, X: fieldExpr, Y: id}
+		if ifs.Cond != nil {
+			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: ifs.Cond, Y: cond}
+		} else {
+			ifs.Cond = cond
+		}
+	}
+
 	ifs.Body.Add(newReturnStmtForError(g, r, field, fieldExpr))
 	return ifs
 }
@@ -580,7 +606,7 @@ var basicRuleToLogicalOp = map[string]GO.BinaryOp{
 	"ne": GO.BinaryLOr,
 }
 
-func newIfStmtForBasicRule(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
+func newIfStmtForBasic(g *generator, r *analysis.Rule, field *analysis.StructField, fieldExpr GO.ExprNode) (ifs GO.IfStmt) {
 	typ := field.Type
 	for typ.Kind == analysis.TypeKindPtr {
 		typ = *typ.Elem

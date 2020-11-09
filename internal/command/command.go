@@ -49,7 +49,7 @@ func (cmd *Command) Run() error {
 
 	// 0. pre-parsing & analysis of custom rule functions
 	for _, rc := range cmd.CustomRules {
-		f, err := parser.ParseFunc(rc.funcPkg, rc.funcName)
+		f, err := parser.ParseFunc(rc.funcPkg, rc.funcName, nil)
 		if err != nil {
 			return err
 		}
@@ -59,7 +59,7 @@ func (cmd *Command) Run() error {
 	}
 
 	// 1. parse
-	pkgs, err := parser.Parse(cmd.WorkingDirectory.Value, cmd.Recursive.Value, cmd.FileFilterFunc())
+	pkgs, err := parser.Parse(cmd.WorkingDirectory.Value, cmd.Recursive.Value, cmd.FileFilterFunc(), &aConf.AST)
 	if err != nil {
 		return err
 	}

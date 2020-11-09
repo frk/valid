@@ -7,10 +7,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/frk/isvalid/internal/parser"
 	"github.com/frk/tagutil"
 )
 
 type Config struct {
+	AST parser.AST
+
 	FieldKeyTag       string
 	FieldKeySeparator string
 	FieldKeyBase      bool
@@ -23,8 +26,8 @@ type Config struct {
 // custom function MUST have at least one parameter item and, it MUST have
 // exactly one result item which MUST be of type bool.
 func (c *Config) AddRuleFunc(ruleName string, ruleFunc *types.Func) error {
-	if strings.ToLower(ruleName) == "isvalid" {
-		return &anError{Code: errRuleIsValidUnavailable}
+	if name := strings.ToLower(ruleName); name == "isvalid" || name == "enum" {
+		return &anError{Code: errRuleNameUnavailable}
 	}
 
 	sig := ruleFunc.Type().(*types.Signature)
@@ -71,6 +74,7 @@ func (c Config) Analyze(fset *token.FileSet, named *types.Named, pos token.Pos, 
 	a.info.TypeName = named.Obj().Name()
 	a.info.TypeNamePos = pos
 	a.info.SelectorMap = make(map[string]StructFieldSelector)
+	a.info.EnumMap = make(map[string][]Const)
 
 	a.fieldKey = makeFieldKeyFunc(c)
 	vs, err := analyzeValidatorStruct(a, structType)
@@ -105,6 +109,9 @@ type Info struct {
 	RuleSpecMap map[string]RuleSpec
 	// SelectorMap maps field keys to their respective field selectors.
 	SelectorMap map[string]StructFieldSelector
+	// EnumMap maps package-path qualified type names to a slice of
+	// constants declared with that type.
+	EnumMap map[string][]Const
 }
 
 // analysis holds the state of the analyzer.
@@ -145,6 +152,8 @@ type fieldVar struct {
 	tag string
 }
 
+var filenamehook = func(name string) string { return name }
+
 func (a *analysis) anError(e interface{}, f *StructField, r *Rule) error {
 	var err *anError
 
@@ -166,7 +175,7 @@ func (a *analysis) anError(e interface{}, f *StructField, r *Rule) error {
 
 	if fv, ok := a.fieldVarMap[f]; ok {
 		pos := a.fset.Position(fv.v.Pos())
-		err.FieldFileName = pos.Filename
+		err.FieldFileName = filenamehook(pos.Filename)
 		err.FieldFileLine = pos.Line
 		if f.Type.Kind == TypeKindInvalid {
 			err.FieldType = fv.v.Type().String()
@@ -176,7 +185,7 @@ func (a *analysis) anError(e interface{}, f *StructField, r *Rule) error {
 	obj := a.named.Obj()
 	pos := a.fset.Position(obj.Pos())
 	err.VtorName = obj.Name()
-	err.VtorFileName = pos.Filename
+	err.VtorFileName = filenamehook(pos.Filename)
 	err.VtorFileLine = pos.Line
 	return err
 }
@@ -438,33 +447,51 @@ var rxFloat = regexp.MustCompile(`^(?:(?:-?0|[1-9][0-9]*)?\.[0-9]+)$`)
 var rxBool = regexp.MustCompile(`^(?:false|true)$`)
 
 func analyzeRules(a *analysis, f *StructField) error {
+	typ := f.Type.PtrBase()
+
+	// first look for values that control the rest
+	omitisvalid := false
+	for _, s := range f.Tag["is"] {
+		// The "-isvalid" tag value does not identify a specific rule,
+		// instead it indicates that RuleIsValid should be voided.
+		if strings.TrimSpace(s) == "-isvalid" {
+			omitisvalid = true
+		}
+	}
+
+	// Prepare the "isvalid" rule "backup" -- this will be added at the
+	// end of the func if there are no empty rule names in the tag.
 	var isvalid *Rule
-	if typ := f.Type.PtrBase(); typ.IsIsValider {
+	if typ.IsIsValider && !omitisvalid {
 		isvalid = &Rule{Name: "isvalid"}
 	}
 
+	// do all the rest...
 	for _, s := range f.Tag["is"] {
 		s = strings.TrimSpace(s)
-		if len(s) == 0 {
-			continue
-		}
-
-		// The "isvalid" tag option is not accepted, the corresponding
-		// rule RuleIsValid is inferred from the field's type instead.
-		if strings.ToLower(s) == "isvalid" {
-			continue
-		}
-
-		// The "-isvalid" tag option does not identify a specific rule,
-		// instead it indicates that RuleIsValid should be voided.
-		if strings.ToLower(s) == "-isvalid" {
-			isvalid = nil
+		if s == "-isvalid" { // already handled above?
 			continue
 		}
 
 		r := parseIsTagElem(s)
 		if len(r.Context) > 0 && a.needsContext == nil {
 			a.needsContext = &needsContext{f, r}
+		}
+
+		// handle "isvalid"
+		switch r.Name {
+		case "":
+			if typ.IsIsValider && !omitisvalid {
+				r.Name = "isvalid"
+
+				// unset the isvalid variable so that it isn't
+				// added a second time outside of the loop.
+				isvalid = nil
+			}
+		case "isvalid":
+			// The explicit "isvalid" tag value is actually not accepted,
+			// instead the corresponding rule is inferred from the field's type.
+			return a.anError(errRuleUnknown, f, r)
 		}
 
 		// make sure a spec is registered for the rule
@@ -477,7 +504,7 @@ func analyzeRules(a *analysis, f *StructField) error {
 		f.Rules = append(f.Rules, r)
 	}
 
-	// add RuleIsValid as last
+	// append "backup" if present
 	if isvalid != nil {
 		f.Rules = append(f.Rules, isvalid)
 	}
@@ -628,6 +655,10 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 			switch s := spec.(type) {
 			case RuleIsValid:
 				// do nothing
+			case RuleEnum:
+				if err := typeCheckRuleEnum(a, f, r); err != nil {
+					return a.anError(err, f, r)
+				}
 			case RuleBasic:
 				if err := s.check(a, f, r); err != nil {
 					return a.anError(err, f, r)
@@ -645,6 +676,45 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 			}
 		}
 	}
+	return nil
+}
+
+// checks whether the rule enum can be applied to its respective field.
+func typeCheckRuleEnum(a *analysis, f *StructField, r *Rule) error {
+	typ := f.Type.PtrBase()
+	if len(typ.Name) == 0 {
+		return a.anError(errRuleEnumTypeUnnamed, f, r)
+	}
+
+	ident := typ.PkgPath + "." + typ.Name
+	if _, ok := a.info.EnumMap[ident]; ok { // already done?
+		return nil
+	}
+
+	var enums []Const
+
+	consts := parser.FindConstantsByType(typ.PkgPath, typ.Name, a.conf.AST)
+	for _, c := range consts {
+		name := c.Name()
+		pkgpath := c.Pkg().Path()
+
+		// blank, skip
+		if name == "_" {
+			continue
+		}
+
+		// imported but not exported, skip
+		if a.pkgPath != pkgpath && !c.Exported() {
+			continue
+		}
+
+		enums = append(enums, Const{Name: name, PkgPath: pkgpath})
+	}
+	if len(enums) == 0 {
+		return a.anError(errRuleEnumTypeNoConst, f, r)
+	}
+
+	a.info.EnumMap[ident] = enums
 	return nil
 }
 

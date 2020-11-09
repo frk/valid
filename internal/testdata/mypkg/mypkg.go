@@ -52,3 +52,14 @@ func (*MyInt) IsValid() bool {
 	// ...
 	return false
 }
+
+// enum
+type MyKind uint
+
+const (
+	_ MyKind = 1 << iota
+	MyFoo
+	MyBar
+	_
+	MyBaz
+)

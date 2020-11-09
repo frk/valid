@@ -91,6 +91,12 @@ type (
 		Fields []*StructField
 	}
 
+	// Const
+	Const struct {
+		Name    string
+		PkgPath string
+	}
+
 	// ErrorHandlerField is the result of analyzing a validator struct's field whose
 	// type implements the isvalid.ErrorConstructor or isvalid.ErrorAggregator interface.
 	ErrorHandlerField struct {
@@ -146,6 +152,10 @@ type (
 	// method invocation for the field associated with the rule.
 	RuleIsValid struct{}
 
+	// RuleEnum represents a rule that should produce code that checks the
+	// field's value against a set of constants declared with the field's type.
+	RuleEnum struct{}
+
 	// RuleBasic represents a rule that should produce an expression using
 	// the basic comparison operators for carrying out its validation.
 	RuleBasic struct {
@@ -186,6 +196,9 @@ type (
 
 func (RuleIsValid) ruleSpec()      {}
 func (RuleIsValid) IsCustom() bool { return true }
+
+func (RuleEnum) ruleSpec()      {}
+func (RuleEnum) IsCustom() bool { return true }
 
 func (RuleBasic) ruleSpec()      {}
 func (RuleBasic) IsCustom() bool { return false }

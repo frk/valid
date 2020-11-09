@@ -32,6 +32,7 @@ func rulechecks(checks ...func(a *analysis, f *StructField, r *Rule) error) (che
 var defaultRuleSpecMap = map[string]RuleSpec{
 	// speciél
 	"isvalid": RuleIsValid{},
+	"enum":    RuleEnum{},
 
 	// basic rules
 	"required": RuleBasic{check: isValidRuleRequired},

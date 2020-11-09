@@ -59,13 +59,8 @@ func TestGenerator(t *testing.T) {
 		"custom",
 		"hooks",
 		"isvalider",
+		"enum",
 	}
-
-	pkgs, err := parser.Parse("../testdata/generator", false, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	pkg := pkgs[0]
 
 	customrules := [][3]string{
 		{"myrule", "github.com/frk/isvalid/internal/testdata/mypkg", "MyRule"},
@@ -75,7 +70,7 @@ func TestGenerator(t *testing.T) {
 
 	anConf := analysis.Config{FieldKeySeparator: "."}
 	for _, cr := range customrules {
-		f, err := parser.ParseFunc(cr[1], cr[2])
+		f, err := parser.ParseFunc(cr[1], cr[2], nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -83,6 +78,12 @@ func TestGenerator(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+
+	pkgs, err := parser.Parse("../testdata/generator", false, nil, &anConf.AST)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkg := pkgs[0]
 
 	for _, filename := range tests {
 		t.Run(filename, func(t *testing.T) {

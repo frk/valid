@@ -58,7 +58,7 @@ func (e errorCode) name() string { return fmt.Sprintf("error_template_%d", e) }
 const (
 	_ errorCode = iota
 	errEmptyValidator
-	errRuleIsValidUnavailable
+	errRuleNameUnavailable
 	errRuleUnknown
 	errRuleContextUnknown
 	errRuleArgNum
@@ -96,6 +96,8 @@ const (
 	errRuleFuncFieldArgType
 	errRuleFuncRuleArgCount
 	errRuleFuncRuleArgType
+	errRuleEnumTypeUnnamed
+	errRuleEnumTypeNoConst
 )
 
 var error_template_string = `
@@ -104,7 +106,7 @@ var error_template_string = `
   > must have at least one field to validate.
 {{ end }}
 
-{{ define "` + errRuleIsValidUnavailable.name() + `" -}}
+{{ define "` + errRuleNameUnavailable.name() + `" -}}
 {{Wb .FileAndLine}}: {{Y "rule name not available."}}
 	TODO {{R .FieldName}}
 {{ end }}
@@ -291,6 +293,16 @@ var error_template_string = `
 
 {{ define "` + errRuleFuncRuleArgType.name() + `" -}}
 {{Wb .FileAndLine}}: {{Y "Incompatible rule func parameter type and rule argument type."}}
+	TODO {{R .FieldName}} {{R .FieldType}}
+{{ end }}
+
+{{ define "` + errRuleEnumTypeUnnamed.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "\"enum\" rule with unnamed type is not allowed."}}
+	TODO {{R .FieldName}} {{R .FieldType}}
+{{ end }}
+
+{{ define "` + errRuleEnumTypeNoConst.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "Type of field with \"enum\" rule has no constants declared."}}
 	TODO {{R .FieldName}} {{R .FieldType}}
 {{ end }}
 ` // `

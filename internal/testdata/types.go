@@ -116,8 +116,23 @@ type UserInput struct {
 	f75 mypkg.MyString  `is:"required"`
 	f76 mypkg.MyInt     `is:"required"`
 	f77 *mypkg.MyString `is:"-isvalid"`
-	f78 **mypkg.MyInt   `is:""`
+	f78 **mypkg.MyInt   `is:":@create"`
 	f79 *interface {
 		IsValid() bool
 	}
+
+	// enums
+	f80 someKind      `is:"enum"`
+	f81 mypkg.MyKind  `is:"enum"`
+	f82 **someKind    `is:"enum"`
+	f83 *mypkg.MyKind `is:"enum:@create"`
 }
+
+// local enum
+type someKind string
+
+const (
+	someFoo someKind = "foo"
+	someBar someKind = "bar"
+	someBaz someKind = "baz"
+)
