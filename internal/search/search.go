@@ -1,3 +1,4 @@
+// package search is used to find targets for the generator.
 package search
 
 import (
@@ -204,7 +205,7 @@ func hasIgnoreDirective(doc *ast.CommentGroup) bool {
 }
 
 // FindConstantsByType scans the given AST looking for all declared constants
-// of the type identified by pkgpath and name, on success the result will be
+// of the type identified by pkgpath and name. On success the result will be
 // a slice of go/types.Const instances that represent those constants.
 //
 // FindConstantsByType is exepcted to be invoked *after* Search and the AST argument is
