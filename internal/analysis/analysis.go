@@ -7,12 +7,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/frk/isvalid/internal/parser"
+	"github.com/frk/isvalid/internal/search"
 	"github.com/frk/tagutil"
 )
 
 type Config struct {
-	AST parser.AST
+	AST search.AST
 
 	FieldKeyTag       string
 	FieldKeySeparator string
@@ -801,7 +801,7 @@ func typeCheckRuleEnum(a *analysis, t Type, r *Rule, f *StructField) error {
 	}
 
 	enums := []Const{}
-	consts := parser.FindConstantsByType(typ.PkgPath, typ.Name, a.conf.AST)
+	consts := search.FindConstantsByType(typ.PkgPath, typ.Name, a.conf.AST)
 	for _, c := range consts {
 		name := c.Name()
 		pkgpath := c.Pkg().Path()

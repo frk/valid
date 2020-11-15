@@ -18,6 +18,44 @@ const (
 	pkgisvalid   = `github.com/frk/isvalid`
 )
 
+// TargetAnalysis is used as the input to the generator, it holds
+// the result of the target's analysis.
+type TargetAnalysis struct {
+	// the target struct
+	ValidatorStruct *analysis.ValidatorStruct
+	// additional info produced by the analysis
+	Info *analysis.Info
+}
+
+// Generate produces the code for the given targets and writes it to w.
+func Generate(w io.Writer, pkgName string, targets []*TargetAnalysis) error {
+	file := new(file)
+	for _, t := range targets {
+		g := new(generator)
+		g.info = t.Info
+		g.vs = t.ValidatorStruct
+		g.file = file
+
+		buildMethodValidate(g)
+	}
+
+	// add an "init()" func if needed
+	if len(file.init) > 0 {
+		init := GO.FuncDecl{}
+		init.Name.Name = "init"
+		init.Body.List = file.init
+		file.Decls = append([]GO.TopLevelDeclNode{init}, file.Decls...)
+	}
+
+	// final touch
+	file.PkgName = pkgName
+	file.Preamble = GO.LineComment{filePreamble}
+	file.Imports = []GO.ImportDeclNode{newImportDeclNode(file)}
+
+	// let's go
+	return GO.Write(file.File, w)
+}
+
 // The file type holds info about the file for which the code is being generated.
 type file struct {
 	// The ast.
@@ -62,40 +100,6 @@ type generator struct {
 	fragments      []*fragment
 	beforeValidate GO.StmtNode
 	afterValidate  GO.StmtNode
-}
-
-type TargetInfo struct {
-	ValidatorStruct *analysis.ValidatorStruct
-	Info            *analysis.Info
-}
-
-// Generate produces the code for the given targets and writes it to w.
-func Generate(w io.Writer, pkgName string, targets []*TargetInfo) error {
-	file := new(file)
-	for _, t := range targets {
-		g := new(generator)
-		g.info = t.Info
-		g.vs = t.ValidatorStruct
-		g.file = file
-
-		buildMethodValidate(g)
-	}
-
-	// add an "init()" func if needed
-	if len(file.init) > 0 {
-		init := GO.FuncDecl{}
-		init.Name.Name = "init"
-		init.Body.List = file.init
-		file.Decls = append([]GO.TopLevelDeclNode{init}, file.Decls...)
-	}
-
-	// final touch
-	file.PkgName = pkgName
-	file.Preamble = GO.LineComment{filePreamble}
-	file.Imports = []GO.ImportDeclNode{newImportDeclNode(file)}
-
-	// let's go
-	return GO.Write(file.File, w)
 }
 
 // set of common nodes

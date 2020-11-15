@@ -11,7 +11,7 @@ import (
 
 	"github.com/frk/compare"
 	"github.com/frk/isvalid/internal/analysis"
-	"github.com/frk/isvalid/internal/parser"
+	"github.com/frk/isvalid/internal/search"
 )
 
 func TestGenerator(t *testing.T) {
@@ -74,15 +74,20 @@ func TestGenerator(t *testing.T) {
 		"slice",
 	}
 
+	anConf := analysis.Config{FieldKeySeparator: "."}
+	pkgs, err := search.Search("../testdata/generator", false, nil, &anConf.AST)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkg := pkgs[0]
+
 	customrules := [][3]string{
 		{"myrule", "github.com/frk/isvalid/internal/testdata/mypkg", "MyRule"},
 		{"myrule2", "github.com/frk/isvalid/internal/testdata/mypkg", "MyRule2"},
 		{"myrule3", "github.com/frk/isvalid/internal/testdata/mypkg", "MyRule3"},
 	}
-
-	anConf := analysis.Config{FieldKeySeparator: "."}
 	for _, cr := range customrules {
-		f, err := parser.ParseFunc(cr[1], cr[2], nil)
+		f, err := search.FindFunc(cr[1], cr[2], anConf.AST)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -91,15 +96,9 @@ func TestGenerator(t *testing.T) {
 		}
 	}
 
-	pkgs, err := parser.Parse("../testdata/generator", false, nil, &anConf.AST)
-	if err != nil {
-		t.Fatal(err)
-	}
-	pkg := pkgs[0]
-
 	for _, filename := range tests {
 		t.Run(filename, func(t *testing.T) {
-			tinfos := []*TargetInfo{}
+			tinfos := []*TargetAnalysis{}
 			fileprefix := "../testdata/generator/" + filename
 
 			f, err := getFile(pkg, fileprefix+"_in.go")
@@ -107,15 +106,15 @@ func TestGenerator(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			for _, target := range f.Targets {
+			for _, match := range f.Matches {
 				anInfo := &analysis.Info{}
-				vs, err := anConf.Analyze(pkg.Fset, target.Named, target.Pos, anInfo)
+				vs, err := anConf.Analyze(pkg.Fset, match.Named, match.Pos, anInfo)
 				if err != nil {
 					t.Error(err)
 					return
 				}
 
-				tinfos = append(tinfos, &TargetInfo{vs, anInfo})
+				tinfos = append(tinfos, &TargetAnalysis{vs, anInfo})
 			}
 
 			buf := new(bytes.Buffer)
@@ -141,7 +140,7 @@ func TestGenerator(t *testing.T) {
 }
 
 // helper method...
-func getFile(p *parser.Package, filename string) (*parser.File, error) {
+func getFile(p *search.Package, filename string) (*search.File, error) {
 	filename, err := filepath.Abs(filename)
 	if err != nil {
 		return nil, err

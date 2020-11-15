@@ -11,7 +11,7 @@ import (
 
 	"github.com/frk/isvalid/internal/analysis"
 	"github.com/frk/isvalid/internal/generator"
-	"github.com/frk/isvalid/internal/parser"
+	"github.com/frk/isvalid/internal/search"
 )
 
 type Command struct {
@@ -47,21 +47,21 @@ func (cmd *Command) Run() error {
 	aConf.FieldKeyBase = cmd.FieldKeyBase.Value
 	aConf.FieldKeySeparator = cmd.FieldKeySeparator.Value
 
-	// 0. pre-parsing & analysis of custom rule functions
+	// 1. search for validator types
+	pkgs, err := search.Search(cmd.WorkingDirectory.Value, cmd.Recursive.Value, cmd.FileFilterFunc(), &aConf.AST)
+	if err != nil {
+		return err
+	}
+
+	// 2. find & analyze custom rule functions
 	for _, rc := range cmd.CustomRules {
-		f, err := parser.ParseFunc(rc.funcPkg, rc.funcName, nil)
+		f, err := search.FindFunc(rc.funcPkg, rc.funcName, aConf.AST)
 		if err != nil {
 			return err
 		}
 		if err := aConf.AddRuleFunc(rc.Name, f); err != nil {
 			return err
 		}
-	}
-
-	// 1. parse
-	pkgs, err := parser.Parse(cmd.WorkingDirectory.Value, cmd.Recursive.Value, cmd.FileFilterFunc(), &aConf.AST)
-	if err != nil {
-		return err
 	}
 
 	result := make([][]*outFile, len(pkgs))
@@ -71,20 +71,20 @@ func (cmd *Command) Run() error {
 		for j, file := range pkg.Files {
 			out := new(outFile)
 			out.path = cmd.outFilePath(file.Path)
-			out.targInfos = make([]*generator.TargetInfo, len(file.Targets))
+			out.targInfos = make([]*generator.TargetAnalysis, len(file.Matches))
 
-			for k, target := range file.Targets {
-				// 2. analyze
+			for k, match := range file.Matches {
+				// 3. analyze targets
 				aInfo := new(analysis.Info)
-				vs, err := aConf.Analyze(pkg.Fset, target.Named, target.Pos, aInfo)
+				vs, err := aConf.Analyze(pkg.Fset, match.Named, match.Pos, aInfo)
 				if err != nil {
 					return err
 				}
 
-				out.targInfos[k] = &generator.TargetInfo{ValidatorStruct: vs, Info: aInfo}
+				out.targInfos[k] = &generator.TargetAnalysis{ValidatorStruct: vs, Info: aInfo}
 			}
 
-			// 3. generate
+			// 4. generate code
 			if err := generator.Generate(&out.buf, pkg.Name, out.targInfos); err != nil {
 				return err
 			}
@@ -94,7 +94,7 @@ func (cmd *Command) Run() error {
 		result[i] = outFiles
 	}
 
-	// 4. write to file(s)
+	// 5. write to file(s)
 	for _, outFiles := range result {
 		for _, out := range outFiles {
 			if err := cmd.writeOutFile(out); err != nil {
@@ -122,7 +122,7 @@ type outFile struct {
 	// absolute path of the output file
 	path string
 	// the type checked targets
-	targInfos []*generator.TargetInfo
+	targInfos []*generator.TargetAnalysis
 	// the generated code
 	buf bytes.Buffer
 }

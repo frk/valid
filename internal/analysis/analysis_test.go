@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/frk/compare"
-	"github.com/frk/isvalid/internal/parser"
+	"github.com/frk/isvalid/internal/search"
 	"github.com/frk/tagutil"
 )
 
@@ -2925,7 +2925,7 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}
 
-	pkgs, err := parser.Parse("../testdata", false, nil, &anConf.AST)
+	pkgs, err := search.Search("../testdata", false, nil, &anConf.AST)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2933,8 +2933,8 @@ func TestAnalysisRun(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			target := lookupTarget(tt.name, pkg, t)
-			got, err := anConf.Analyze(pkg.Fset, target.Named, target.Pos, &Info{})
+			match := getMatch(tt.name, pkg, t)
+			got, err := anConf.Analyze(pkg.Fset, match.Named, match.Pos, &Info{})
 			if e := compare.Compare(err, tt.err); e != nil {
 				t.Errorf("Error: %v", e)
 			}
@@ -2961,7 +2961,7 @@ func TestContainsRules(t *testing.T) {
 	}
 
 	anConf := Config{FieldKeySeparator: "."}
-	pkgs, err := parser.Parse("../testdata/containsrules", false, nil, &anConf.AST)
+	pkgs, err := search.Search("../testdata/containsrules", false, nil, &anConf.AST)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2969,8 +2969,8 @@ func TestContainsRules(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			target := lookupTarget(tt.name, pkg, t)
-			vs, err := anConf.Analyze(pkg.Fset, target.Named, target.Pos, &Info{})
+			match := getMatch(tt.name, pkg, t)
+			vs, err := anConf.Analyze(pkg.Fset, match.Named, match.Pos, &Info{})
 			if err != nil {
 				t.Errorf("Error: %v", err)
 			} else if len(vs.Fields) != 2 {
@@ -2989,11 +2989,11 @@ func TestContainsRules(t *testing.T) {
 	}
 }
 
-func lookupTarget(name string, pkg *parser.Package, t *testing.T) *parser.Target {
+func getMatch(name string, pkg *search.Package, t *testing.T) *search.Match {
 	for _, file := range pkg.Files {
-		for _, target := range file.Targets {
-			if target.Named.Obj().Name() == name {
-				return target
+		for _, match := range file.Matches {
+			if match.Named.Obj().Name() == name {
+				return match
 			}
 		}
 	}
