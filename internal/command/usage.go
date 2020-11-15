@@ -50,12 +50,14 @@ the generator will default to use the field names instead of struct tags to cons
 the field keys. If left unspecified, the tag "json" will be used by default.
 
 
-The -fkbase flag if set, instructs the generator to use only the base of a tag/field chain
-to construct the field keys. If left unspecified, the value false will be used by default.
+The -fkjoin flag if set to true, specifies that a nested struct field's key will be
+produced by joining it together with all of its parent fields. If set to false, such
+a field's key will be produced only from that field's name/tag. If left unspecified,
+the value true will be used by default.
 
 
-The -fksep flag specifies the separator to be used to join a chain of tag/field values
-for constructing the field keys. The separator can be at most one byte long.
+The -fksep flag specifies the separator to be used for joining fields' tags/names
+when producing the field keys. The separator can be at most one byte long.
 If left unspecified, the separator "." will be used by default.
 
 ` //`

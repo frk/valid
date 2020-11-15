@@ -44,13 +44,14 @@ type Config struct {
 	//
 	// If not provided, the tag "json" will be used by default.
 	FieldKeyTag String `json:"field_key_tag"`
-	// If set, instructs the generator to use only the base of a tag/field
-	// chain to construct the field keys.
+	// If set to true, a nested struct field's key will be produced by joining
+	// it together with all of its parent fields. If set to false, such a field's
+	// key will be produced only from that field's name/tag.
 	//
-	// If not provided, `false` will be used by default.
-	FieldKeyBase Bool `json:"field_key_base"`
-	// The separator to be used to join a chain of tag/field values for
-	// constructing the field keys. The separator can be at most one byte long.
+	// If not provided, `true` will be used by default.
+	FieldKeyJoin Bool `json:"field_key_join"`
+	// The separator to be used for joining fields' tags/names when producing
+	// field keys. The separator can be at most one byte long.
 	//
 	// If not provided, the separator "." will be used by default.
 	FieldKeySeparator String `json:"field_key_separator"`
@@ -77,7 +78,7 @@ var DefaultConfig = Config{
 	InputFileRegexps:     StringSlice{},
 	OutputFileNameFormat: String{Value: "%s_isvalid.go"},
 	FieldKeyTag:          String{Value: "json"},
-	FieldKeyBase:         Bool{Value: false},
+	FieldKeyJoin:         Bool{Value: true},
 	FieldKeySeparator:    String{Value: "."},
 }
 
@@ -91,7 +92,7 @@ func (c *Config) ParseFlags() {
 	fs.Var(&c.InputFileRegexps, "rx", "")
 	fs.Var(&c.OutputFileNameFormat, "o", "")
 	fs.Var(&c.FieldKeyTag, "fktag", "")
-	fs.Var(&c.FieldKeyBase, "fkbase", "")
+	fs.Var(&c.FieldKeyJoin, "fkjoin", "")
 	fs.Var(&c.FieldKeySeparator, "fksep", "")
 	_ = fs.Parse(os.Args[1:])
 }

@@ -44,18 +44,19 @@ func New(cfg Config) (*Command, error) {
 func (cmd *Command) Run() error {
 	var aConf analysis.Config
 	aConf.FieldKeyTag = cmd.FieldKeyTag.Value
-	aConf.FieldKeyBase = cmd.FieldKeyBase.Value
+	aConf.FieldKeyJoin = cmd.FieldKeyJoin.Value
 	aConf.FieldKeySeparator = cmd.FieldKeySeparator.Value
 
 	// 1. search for validator types
-	pkgs, err := search.Search(cmd.WorkingDirectory.Value, cmd.Recursive.Value, cmd.FileFilterFunc(), &aConf.AST)
+	var AST search.AST
+	pkgs, err := search.Search(cmd.WorkingDirectory.Value, cmd.Recursive.Value, cmd.FileFilterFunc(), &AST)
 	if err != nil {
 		return err
 	}
 
 	// 2. find & analyze custom rule functions
 	for _, rc := range cmd.CustomRules {
-		f, err := search.FindFunc(rc.funcPkg, rc.funcName, aConf.AST)
+		f, err := search.FindFunc(rc.funcPkg, rc.funcName, AST)
 		if err != nil {
 			return err
 		}
@@ -74,9 +75,9 @@ func (cmd *Command) Run() error {
 			out.targInfos = make([]*generator.TargetAnalysis, len(file.Matches))
 
 			for k, match := range file.Matches {
-				// 3. analyze targets
+				// 3. analyze matched targets
 				aInfo := new(analysis.Info)
-				vs, err := aConf.Analyze(pkg.Fset, match.Named, match.Pos, aInfo)
+				vs, err := aConf.Analyze(AST, match, aInfo)
 				if err != nil {
 					return err
 				}

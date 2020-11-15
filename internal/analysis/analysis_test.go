@@ -2889,7 +2889,7 @@ func TestAnalysisRun(t *testing.T) {
 
 	compare := compare.Config{ObserveFieldTag: "cmp"}
 
-	anConf := Config{FieldKeySeparator: "."}
+	anConf := Config{FieldKeyJoin: true, FieldKeySeparator: "."}
 	anConf.ruleSpecMap = map[string]RuleSpec{
 		// legit
 		"utf8": RuleFunc{
@@ -2925,7 +2925,8 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}
 
-	pkgs, err := search.Search("../testdata", false, nil, &anConf.AST)
+	var AST search.AST
+	pkgs, err := search.Search("../testdata", false, nil, &AST)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2934,7 +2935,7 @@ func TestAnalysisRun(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			match := getMatch(tt.name, pkg, t)
-			got, err := anConf.Analyze(pkg.Fset, match.Named, match.Pos, &Info{})
+			got, err := anConf.Analyze(AST, match, &Info{})
 			if e := compare.Compare(err, tt.err); e != nil {
 				t.Errorf("Error: %v", e)
 			}
@@ -2960,8 +2961,10 @@ func TestContainsRules(t *testing.T) {
 		{name: "ContainsRulesTest5Validator"},
 	}
 
-	anConf := Config{FieldKeySeparator: "."}
-	pkgs, err := search.Search("../testdata/containsrules", false, nil, &anConf.AST)
+	anConf := Config{FieldKeyJoin: true, FieldKeySeparator: "."}
+
+	var AST search.AST
+	pkgs, err := search.Search("../testdata/containsrules", false, nil, &AST)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2970,7 +2973,7 @@ func TestContainsRules(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			match := getMatch(tt.name, pkg, t)
-			vs, err := anConf.Analyze(pkg.Fset, match.Named, match.Pos, &Info{})
+			vs, err := anConf.Analyze(AST, match, &Info{})
 			if err != nil {
 				t.Errorf("Error: %v", err)
 			} else if len(vs.Fields) != 2 {

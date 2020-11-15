@@ -74,8 +74,10 @@ func TestGenerator(t *testing.T) {
 		"slice",
 	}
 
-	anConf := analysis.Config{FieldKeySeparator: "."}
-	pkgs, err := search.Search("../testdata/generator", false, nil, &anConf.AST)
+	anConf := analysis.Config{FieldKeyJoin: true, FieldKeySeparator: "."}
+
+	var AST search.AST
+	pkgs, err := search.Search("../testdata/generator", false, nil, &AST)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +89,7 @@ func TestGenerator(t *testing.T) {
 		{"myrule3", "github.com/frk/isvalid/internal/testdata/mypkg", "MyRule3"},
 	}
 	for _, cr := range customrules {
-		f, err := search.FindFunc(cr[1], cr[2], anConf.AST)
+		f, err := search.FindFunc(cr[1], cr[2], AST)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -108,7 +110,7 @@ func TestGenerator(t *testing.T) {
 
 			for _, match := range f.Matches {
 				anInfo := &analysis.Info{}
-				vs, err := anConf.Analyze(pkg.Fset, match.Named, match.Pos, anInfo)
+				vs, err := anConf.Analyze(AST, match, anInfo)
 				if err != nil {
 					t.Error(err)
 					return

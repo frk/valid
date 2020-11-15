@@ -11,18 +11,27 @@ import (
 	"github.com/frk/tagutil"
 )
 
+// A Config specifies the configuration for the analysis.
 type Config struct {
-	AST search.AST
-
-	FieldKeyTag       string
+	// If set, specifies the struct tag to be used to produce a struct
+	// field's key. If not set, the field's name will be used by default.
+	FieldKeyTag string
+	// If set to true, a nested struct field's key will be produced by
+	// joining it together with all of its parent fields. If set to false,
+	// such a field's key will be produced only from that field's name/tag.
+	FieldKeyJoin bool
+	// If set, specifies the separator that will be used when producing a
+	// joined key for a nested struct field. If not set, the field's key
+	// will be joined without a separator.
+	//
+	// This field is only used if FieldKeyJoin is set to true.
 	FieldKeySeparator string
-	FieldKeyBase      bool
 
 	// map of custom RuleSpecs
 	ruleSpecMap map[string]RuleSpec
 }
 
-// AddRuleFunc is used to register a custom RuleFuncs with the Config. The
+// AddRuleFunc is used to register a custom RuleFunc with the Config. The
 // custom function MUST have at least one parameter item and, it MUST have
 // exactly one result item which MUST be of type bool.
 func (c *Config) AddRuleFunc(ruleName string, ruleFunc *types.Func) error {
@@ -54,29 +63,32 @@ func (c *Config) AddRuleFunc(ruleName string, ruleFunc *types.Func) error {
 	return nil
 }
 
-func (c Config) Analyze(fset *token.FileSet, named *types.Named, pos token.Pos, info *Info) (*ValidatorStruct, error) {
-	structType, ok := named.Underlying().(*types.Struct)
+// Analyze runs the analysis of the validator struct represented by the given *search.Match.
+// If successful, the returned *ValidatorStruct value is ready to be fed to the generator.
+func (c Config) Analyze(ast search.AST, match *search.Match, info *Info) (*ValidatorStruct, error) {
+	structType, ok := match.Named.Underlying().(*types.Struct)
 	if !ok {
-		panic(named.Obj().Name() + " must be a struct type.") // this shouldn't happen
+		panic(match.Named.Obj().Name() + " must be a struct type.") // this shouldn't happen
 	}
 
 	a := new(analysis)
 	a.conf = c
-	a.fset = fset
-	a.named = named
-	a.pkgPath = named.Obj().Pkg().Path()
+	a.ast = ast
+	a.fset = match.Fset
+	a.named = match.Named
+	a.pkgPath = match.Named.Obj().Pkg().Path()
 	a.keys = make(map[string]uint)
 	a.fieldVarMap = make(map[*StructField]fieldVar)
 
 	a.info = info
-	a.info.FileSet = fset
+	a.info.FileSet = match.Fset
 	a.info.PkgPath = a.pkgPath
-	a.info.TypeName = named.Obj().Name()
-	a.info.TypeNamePos = pos
+	a.info.TypeName = match.Named.Obj().Name()
+	a.info.TypeNamePos = match.Pos
 	a.info.SelectorMap = make(map[string]StructFieldSelector)
 	a.info.EnumMap = make(map[string][]Const)
 
-	a.fieldKey = makeFieldKeyFunc(c)
+	a.fieldKey = fieldKeyFunc(c)
 	vs, err := analyzeValidatorStruct(a, structType)
 	if err != nil {
 		return nil, err
@@ -107,7 +119,7 @@ type Info struct {
 	TypeNamePos token.Pos
 	// RuleSpecMap will be populated by all the registered RuleSpecs.
 	RuleSpecMap map[string]RuleSpec
-	// SelectorMap maps field keys to their respective field selectors.
+	// SelectorMap maps field keys to their related field selectors.
 	SelectorMap map[string]StructFieldSelector
 	// EnumMap maps package-path qualified type names to a slice of
 	// constants declared with that type.
@@ -117,6 +129,8 @@ type Info struct {
 // analysis holds the state of the analyzer.
 type analysis struct {
 	conf Config
+	// The AST as populated by search.Search.
+	ast search.AST
 	// The FileSet associated with the type under analysis,
 	// used primarily for error reporting.
 	fset *token.FileSet
@@ -152,8 +166,12 @@ type fieldVar struct {
 	tag string
 }
 
+// used by tests to trim away developer specific file system location of
+// the project from testdata files' filepaths.
 var filenamehook = func(name string) string { return name }
 
+// anError wraps the given errorCode/*anError value with a number of
+// detials that are intended to help with error reporting.
 func (a *analysis) anError(e interface{}, f *StructField, r *Rule) error {
 	var err *anError
 
@@ -162,6 +180,8 @@ func (a *analysis) anError(e interface{}, f *StructField, r *Rule) error {
 		err = &anError{Code: v}
 	case *anError:
 		err = v
+	default:
+		panic("shouldn't reach")
 	}
 
 	if f != nil {
@@ -228,6 +248,7 @@ func analyzeValidatorStruct(a *analysis, structType *types.Struct) (*ValidatorSt
 	return a.validator, nil
 }
 
+// analyzeStructFields analyzes the given *types.Struct's fields.
 func analyzeStructFields(a *analysis, structType *types.Struct, selector []*StructField, local bool) (fields []*StructField, err error) {
 	for i := 0; i < structType.NumFields(); i++ {
 		fvar := structType.Field(i)
@@ -274,7 +295,7 @@ func analyzeStructFields(a *analysis, structType *types.Struct, selector []*Stru
 		a.info.SelectorMap[f.Key] = append(StructFieldSelector{}, fsel...)
 
 		maxdepth := 0
-		typ, err := analyzeType(a, fsel, fvar.Type(), &maxdepth)
+		typ, err := analyzeType(a, fvar.Type(), fsel, &maxdepth)
 		if err != nil {
 			return nil, err
 		}
@@ -339,7 +360,8 @@ func analyzeContextOptionField(a *analysis, f *StructField) error {
 	return nil
 }
 
-func analyzeType(a *analysis, selector []*StructField, t types.Type, maxdepth *int) (typ Type, err error) {
+// analyzeType analyzes the given types.Type.
+func analyzeType(a *analysis, t types.Type, selector []*StructField, maxdepth *int) (typ Type, err error) {
 	if named, ok := t.(*types.Named); ok {
 		pkg := named.Obj().Pkg()
 		typ.Name = named.Obj().Name()
@@ -359,31 +381,31 @@ func analyzeType(a *analysis, selector []*StructField, t types.Type, maxdepth *i
 		typ.IsRune = T.Name() == "rune"
 		typ.IsByte = T.Name() == "byte"
 	case *types.Slice:
-		elem, err := analyzeType(a, selector, T.Elem(), maxdepth)
+		elem, err := analyzeType(a, T.Elem(), selector, maxdepth)
 		if err != nil {
 			return Type{}, err
 		}
 		typ.Elem = &elem
 	case *types.Array:
-		elem, err := analyzeType(a, selector, T.Elem(), maxdepth)
+		elem, err := analyzeType(a, T.Elem(), selector, maxdepth)
 		if err != nil {
 			return Type{}, err
 		}
 		typ.Elem = &elem
 		typ.ArrayLen = T.Len()
 	case *types.Map:
-		key, err := analyzeType(a, selector, T.Key(), maxdepth)
+		key, err := analyzeType(a, T.Key(), selector, maxdepth)
 		if err != nil {
 			return Type{}, err
 		}
-		elem, err := analyzeType(a, selector, T.Elem(), maxdepth)
+		elem, err := analyzeType(a, T.Elem(), selector, maxdepth)
 		if err != nil {
 			return Type{}, err
 		}
 		typ.Key = &key
 		typ.Elem = &elem
 	case *types.Pointer:
-		elem, err := analyzeType(a, selector, T.Elem(), maxdepth)
+		elem, err := analyzeType(a, T.Elem(), selector, maxdepth)
 		if err != nil {
 			return Type{}, err
 		}
@@ -460,6 +482,7 @@ var rxInt = regexp.MustCompile(`^(?:0|-?[1-9][0-9]*)$`)
 var rxFloat = regexp.MustCompile(`^(?:(?:-?0|[1-9][0-9]*)?\.[0-9]+)$`)
 var rxBool = regexp.MustCompile(`^(?:false|true)$`)
 
+// analyzeRules analyzes the rules of the given *StructField.
 func analyzeRules(a *analysis, f *StructField) error {
 	typ := f.Type.PtrBase()
 
@@ -509,8 +532,8 @@ func analyzeRules(a *analysis, f *StructField) error {
 		}
 
 		// make sure a spec is registered for the rule
-		if err := checkRuleExists(a, f, r); err != nil {
-			return err
+		if !hasRuleSpec(a, r) {
+			return a.anError(errRuleUnknown, f, r)
 		}
 
 		f.Rules = append(f.Rules, r)
@@ -523,27 +546,28 @@ func analyzeRules(a *analysis, f *StructField) error {
 	return nil
 }
 
-func checkRuleExists(a *analysis, f *StructField, r *Rule) error {
+// hasRuleSpec reports whether or not the given *Rule has a RuleSpec registered.
+func hasRuleSpec(a *analysis, r *Rule) bool {
 	if r.Key != nil || r.Elem != nil {
 		if r.Key != nil {
-			if err := checkRuleExists(a, f, r.Key); err != nil {
-				return err
+			if !hasRuleSpec(a, r.Key) {
+				return false
 			}
 		}
 		if r.Elem != nil {
-			if err := checkRuleExists(a, f, r.Elem); err != nil {
-				return err
+			if !hasRuleSpec(a, r.Elem) {
+				return false
 			}
 		}
-		return nil
+		return true
 	}
 
 	if _, ok := a.conf.ruleSpecMap[r.Name]; !ok {
 		if _, ok := defaultRuleSpecMap[r.Name]; !ok {
-			return a.anError(errRuleUnknown, f, r)
+			return false
 		}
 	}
-	return nil
+	return true
 }
 
 // analyzeTypeKind returns the TypeKind for the given types.Type.
@@ -573,6 +597,7 @@ func analyzeTypeKind(typ types.Type) TypeKind {
 	return 0 // unsupported / unknown
 }
 
+// makeFieldKey constructs a unique field key for the given selector.
 func makeFieldKey(a *analysis, selector []*StructField) (key string) {
 	key = a.fieldKey(selector)
 	if num, ok := a.keys[key]; ok {
@@ -680,7 +705,7 @@ func parseIsTagElem(str string) *Rule {
 }
 
 // Checks all fields and their rules, and whether each rule can be applied
-// to its respective field without causing a compiler error.
+// to its related field without causing a compiler error.
 func typeCheckRules(a *analysis, fields []*StructField) error {
 
 	// walk recursively traverses the hierarchy of the given type and
@@ -801,7 +826,7 @@ func typeCheckRuleEnum(a *analysis, t Type, r *Rule, f *StructField) error {
 	}
 
 	enums := []Const{}
-	consts := search.FindConstantsByType(typ.PkgPath, typ.Name, a.conf.AST)
+	consts := search.FindConstantsByType(typ.PkgPath, typ.Name, a.ast)
 	for _, c := range consts {
 		name := c.Name()
 		pkgpath := c.Pkg().Path()
@@ -823,7 +848,7 @@ func typeCheckRuleEnum(a *analysis, t Type, r *Rule, f *StructField) error {
 	return nil
 }
 
-// checks whether the rule func can be applied to its respective field.
+// checks whether the rule func can be applied to its related field.
 func typeCheckRuleFunc(a *analysis, r *Rule, rf RuleFunc, t Type, f *StructField) error {
 	if rf.BoolConn > RuleFuncBoolNone {
 		// func with bool connective but rule with no args, fail
@@ -887,8 +912,8 @@ func typeCheckRuleFunc(a *analysis, r *Rule, rf RuleFunc, t Type, f *StructField
 	return nil
 }
 
-// Reports whether src type can be converted to dst type. Note that this does
-// not handle unnamed struct, interface, func, and channel types.
+// canConvert reports whether src type can be converted to dst type. Note that
+// this does not handle unnamed struct, interface, func, and channel types.
 func canConvert(dst, src Type) bool {
 	// if same, accept
 	if src.Equals(dst) {
@@ -935,6 +960,8 @@ func canConvert(dst, src Type) bool {
 	return false
 }
 
+// canConvertRuleArg reports whether or not the src RuleArg's literal value
+// can be converted to the type represented by dst.
 func canConvertRuleArg(a *analysis, dst Type, src *RuleArg) bool {
 	if src.Type == ArgTypeField {
 		field := a.info.SelectorMap[src.Value].Last()
@@ -980,86 +1007,64 @@ func canConvertRuleArg(a *analysis, dst Type, src *RuleArg) bool {
 	return false
 }
 
-func findSelectorForKey(key string, fields []*StructField) StructFieldSelector {
-	for _, f := range fields {
-		if f.Key == key {
-			return StructFieldSelector{f}
-		}
-		if f.Type.Kind == TypeKindStruct {
-			if s := findSelectorForKey(key, f.Type.Fields); len(s) > 0 {
-				return append(StructFieldSelector{f}, s...)
-			}
-		}
-		if f.Type.Kind == TypeKindPtr && f.Type.Elem.Kind == TypeKindStruct {
-			if s := findSelectorForKey(key, f.Type.Elem.Fields); len(s) > 0 {
-				return append(StructFieldSelector{f}, s...)
-			}
-		}
-	}
-	return nil
-}
-
-func makeFieldKeyFunc(conf Config) (fn func([]*StructField) string) {
+// fieldKeyFunc returns a function that, based on the given config, produces
+// field keys from a list of struct fields.
+func fieldKeyFunc(conf Config) (fn func([]*StructField) string) {
 	if len(conf.FieldKeyTag) > 0 {
-		if !conf.FieldKeyBase {
-			return func(sel []*StructField) string {
-				return fieldKeyFromTag(sel, conf.FieldKeyTag, conf.FieldKeySeparator)
+		if conf.FieldKeyJoin {
+			tag := conf.FieldKeyTag
+			sep := conf.FieldKeySeparator
+			// Returns the joined tag values of the fields in the given slice.
+			// If one of the fields does not have a tag value set, their name
+			// will be used in the join as default.
+			return func(sel []*StructField) (key string) {
+				for _, f := range sel {
+					if f.Tag.Contains("isvalid", "omitkey") {
+						continue
+					}
+
+					v := f.Tag.First(tag)
+					if len(v) == 0 {
+						v = f.Name
+					}
+					key += v + sep
+				}
+				if len(sep) > 0 && len(key) > len(sep) {
+					return key[:len(key)-len(sep)]
+				}
+				return key
 			}
 		}
+
+		// Returns the tag value of the last field, if no value was
+		// set the field's name will be returned instead.
 		return func(sel []*StructField) string {
-			return fieldKeyFromTagBase(sel, conf.FieldKeyTag)
+			if key := sel[len(sel)-1].Tag.First(conf.FieldKeyTag); len(key) > 0 {
+				return key
+			}
+			return sel[len(sel)-1].Name
 		}
 	}
 
-	if !conf.FieldKeyBase {
-		return func(sel []*StructField) string {
-			return fieldKeyFromName(sel, conf.FieldKeySeparator)
+	if conf.FieldKeyJoin {
+		sep := conf.FieldKeySeparator
+		// Returns the joined names of the fields in the given slice.
+		return func(sel []*StructField) (key string) {
+			for _, f := range sel {
+				if f.Tag.Contains("isvalid", "omitkey") {
+					continue
+				}
+				key += f.Name + sep
+			}
+			if len(sep) > 0 && len(key) > len(sep) {
+				return key[:len(key)-len(sep)]
+			}
+			return key
 		}
 	}
-	return fieldKeyFromNameBase
-}
 
-func fieldKeyFromNameBase(selector []*StructField) (key string) {
-	f := selector[len(selector)-1]
-	return f.Name
-}
-
-func fieldKeyFromTagBase(selector []*StructField, tag string) (key string) {
-	f := selector[len(selector)-1]
-	key = f.Tag.First(tag)
-	if len(key) == 0 {
-		key = f.Name
+	// Returns the name of the last field.
+	return func(sel []*StructField) string {
+		return sel[len(sel)-1].Name
 	}
-	return key
-}
-
-func fieldKeyFromName(selector []*StructField, sep string) (key string) {
-	for _, f := range selector {
-		if f.Tag.Contains("isvalid", "omitkey") {
-			continue
-		}
-		key += f.Name + sep
-	}
-	if len(sep) > 0 && len(key) > len(sep) {
-		return key[:len(key)-len(sep)]
-	}
-	return key
-}
-
-func fieldKeyFromTag(selector []*StructField, tag, sep string) (key string) {
-	for _, f := range selector {
-		if f.Tag.Contains("isvalid", "omitkey") {
-			continue
-		}
-
-		v := f.Tag.First(tag)
-		if len(v) == 0 {
-			v = f.Name
-		}
-		key += v + sep
-	}
-	if len(sep) > 0 && len(key) > len(sep) {
-		return key[:len(key)-len(sep)]
-	}
-	return key
 }

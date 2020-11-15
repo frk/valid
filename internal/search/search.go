@@ -63,10 +63,14 @@ func (a *AST) add(pkgs ...*packages.Package) {
 	}
 }
 
-// Match holds the types.Named and token position of a matched validator struct type.
+// Match holds information on a matched validator struct type.
 type Match struct {
+	// The go/types.Named representation of the matched type.
 	Named *types.Named
-	Pos   token.Pos
+	// The file set with which the matched type is associated.
+	Fset *token.FileSet
+	// The source position of the matched type.
+	Pos token.Pos
 }
 
 // File represents a Go file that contains one or more matching validator struct types.
@@ -170,6 +174,7 @@ func Search(dir string, recursive bool, filter func(filePath string) bool, a *AS
 
 					match := new(Match)
 					match.Named = named
+					match.Fset = pkg.Fset
 					match.Pos = typeName.Pos()
 					f.Matches = append(f.Matches, match)
 				}
