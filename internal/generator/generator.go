@@ -201,29 +201,20 @@ func prepareFragments(g *generator) {
 		expr := GO.SelectorExpr{X: g.recv, Sel: GO.Ident{f.Name}}
 		frag := &fragment{f: f, typ: f.Type, x: expr}
 
-		prepareFragment(g, frag, f.Rules)
+		prepareFragment(g, frag, f.RuleTag)
 		g.fragments = append(g.fragments, frag)
 	}
 }
 
-func prepareFragment(g *generator, frag *fragment, rules []*analysis.Rule) {
+func prepareFragment(g *generator, frag *fragment, rtag *analysis.RuleTag) {
 	// first split rules:
-	var keyrules []*analysis.Rule
-	var elemrules []*analysis.Rule
-	for _, r := range rules {
+	for _, r := range rtag.Rules {
 		if r.Name == "required" {
 			frag.required = r
 		} else if r.Name == "notnil" {
 			frag.notnil = r
-		} else if r.Key == nil && r.Elem == nil {
-			frag.rules = append(frag.rules, r)
 		} else {
-			if r.Key != nil {
-				keyrules = append(keyrules, r.Key)
-			}
-			if r.Elem != nil {
-				elemrules = append(elemrules, r.Elem)
-			}
+			frag.rules = append(frag.rules, r)
 		}
 	}
 
@@ -235,23 +226,23 @@ func prepareFragment(g *generator, frag *fragment, rules []*analysis.Rule) {
 
 	switch frag.typ.Kind {
 	case analysis.TypeKindSlice, analysis.TypeKindArray:
-		if len(elemrules) > 0 {
+		if rtag.Elem != nil {
 			expr := GO.Ident{"e"}
 			elem := &fragment{f: frag.f, typ: *frag.typ.Elem, x: expr}
-			prepareFragment(g, elem, elemrules)
+			prepareFragment(g, elem, rtag.Elem)
 			frag.elem = elem
 		}
 	case analysis.TypeKindMap:
-		if len(keyrules) > 0 {
+		if rtag.Key != nil {
 			expr := GO.Ident{"k"}
 			key := &fragment{f: frag.f, typ: *frag.typ.Key, x: expr}
-			prepareFragment(g, key, keyrules)
+			prepareFragment(g, key, rtag.Key)
 			frag.key = key
 		}
-		if len(elemrules) > 0 {
+		if rtag.Elem != nil {
 			expr := GO.Ident{"e"}
 			elem := &fragment{f: frag.f, typ: *frag.typ.Elem, x: expr}
-			prepareFragment(g, elem, elemrules)
+			prepareFragment(g, elem, rtag.Elem)
 			frag.elem = elem
 		}
 	case analysis.TypeKindStruct:
@@ -263,7 +254,7 @@ func prepareFragment(g *generator, frag *fragment, rules []*analysis.Rule) {
 			expr := GO.SelectorExpr{X: frag.x, Sel: GO.Ident{f.Name}}
 			next := &fragment{f: f, typ: f.Type, x: expr}
 
-			prepareFragment(g, next, f.Rules)
+			prepareFragment(g, next, f.RuleTag)
 			frag.fields = append(frag.fields, next)
 
 		}
@@ -409,8 +400,13 @@ func buildFragmentStmtNode(g *generator, frag *fragment) GO.StmtNode {
 	}
 
 	if frag.key != nil || frag.elem != nil {
+		log.Println("ey!", frag.x)
 		node := buildFragmentForStmt(g, frag)
 		if node.Clause != nil {
+			if frag.ng != nil {
+				return GO.IfStmt{Cond: frag.ng, Body: GO.BlockStmt{[]GO.StmtNode{node}}}
+			}
+			// if ng: build ng
 			return buildFieldSubBlock(g, frag, node)
 		}
 

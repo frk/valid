@@ -9,7 +9,7 @@ import (
 )
 
 type (
-	// ValidatorStruct represents the result of the analysis of a target struct type.
+	// ValidatorStruct represents the result of the analysis of a validator struct type.
 	ValidatorStruct struct {
 		// Name of the validator struct type.
 		TypeName string
@@ -20,9 +20,9 @@ type (
 		ErrorHandler *ErrorHandlerField
 		// Info on the validator type's field named "context" (case insensitive), or nil.
 		ContextOption *ContextOptionField
-		// Info on the validator type's "beforevalidate" (case insensitive) method.
+		// Info on the validator type's "beforevalidate" (case insensitive) method, or nil.
 		BeforeValidate *MethodInfo
-		// Info on the validator type's "aftervalidate" (case insensitive) method.
+		// Info on the validator type's "aftervalidate" (case insensitive) method, or nil.
 		AfterValidate *MethodInfo
 	}
 
@@ -31,11 +31,9 @@ type (
 	StructField struct {
 		// Name of the field.
 		Name string
-		// The key of the StructField (used for errors, field args, etc.),
+		// The unique key of the StructField (used for errors, field args, etc.),
 		// the value of this is determined by the "field key" settings, if not
 		// specified by the user it will default to the value of the field's name.
-		//
-		// The Key of each field and subfield of a single ValidatorStruct will be unique.
 		Key string
 		// The field's type.
 		Type Type
@@ -45,11 +43,10 @@ type (
 		IsEmbedded bool
 		// Indicates whether or not the field is exported.
 		IsExported bool
-		// The list of validation rules, as parsed from the struct's tag,
-		// that need to be applied to the field.
-		Rules []*Rule
+		// The field's analyzed "rule" struct tag.
+		RuleTag *RuleTag
 
-		// TODO
+		// XXX
 		MaxFieldDepth int
 	}
 
@@ -75,7 +72,7 @@ type (
 		// Indicates whether or not the field is exported.
 		IsExported bool
 		// Indicates that the type satisfies the IsValider interface.
-		IsIsValider bool
+		CanIsValid bool
 		// If the base type's an array type, this field will hold the array's length.
 		ArrayLen int64
 		// Indicates whether or not the type is an empty interface type.
@@ -133,13 +130,6 @@ type (
 		Args []*RuleArg
 		// The context in which the rule should be applied.
 		Context string
-		// ...
-		Key *Rule
-		// ...
-		Elem *Rule
-
-		// XXX currently not implemented, may never be...
-		SetKey string
 	}
 
 	// RuleArg represents a rule argument as parsed from a "rule" tag (`is:"{rule:arg}"`).
@@ -153,10 +143,13 @@ type (
 	// RuleSpec implementations specify the validity of a field-rule
 	// combo, as well as what code should be generated from a rule.
 	RuleSpec interface {
-		ruleSpec()
-
 		IsCustom() bool
+
+		ruleSpec()
 	}
+
+	// RuleNop represents a rule that should produce NO code.
+	RuleNop struct{}
 
 	// RuleIsValid represents a rule that should produce the "f.IsValid()"
 	// method invocation for the field associated with the rule.
@@ -207,7 +200,7 @@ type (
 // ContainsRules reports whether or not the StructField f, or any of
 // the StructFields in the type hierarchy of f, contain validation rules.
 func (f *StructField) ContainsRules() bool {
-	if len(f.Rules) > 0 {
+	if f.RuleTag.ContainsRules() {
 		return true
 	}
 
@@ -237,11 +230,13 @@ func (f *StructField) ContainsRules() bool {
 	return walk(f.Type)
 }
 
+func (RuleNop) ruleSpec()     {}
 func (RuleIsValid) ruleSpec() {}
 func (RuleEnum) ruleSpec()    {}
 func (RuleBasic) ruleSpec()   {}
 func (RuleFunc) ruleSpec()    {}
 
+func (RuleNop) IsCustom() bool     { return true }
 func (RuleIsValid) IsCustom() bool { return true }
 func (RuleEnum) IsCustom() bool    { return true }
 func (RuleBasic) IsCustom() bool   { return false }
@@ -349,24 +344,6 @@ func (f *StructField) SubFields() []*StructField {
 		return typ.Fields
 	}
 	return nil
-}
-
-func (f *StructField) HasRuleRequired() bool {
-	for _, r := range f.Rules {
-		if r.Name == "required" {
-			return true
-		}
-	}
-	return false
-}
-
-func (f *StructField) HasRuleNotnil() bool {
-	for _, r := range f.Rules {
-		if r.Name == "notnil" {
-			return true
-		}
-	}
-	return false
 }
 
 func (s StructFieldSelector) Last() *StructField {

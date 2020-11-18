@@ -14,16 +14,20 @@ func (v SliceValidator) Validate() error {
 			return errors.New("F1 must be a valid email")
 		}
 	}
-	for _, e := range ***v.F2 {
-		if !isvalid.Email(e) {
-			return errors.New("F2 must be a valid email")
+	if v.F2 != nil && *v.F2 != nil && **v.F2 != nil {
+		for _, e := range ***v.F2 {
+			if !isvalid.Email(e) {
+				return errors.New("F2 must be a valid email")
+			}
 		}
 	}
-	for _, e := range *v.F3 {
-		if e == nil || len(*e) == 0 {
-			return errors.New("F3 is required")
-		} else if !isvalid.Email(*e) {
-			return errors.New("F3 must be a valid email")
+	if v.F3 != nil {
+		for _, e := range *v.F3 {
+			if e == nil || len(*e) == 0 {
+				return errors.New("F3 is required")
+			} else if !isvalid.Email(*e) {
+				return errors.New("F3 must be a valid email")
+			}
 		}
 	}
 	for k, e := range v.F4 {
@@ -32,6 +36,23 @@ func (v SliceValidator) Validate() error {
 		}
 		if e < 18 || e > 64 {
 			return errors.New("F4 must be between: 18 and 64")
+		}
+	}
+	for _, e := range v.F5 {
+		for k, e := range e {
+			if k != nil {
+				for k, e := range *k {
+					if !isvalid.Email(k) {
+						return errors.New("F5 must be a valid email")
+					}
+					if !isvalid.Phone(e, "us", "ca") {
+						return errors.New("F5 must be a valid phone number")
+					}
+				}
+			}
+			if len(e) > 10 {
+				return errors.New("F5 must be of length at most: 10")
+			}
 		}
 	}
 	return nil

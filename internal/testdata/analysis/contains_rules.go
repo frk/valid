@@ -1,4 +1,4 @@
-package containsrules
+package analysis
 
 type ContainsRulesTest1Validator struct {
 	yes string `is:"required"`

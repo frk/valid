@@ -98,6 +98,8 @@ const (
 	errRuleFuncRuleArgType
 	errRuleEnumTypeUnnamed
 	errRuleEnumTypeNoConst
+	errRuleKey
+	errRuleElem
 )
 
 var error_template_string = `
@@ -298,6 +300,16 @@ var error_template_string = `
 
 {{ define "` + errRuleEnumTypeNoConst.name() + `" -}}
 {{Wb .FileAndLine}}: {{Y "Type of field with \"enum\" rule has no constants declared."}}
+	TODO {{R .FieldName}} {{R .FieldType}}
+{{ end }}
+
+{{ define "` + errRuleKey.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "A KEY rule cannot be applied to corresponding field type."}}
+	TODO {{R .FieldName}} {{R .FieldType}}
+{{ end }}
+
+{{ define "` + errRuleElem.name() + `" -}}
+{{Wb .FileAndLine}}: {{Y "An ELEM rule cannot be applied to corresponding field type.."}}
 	TODO {{R .FieldName}} {{R .FieldType}}
 {{ end }}
 ` // `

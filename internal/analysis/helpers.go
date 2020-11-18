@@ -139,8 +139,8 @@ func isErrorAggregator(typ types.Type) bool {
 	return hasAddError && hasError
 }
 
-// isIsValider reports whether or not the given type satisfies the "IsValider" interface.
-func isIsValider(typ types.Type) bool {
+// canIsValid reports whether or not the given type satisfies the "IsValider" interface.
+func canIsValid(typ types.Type) bool {
 	var mm methoder
 	if named, ok := typ.(*types.Named); ok {
 		mm = named

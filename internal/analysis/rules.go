@@ -31,8 +31,9 @@ func rulechecks(checks ...func(a *analysis, r *Rule, t Type, f *StructField) err
 
 var defaultRuleSpecMap = map[string]RuleSpec{
 	// speciél
-	"isvalid": RuleIsValid{},
-	"enum":    RuleEnum{},
+	"-isvalid": RuleNop{},
+	"isvalid":  RuleIsValid{},
+	"enum":     RuleEnum{},
 
 	// basic rules
 	"required": RuleBasic{check: isValidRuleRequired},
@@ -187,6 +188,7 @@ func isValidRuleNumberComparison(a *analysis, r *Rule, t Type, f *StructField) e
 // check that the StructField and the RuleArgs represent a valid "len" rule.
 func isValidRuleLen(a *analysis, r *Rule, t Type, f *StructField) error {
 	// associated field's type must have length
+	t = t.PtrBase()
 	if !hasTypeKind(t, TypeKindString, TypeKindArray, TypeKindSlice, TypeKindMap) {
 		return a.anError(errTypeLength, f, r)
 	}
@@ -281,7 +283,7 @@ func isValidRuleRng(a *analysis, r *Rule, t Type, f *StructField) error {
 
 var rxUUIDVer = regexp.MustCompile(`^(?:v?[1-5])$`)
 
-// check that the RuleArgs represent a valid "uuid" rule.
+// check that the RuleArgs are valid UUID versions.
 func isValidRuleUUID(a *analysis, r *Rule, t Type, f *StructField) error {
 	// rule can have at most 5 args, no more
 	if len(r.Args) > 5 {
@@ -431,6 +433,7 @@ func isValidCountryCode(a *analysis, r *Rule, t Type, f *StructField) error {
 
 // checks that the StructField's type is one of the int/uint/float types.
 func typeIsNumeric(a *analysis, r *Rule, t Type, f *StructField) error {
+	t = t.PtrBase()
 	if !hasTypeKind(t, TypeKindInt, TypeKindInt8, TypeKindInt16, TypeKindInt32, TypeKindInt64,
 		TypeKindUint, TypeKindUint8, TypeKindUint16, TypeKindUint32, TypeKindUint64,
 		TypeKindFloat32, TypeKindFloat64) {
@@ -440,14 +443,8 @@ func typeIsNumeric(a *analysis, r *Rule, t Type, f *StructField) error {
 }
 
 func hasTypeKind(t Type, kinds ...TypeKind) bool {
-	isptr := t.Kind == TypeKindPtr
-
-	typ := t.PtrBase()
 	for _, k := range kinds {
-		if k == typ.Kind {
-			return true
-		}
-		if k == TypeKindPtr && isptr {
+		if k == t.Kind {
 			return true
 		}
 	}

@@ -11,16 +11,19 @@ type UserInput struct {
 	SomeVersion int
 	SomeValue   string
 
-	f0  string `is:"-"`
-	f1  string `is:"required"`
-	f2  string `is:"required:@create"`
-	f3  string `is:"required:#key"`
-	f4  string `is:"required:@create:#key"`
-	f5  string `is:"email"`
-	f6  string `is:"url"`
-	f7  string `is:"uri"`
-	f8  string `is:"pan"`
-	f9  string `is:"cvv"`
+	F0 string `is:"-"`
+	F1 string `is:"required"`
+	F2 string `is:"required:@create"`
+
+	// NOTE the #key is dropped for now ...
+	// F3  string `is:"required:#key"`
+	// F4  string `is:"required:@create:#key"`
+
+	F5  string `is:"email"`
+	F6  string `is:"url"`
+	F7  string `is:"uri"`
+	F8  string `is:"pan"`
+	F9  string `is:"cvv"`
 	F10 string `is:"ssn"`
 	F11 string `is:"ein"`
 	F12 string `is:"numeric"`
@@ -61,88 +64,97 @@ type UserInput struct {
 	F39 string `is:"contains:foo bar"`
 	F40 string `is:"contains:&SomeValue"`
 
-	f41 string `is:"prefix:foo bar"`
-	f42 string `is:"prefix:&SomeValue"`
+	F41 string `is:"prefix:foo bar"`
+	F42 string `is:"prefix:&SomeValue"`
 
-	f43 string `is:"suffix:foo bar"`
-	f44 string `is:"suffix:&SomeValue"`
+	F43 string `is:"suffix:foo bar"`
+	F44 string `is:"suffix:&SomeValue"`
 
-	f45 string  `is:"eq:foo bar"`
-	f46 int     `is:"eq:-123"`
-	f47 float64 `is:"eq:123.987"`
-	f48 string  `is:"eq:&SomeValue"`
+	F45 string  `is:"eq:foo bar"`
+	F46 int     `is:"eq:-123"`
+	F47 float64 `is:"eq:123.987"`
+	F48 string  `is:"eq:&SomeValue"`
 
-	f49 string  `is:"ne:foo bar"`
-	f50 int     `is:"ne:-123"`
-	f51 float64 `is:"ne:123.987"`
-	f52 string  `is:"ne:&SomeValue"`
+	F49 string  `is:"ne:foo bar"`
+	F50 int     `is:"ne:-123"`
+	F51 float64 `is:"ne:123.987"`
+	F52 string  `is:"ne:&SomeValue"`
 
-	f53 uint8   `is:"gt:24,lt:128"`
-	f54 int16   `is:"gt:-128,lt:-24"`
-	f55 float32 `is:"gt:0.24,lt:1.28"`
+	F53 uint8   `is:"gt:24,lt:128"`
+	F54 int16   `is:"gt:-128,lt:-24"`
+	F55 float32 `is:"gt:0.24,lt:1.28"`
 
-	f56 uint8   `is:"gte:24,lte:128"`
-	f57 int16   `is:"gte:-128,lte:-24"`
-	f58 float32 `is:"gte:0.24,lte:1.28"`
+	F56 uint8   `is:"gte:24,lte:128"`
+	F57 int16   `is:"gte:-128,lte:-24"`
+	F58 float32 `is:"gte:0.24,lte:1.28"`
 
-	f59 uint8   `is:"min:24,max:128"`
-	f60 int16   `is:"min:-128,max:-24"`
-	f61 float32 `is:"min:0.24,max:1.28"`
+	F59 uint8   `is:"min:24,max:128"`
+	F60 int16   `is:"min:-128,max:-24"`
+	F61 float32 `is:"min:0.24,max:1.28"`
 
-	f62 uint8   `is:"rng:24:128"`
-	f63 int16   `is:"rng:-128:-24"`
-	f64 float32 `is:"rng:0.24:1.28"`
+	F62 uint8   `is:"rng:24:128"`
+	F63 int16   `is:"rng:-128:-24"`
+	F64 float32 `is:"rng:0.24:1.28"`
 
-	f65 string         `is:"len:28"`
-	f66 []int          `is:"len:28"`
-	f67 map[string]int `is:"len:28"`
+	F65 string         `is:"len:28"`
+	F66 []int          `is:"len:28"`
+	F67 map[string]int `is:"len:28"`
 
-	f68 string         `is:"len:4:28"`
-	f69 []int          `is:"len:4:28"`
-	f70 map[string]int `is:"len:4:28"`
+	F68 string         `is:"len:4:28"`
+	F69 []int          `is:"len:4:28"`
+	F70 map[string]int `is:"len:4:28"`
 
-	f71 string `is:"len::28"`
-	f72 []int  `is:"len:4:"`
+	F71 string `is:"len::28"`
+	F72 []int  `is:"len:4:"`
 
-	g1 struct {
-		f1 string `is:"required"`
+	G1 struct {
+		F1 string `is:"required"`
 	}
 
 	// custom rule...
-	f73 string    `is:"utf8"`
-	f74 time.Time `is:"timecheck,ifacecheck"`
+	F73 string    `is:"utf8"`
+	F74 time.Time `is:"timecheck,ifacecheck"`
 
 	// custom isValider
-	f75 mypkg.MyString  `is:"required"`
-	f76 mypkg.MyInt     `is:"required"`
-	f77 *mypkg.MyString `is:"-isvalid"`
-	f78 **mypkg.MyInt   `is:":@create"`
-	f79 *interface {
+	F75 mypkg.MyString  `is:"required"`
+	F76 mypkg.MyInt     `is:"required"`
+	F77 *mypkg.MyString `is:"-isvalid"`
+	F78 **mypkg.MyInt   `is:"isvalid:@create"`
+	F79 *interface {
 		IsValid() bool
 	}
 
 	// enums
-	f80 someKind      `is:"enum"`
-	f81 mypkg.MyKind  `is:"enum"`
-	f82 **someKind    `is:"enum"`
-	f83 *mypkg.MyKind `is:"enum:@create"`
+	F80 someKind      `is:"enum"`
+	F81 mypkg.MyKind  `is:"enum"`
+	F82 **someKind    `is:"enum"`
+	F83 *mypkg.MyKind `is:"enum:@create"`
 
 	// elements & keys
-	f84 []string          `is:"[]email"`
-	f85 map[string]string `is:"[email]"`
-	f86 map[string]string `is:"[phone:us:ca]zip:ca:us"`
-	f87 map[string]*struct {
-		f1 string `is:"len:2:32"`
-		f2 string `is:"len:2:32"`
-		f3 string `is:"phone"`
+	F84 []string          `is:"[]email"`
+	F85 map[string]string `is:"[email]"`
+	F86 map[string]string `is:"[phone:us:ca]zip:ca:us"`
+	F87 map[string]*struct {
+		F1 string `is:"len:2:32"`
+		F2 string `is:"len:2:32"`
+		F3 string `is:"phone"`
 	} `is:"[email]"`
+
+	// notnil
+	F88 []string          `is:"notnil"`
+	F89 map[string]string `is:"notnil"`
+	F90 interface{}       `is:"notnil"`
+	F91 *string           `is:"notnil"`
+
+	// more nested elements & keys
+	F92 []map[*map[string]string][]int `is:"[][[email]phone:us:ca]len::10,[]rng:-54:256"`
 }
 
 // local enum
 type someKind string
 
 const (
-	someFoo someKind = "foo"
-	someBar someKind = "bar"
-	someBaz someKind = "baz"
+	SomeFoo someKind = "foo"
+	SomeBar someKind = "bar"
+	SomeBaz someKind = "baz"
 )
