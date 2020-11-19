@@ -17,6 +17,21 @@ func MyRule3(v int64, i int, f float64, s string, b bool) bool {
 	return false
 }
 
+func MyBadRule1() bool {
+	// ...
+	return false
+}
+
+func MyBadRule2(v string) int {
+	// ...
+	return 0
+}
+
+func MyBadRule3(v int64, i int, f float64, s string, b bool) (bool, error) {
+	// ...
+	return false, nil
+}
+
 // error handlers
 
 type MyErrorConstructor struct{}

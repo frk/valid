@@ -25,6 +25,125 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+func TestAddRuleFunc(t *testing.T) {
+	tests := []struct {
+		rulename string
+		pkgpath  string
+		funcname string
+		err      error
+		want     Config
+		printerr bool
+	}{{
+		rulename: "isvalid",
+		pkgpath:  "github.com/frk/isvalid/internal/testdata/mypkg", funcname: "MyRule",
+		err: &anError{Code: errRuleNameReserved, RuleName: "isvalid"},
+	}, {
+		rulename: "-isvalid",
+		pkgpath:  "strings", funcname: "Contains",
+		err: &anError{Code: errRuleNameReserved, RuleName: "-isvalid"},
+	}, {
+		rulename: "enum",
+		pkgpath:  "strings", funcname: "Contains",
+		err: &anError{Code: errRuleNameReserved, RuleName: "enum"},
+	}, {
+		rulename: "myrule",
+		pkgpath:  "strings", funcname: "TrimLeftFunc",
+		err: &anError{
+			Code:    errRuleFuncSignature,
+			FuncPkg: "strings", FuncName: "TrimLeftFunc",
+			FuncType: "func(s string, f func(rune) bool) string",
+		},
+	}, {
+		rulename: "myrule",
+		pkgpath:  "github.com/frk/isvalid/internal/testdata/mypkg", funcname: "MyBadRule1",
+		err: &anError{
+			Code:    errRuleFuncSignature,
+			FuncPkg: "github.com/frk/isvalid/internal/testdata/mypkg", FuncName: "MyBadRule1",
+			FuncType: "func() bool",
+		},
+	}, {
+		rulename: "myrule",
+		pkgpath:  "github.com/frk/isvalid/internal/testdata/mypkg", funcname: "MyBadRule2",
+		err: &anError{
+			Code:    errRuleFuncSignature,
+			FuncPkg: "github.com/frk/isvalid/internal/testdata/mypkg", FuncName: "MyBadRule2",
+			FuncType: "func(v string) int",
+		},
+	}, {
+		rulename: "myrule",
+		pkgpath:  "github.com/frk/isvalid/internal/testdata/mypkg", funcname: "MyBadRule3",
+		err: &anError{
+			Code:    errRuleFuncSignature,
+			FuncPkg: "github.com/frk/isvalid/internal/testdata/mypkg", FuncName: "MyBadRule3",
+			FuncType: "func(v int64, i int, f float64, s string, b bool) (bool, error)",
+		},
+	}, {
+		rulename: "myrule",
+		pkgpath:  "github.com/frk/isvalid/internal/testdata/mypkg", funcname: "MyRule",
+		want: Config{ruleSpecMap: map[string]RuleSpec{
+			"myrule": RuleFunc{
+				iscustom: true,
+				FuncName: "MyRule",
+				PkgPath:  "github.com/frk/isvalid/internal/testdata/mypkg",
+				ArgTypes: []Type{{Kind: TypeKindString}},
+			},
+		}},
+	}, {
+		rulename: "myrule",
+		pkgpath:  "github.com/frk/isvalid/internal/testdata/mypkg", funcname: "MyRule2",
+		want: Config{ruleSpecMap: map[string]RuleSpec{
+			"myrule": RuleFunc{
+				iscustom:   true,
+				FuncName:   "MyRule2",
+				PkgPath:    "github.com/frk/isvalid/internal/testdata/mypkg",
+				ArgTypes:   []Type{{Kind: TypeKindSlice, Elem: &Type{Kind: TypeKindString}}},
+				IsVariadic: true,
+			},
+		}},
+	}, {
+		rulename: "myrule",
+		pkgpath:  "github.com/frk/isvalid/internal/testdata/mypkg", funcname: "MyRule3",
+		want: Config{ruleSpecMap: map[string]RuleSpec{
+			"myrule": RuleFunc{
+				iscustom: true,
+				FuncName: "MyRule3",
+				PkgPath:  "github.com/frk/isvalid/internal/testdata/mypkg",
+				ArgTypes: []Type{
+					{Kind: TypeKindInt64},
+					{Kind: TypeKindInt},
+					{Kind: TypeKindFloat64},
+					{Kind: TypeKindString},
+					{Kind: TypeKindBool},
+				},
+			},
+		}},
+	}}
+
+	compare := compare.Config{ObserveFieldTag: "cmp"}
+
+	for _, tt := range tests {
+		t.Run(tt.rulename, func(t *testing.T) {
+			fn, err := search.FindFunc(tt.pkgpath, tt.funcname, testast)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			var conf Config
+			err = conf.AddRuleFunc(tt.rulename, fn)
+			if e := compare.Compare(err, tt.err); e != nil {
+				t.Errorf("Error: %v", e)
+			}
+			if e := compare.Compare(conf, tt.want); e != nil {
+				t.Error(e)
+			}
+
+			if tt.printerr && err != nil {
+				fmt.Println(err)
+			}
+		})
+	}
+}
+
 func TestAnalysisRun(t *testing.T) {
 	originalhook := filenamehook
 	defer func() { filenamehook = originalhook }()
@@ -78,21 +197,21 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_EmptyValidator",
-		err: &anError{Code: errEmptyValidator,
+		err: &anError{Code: errValidatorNoField,
 			VtorName:     "AnalysisTestBAD_EmptyValidator",
 			VtorFileName: file_analysis_bad,
 			VtorFileLine: 123,
 		},
 	}, {
 		name: "AnalysisTestBAD_Empty2Validator",
-		err: &anError{Code: errEmptyValidator,
+		err: &anError{Code: errValidatorNoField,
 			VtorName:     "AnalysisTestBAD_Empty2Validator",
 			VtorFileName: file_analysis_bad,
 			VtorFileLine: 123,
 		},
 	}, {
 		name: "AnalysisTestBAD_Empty3Validator",
-		err: &anError{Code: errEmptyValidator,
+		err: &anError{Code: errValidatorNoField,
 			VtorName:     "AnalysisTestBAD_Empty3Validator",
 			VtorFileName: file_analysis_bad,
 			VtorFileLine: 123,
@@ -2142,7 +2261,7 @@ func TestAnalysisRun(t *testing.T) {
 			BeforeValidate: &MethodInfo{Name: "beforevalidate"},
 			AfterValidate:  &MethodInfo{Name: "AfterValidate"},
 			Fields: []*StructField{{
-				Name: "UserInput", MaxFieldDepth: 2,
+				Name:    "UserInput",
 				Tag:     tagutil.Tag{"isvalid": []string{"omitkey"}},
 				RuleTag: &RuleTag{},
 				Type: Type{
@@ -2667,7 +2786,7 @@ func TestAnalysisRun(t *testing.T) {
 								{Value: "", Type: ArgTypeUnknown}}},
 							}},
 						}, {
-							Name: "G1", Key: "G1", IsExported: true, MaxFieldDepth: 1,
+							Name: "G1", Key: "G1", IsExported: true,
 							Type: Type{Kind: TypeKindStruct,
 								Fields: []*StructField{{
 									Name: "F1", Key: "G1.F1", IsExported: true,
@@ -2873,7 +2992,7 @@ func TestAnalysisRun(t *testing.T) {
 								}},
 							},
 						}, {
-							Name: "F87", Key: "F87", IsExported: true, MaxFieldDepth: 1,
+							Name: "F87", Key: "F87", IsExported: true,
 							Type: Type{
 								Kind: TypeKindMap,
 								Key:  &Type{Kind: TypeKindString},

@@ -10,49 +10,46 @@ import (
 )
 
 func (v NestedFieldsWithRulesAndRequiredValidator) Validate() error {
-	{
-		f := v.G2
-		if f.F1 == nil || len(*f.F1) == 0 {
-			return errors.New("G2.F1 is required")
-		} else if !isvalid.Email(*f.F1) {
-			return errors.New("G2.F1 must be a valid email")
+	if v.G2.F1 == nil || len(*v.G2.F1) == 0 {
+		return errors.New("G2.F1 is required")
+	} else if !isvalid.Email(*v.G2.F1) {
+		return errors.New("G2.F1 must be a valid email")
+	}
+	if v.G2.F2 == nil || *v.G2.F2 == nil || len(**v.G2.F2) == 0 {
+		return errors.New("G2.F2 is required")
+	} else if !isvalid.Email(**v.G2.F2) {
+		return errors.New("G2.F2 must be a valid email")
+	}
+	if v.G2.G3 == nil {
+		return errors.New("G2.G3 is required")
+	} else {
+		f := *v.G2.G3
+		if f.F3 == nil || *f.F3 == nil || **f.F3 == nil || len(***f.F3) == 0 {
+			return errors.New("G2.G3.F3 is required")
+		} else if !isvalid.Hex(***f.F3) {
+			return errors.New("G2.G3.F3 must be a valid hexadecimal string")
+		} else if len(***f.F3) < 8 || len(***f.F3) > 128 {
+			return errors.New("G2.G3.F3 must be of length between: 8 and 128 (inclusive)")
 		}
-		if f.F2 == nil || *f.F2 == nil || len(**f.F2) == 0 {
-			return errors.New("G2.F2 is required")
-		} else if !isvalid.Email(**f.F2) {
-			return errors.New("G2.F2 must be a valid email")
-		}
-		if f.G3 == nil {
-			return errors.New("G2.G3 is required")
+	}
+	if v.G2.G4 == nil || *v.G2.G4 == nil || **v.G2.G4 == nil {
+		return errors.New("G2.G4 is required")
+	} else {
+		f := ***v.G2.G4
+		if f.G5 == nil || *f.G5 == nil {
+			return errors.New("G2.G4.G5 is required")
 		} else {
-			f := *f.G3
-			if f.F3 == nil || *f.F3 == nil || **f.F3 == nil || len(***f.F3) == 0 {
-				return errors.New("G2.G3.F3 is required")
-			} else if !isvalid.Hex(***f.F3) {
-				return errors.New("G2.G3.F3 must be a valid hexadecimal string")
-			} else if len(***f.F3) < 8 || len(***f.F3) > 128 {
-				return errors.New("G2.G3.F3 must be of length between: 8 and 128 (inclusive)")
-			}
-		}
-		if f.G4 == nil || *f.G4 == nil || **f.G4 == nil {
-			return errors.New("G2.G4 is required")
-		} else {
-			f := ***f.G4
-			if f.G5 == nil || *f.G5 == nil {
-				return errors.New("G2.G4.G5 is required")
-			} else {
-				f := **f.G5
-				if f.F3 == nil || *f.F3 == nil || len(**f.F3) == 0 {
-					return errors.New("G2.G4.G5.F3 is required")
-				} else if !strings.HasPrefix(**f.F3, "foo") {
-					return errors.New("G2.G4.G5.F3 must be prefixed with: \"foo\"")
-				} else if !strings.Contains(**f.F3, "bar") {
-					return errors.New("G2.G4.G5.F3 must contain substring: \"bar\"")
-				} else if !strings.HasSuffix(**f.F3, "baz") && !strings.HasSuffix(**f.F3, "quux") {
-					return errors.New("G2.G4.G5.F3 must be suffixed with: \"baz\" or \"quux\"")
-				} else if len(**f.F3) < 8 || len(**f.F3) > 64 {
-					return errors.New("G2.G4.G5.F3 must be of length between: 8 and 64 (inclusive)")
-				}
+			f := **f.G5
+			if f.F3 == nil || *f.F3 == nil || len(**f.F3) == 0 {
+				return errors.New("G2.G4.G5.F3 is required")
+			} else if !strings.HasPrefix(**f.F3, "foo") {
+				return errors.New("G2.G4.G5.F3 must be prefixed with: \"foo\"")
+			} else if !strings.Contains(**f.F3, "bar") {
+				return errors.New("G2.G4.G5.F3 must contain substring: \"bar\"")
+			} else if !strings.HasSuffix(**f.F3, "baz") && !strings.HasSuffix(**f.F3, "quux") {
+				return errors.New("G2.G4.G5.F3 must be suffixed with: \"baz\" or \"quux\"")
+			} else if len(**f.F3) < 8 || len(**f.F3) > 64 {
+				return errors.New("G2.G4.G5.F3 must be of length between: 8 and 64 (inclusive)")
 			}
 		}
 	}

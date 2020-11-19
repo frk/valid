@@ -45,9 +45,6 @@ type (
 		IsExported bool
 		// The field's analyzed "rule" struct tag.
 		RuleTag *RuleTag
-
-		// XXX
-		MaxFieldDepth int
 	}
 
 	// StructFieldSelector is a list of fields that represents a chain of

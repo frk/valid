@@ -37,17 +37,19 @@ type Config struct {
 // custom function MUST have at least one parameter item and, it MUST have
 // exactly one result item which MUST be of type bool.
 func (c *Config) AddRuleFunc(ruleName string, ruleFunc *types.Func) error {
-	if name := strings.ToLower(ruleName); name == "isvalid" || name == "enum" {
-		return &anError{Code: errRuleNameUnavailable}
+	if name := strings.ToLower(ruleName); name == "isvalid" || name == "-isvalid" || name == "enum" {
+		return &anError{Code: errRuleNameReserved, RuleName: ruleName}
 	}
 
 	sig := ruleFunc.Type().(*types.Signature)
 	p, r := sig.Params(), sig.Results()
 	if p.Len() < 1 || r.Len() != 1 {
-		return &anError{Code: errRuleFuncParamCount}
+		return &anError{Code: errRuleFuncSignature, FuncName: ruleFunc.Name(),
+			FuncPkg: ruleFunc.Pkg().Path(), FuncType: sig.String()}
 	}
 	if !isBool(r.At(0).Type()) {
-		return &anError{Code: errRuleFuncResultType}
+		return &anError{Code: errRuleFuncSignature, FuncName: ruleFunc.Name(),
+			FuncPkg: ruleFunc.Pkg().Path(), FuncType: sig.String()}
 	}
 
 	rf := RuleFunc{iscustom: true}
@@ -212,7 +214,7 @@ func (a *analysis) anError(e interface{}, f *StructField, r *Rule) error {
 	return err
 }
 
-// analyzeValidatorStruct is the entry point of a ValidatorStruct analysis.
+// analyzeValidatorStruct is the entry point of the analysis of a ValidatorStruct type.
 func analyzeValidatorStruct(a *analysis, structType *types.Struct) (*ValidatorStruct, error) {
 	a.validator = new(ValidatorStruct)
 	a.validator.TypeName = a.named.Obj().Name()
@@ -233,7 +235,7 @@ func analyzeValidatorStruct(a *analysis, structType *types.Struct) (*ValidatorSt
 	if err != nil {
 		return nil, err
 	} else if len(fields) == 0 {
-		return nil, a.anError(errEmptyValidator, nil, nil)
+		return nil, a.anError(errValidatorNoField, nil, nil)
 	}
 
 	// 2. type-check all of the fields' rules
@@ -297,13 +299,11 @@ func analyzeStructFields(a *analysis, structType *types.Struct, selector []*Stru
 		// map keys to selectors
 		a.info.SelectorMap[f.Key] = append(StructFieldSelector{}, fsel...)
 
-		maxdepth := 0
-		typ, err := analyzeType(a, fvar.Type(), fsel, &maxdepth)
+		typ, err := analyzeType(a, fvar.Type(), fsel)
 		if err != nil {
 			return nil, err
 		}
 		f.Type = typ
-		f.MaxFieldDepth = maxdepth
 
 		// Check for untagged, "special" root fields.
 		if len(istag) == 0 && len(selector) == 0 {
@@ -360,7 +360,7 @@ func analyzeContextOptionField(a *analysis, f *StructField) error {
 }
 
 // analyzeType analyzes the given types.Type.
-func analyzeType(a *analysis, t types.Type, selector []*StructField, maxdepth *int) (typ Type, err error) {
+func analyzeType(a *analysis, t types.Type, selector []*StructField) (typ Type, err error) {
 	if named, ok := t.(*types.Named); ok {
 		pkg := named.Obj().Pkg()
 		typ.Name = named.Obj().Name()
@@ -380,31 +380,31 @@ func analyzeType(a *analysis, t types.Type, selector []*StructField, maxdepth *i
 		typ.IsRune = T.Name() == "rune"
 		typ.IsByte = T.Name() == "byte"
 	case *types.Slice:
-		elem, err := analyzeType(a, T.Elem(), selector, maxdepth)
+		elem, err := analyzeType(a, T.Elem(), selector)
 		if err != nil {
 			return Type{}, err
 		}
 		typ.Elem = &elem
 	case *types.Array:
-		elem, err := analyzeType(a, T.Elem(), selector, maxdepth)
+		elem, err := analyzeType(a, T.Elem(), selector)
 		if err != nil {
 			return Type{}, err
 		}
 		typ.Elem = &elem
 		typ.ArrayLen = T.Len()
 	case *types.Map:
-		key, err := analyzeType(a, T.Key(), selector, maxdepth)
+		key, err := analyzeType(a, T.Key(), selector)
 		if err != nil {
 			return Type{}, err
 		}
-		elem, err := analyzeType(a, T.Elem(), selector, maxdepth)
+		elem, err := analyzeType(a, T.Elem(), selector)
 		if err != nil {
 			return Type{}, err
 		}
 		typ.Key = &key
 		typ.Elem = &elem
 	case *types.Pointer:
-		elem, err := analyzeType(a, T.Elem(), selector, maxdepth)
+		elem, err := analyzeType(a, T.Elem(), selector)
 		if err != nil {
 			return Type{}, err
 		}
@@ -419,17 +419,6 @@ func analyzeType(a *analysis, t types.Type, selector []*StructField, maxdepth *i
 			return Type{}, err
 		}
 		typ.Fields = fields
-
-		// get the maxdepth
-		if len(fields) > 0 {
-			max := 0
-			for _, f := range fields {
-				if f.MaxFieldDepth > max {
-					max = f.MaxFieldDepth
-				}
-			}
-			*maxdepth = max + 1
-		}
 	}
 
 	return typ, nil

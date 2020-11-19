@@ -31,22 +31,19 @@ func (v RequiredValidator) Validate() error {
 	if v.F8 == nil || len(*v.F8) == 0 {
 		return errors.New("F8 is required")
 	}
-	{
-		f := v.G1
+	if v.G1.F1 == nil || len(*v.G1.F1) == 0 {
+		return errors.New("G1.F1 is required")
+	}
+	if v.G1.G2 == nil {
+		return errors.New("G1.G2 is required")
+	} else {
+		f := *v.G1.G2
 		if f.F1 == nil || len(*f.F1) == 0 {
-			return errors.New("G1.F1 is required")
+			return errors.New("G1.G2.F1 is required")
 		}
-		if f.G2 == nil {
-			return errors.New("G1.G2 is required")
-		} else {
-			f := *f.G2
-			if f.F1 == nil || len(*f.F1) == 0 {
-				return errors.New("G1.G2.F1 is required")
-			}
-		}
-		if f.F2 == nil || len(*f.F2) == 0 {
-			return errors.New("G1.F2 is required")
-		}
+	}
+	if v.G1.F2 == nil || len(*v.G1.F2) == 0 {
+		return errors.New("G1.F2 is required")
 	}
 	if v.FX == nil || *v.FX == nil || **v.FX == nil || ***v.FX == nil || ****v.FX == nil || *****v.FX == nil {
 		return errors.New("FX is required")

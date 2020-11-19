@@ -31,6 +31,12 @@ type anError struct {
 	RuleName string
 	// The rule arg that caused the error.
 	RuleArg *RuleArg
+	// The name of the custom func type that caused the error.
+	FuncName string
+	// The package path of the custom func type that caused the error.
+	FuncPkg string
+	// The custom func type that caused the error.
+	FuncType string
 	// The original error
 	Err error `cmp:"-"`
 }
@@ -57,8 +63,10 @@ func (e errorCode) name() string { return fmt.Sprintf("error_template_%d", e) }
 
 const (
 	_ errorCode = iota
-	errEmptyValidator
-	errRuleNameUnavailable
+	errRuleNameReserved
+	errRuleFuncSignature
+	errValidatorNoField
+
 	errRuleUnknown
 	errRuleContextUnknown
 	errRuleArgNum
@@ -103,14 +111,18 @@ const (
 )
 
 var error_template_string = `
-{{ define "` + errEmptyValidator.name() + `" -}}
-{{.VtorFileAndLine}}: {{R .VtorName}}
-  > must have at least one field to validate.
+{{ define "` + errRuleNameReserved.name() + `" -}}
+{{R "ERROR:"}} Cannot use the reserved rule name {{R}}"{{.RuleName}}"{{off}} as a custom rule.
 {{ end }}
 
-{{ define "` + errRuleNameUnavailable.name() + `" -}}
-{{Wb .FileAndLine}}: {{Y "rule name not available."}}
-	TODO {{R .FieldName}}
+{{ define "` + errRuleFuncSignature.name() + `" -}}
+{{R "ERROR:"}} Cannot use custom rule func {{R}}{{.FuncPkg}}.{{.FuncName}}{{off}} of type ( {{R .FuncType}} ).
+  > A custom rule func MUST have at least one parameter value and, it MUST have exactly one result value which MUST be of type {{wb "bool"}}.
+{{ end }}
+
+{{ define "` + errValidatorNoField.name() + `" -}}
+{{R "ERROR:"}} {{.VtorFileAndLine}}: 
+  The validator struct {{R .VtorName}} has no fields to validate.
 {{ end }}
 
 {{ define "` + errRuleUnknown.name() + `" -}}

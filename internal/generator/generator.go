@@ -334,10 +334,7 @@ func prepareFieldNotnil(g *generator, frag *fragment) {
 
 func prepareFieldSubBlock(g *generator, frag *fragment) {
 	// no nil-guard and the deepest nested field is less than 2 nodes away
-	// TODO MaxFieldDepth is atm uninterrupted, i.e. it doesn't care
-	// if there are pointers, slices, maps etc. between the fields's types.
-	// This needs to be update to stop the depth count at those types.
-	if frag.ng == nil && frag.f.MaxFieldDepth < 2 {
+	if frag.ng == nil {
 		return // nothing to do
 	}
 
@@ -400,18 +397,13 @@ func buildFragmentStmtNode(g *generator, frag *fragment) GO.StmtNode {
 	}
 
 	if frag.key != nil || frag.elem != nil {
-		log.Println("ey!", frag.x)
 		node := buildFragmentForStmt(g, frag)
 		if node.Clause != nil {
 			if frag.ng != nil {
 				return GO.IfStmt{Cond: frag.ng, Body: GO.BlockStmt{[]GO.StmtNode{node}}}
 			}
-			// if ng: build ng
 			return buildFieldSubBlock(g, frag, node)
 		}
-
-		// TODO needs to be combined with ifstmt from above ...
-		//      - say slice must be "len:1:5" and the each elem must be "email"
 	}
 	return nil
 }
