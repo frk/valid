@@ -30,40 +30,39 @@ type Config struct {
 	FieldKeySeparator string
 
 	// map of custom RuleSpecs
-	ruleSpecMap map[string]RuleSpec
+	customSpecMap map[string]RuleSpec
 }
 
 // AddRuleFunc is used to register a custom RuleFunc with the Config. The
 // custom function MUST have at least one parameter item and, it MUST have
 // exactly one result item which MUST be of type bool.
-func (c *Config) AddRuleFunc(ruleName string, ruleFunc *types.Func) error {
+func (c *Config) AddRuleFunc(ruleName string, typ *types.Func) error {
 	if name := strings.ToLower(ruleName); name == "isvalid" || name == "-isvalid" || name == "enum" {
-		return &anError{Code: errRuleNameReserved, RuleName: ruleName}
+		return &anError{Code: errRuleNameReserved, r: &Rule{Name: ruleName}}
 	}
 
-	sig := ruleFunc.Type().(*types.Signature)
+	sig := typ.Type().(*types.Signature)
 	p, r := sig.Params(), sig.Results()
 	if p.Len() < 1 || r.Len() != 1 {
-		return &anError{Code: errRuleFuncSignature, FuncName: ruleFunc.Name(),
-			FuncPkg: ruleFunc.Pkg().Path(), FuncType: sig.String()}
+		return &anError{Code: errRuleFuncSignature, fn: typ}
 	}
 	if !isBool(r.At(0).Type()) {
-		return &anError{Code: errRuleFuncSignature, FuncName: ruleFunc.Name(),
-			FuncPkg: ruleFunc.Pkg().Path(), FuncType: sig.String()}
+		return &anError{Code: errRuleFuncSignature, fn: typ}
 	}
 
 	rf := RuleFunc{iscustom: true}
-	rf.FuncName = ruleFunc.Name()
-	rf.PkgPath = ruleFunc.Pkg().Path()
+	rf.FuncName = typ.Name()
+	rf.PkgPath = typ.Pkg().Path()
 	rf.IsVariadic = sig.Variadic()
+	rf.typ = typ
 	for i := 0; i < p.Len(); i++ {
 		rf.ArgTypes = append(rf.ArgTypes, analyzeType0(p.At(i).Type()))
 	}
 
-	if c.ruleSpecMap == nil {
-		c.ruleSpecMap = make(map[string]RuleSpec)
+	if c.customSpecMap == nil {
+		c.customSpecMap = make(map[string]RuleSpec)
 	}
-	c.ruleSpecMap[ruleName] = rf
+	c.customSpecMap[ruleName] = rf
 	return nil
 }
 
@@ -103,7 +102,7 @@ func (c Config) Analyze(ast search.AST, match *search.Match, info *Info) (*Valid
 	for k, v := range defaultRuleSpecMap {
 		a.info.RuleSpecMap[k] = v
 	}
-	for k, v := range c.ruleSpecMap {
+	for k, v := range c.customSpecMap {
 		a.info.RuleSpecMap[k] = v
 	}
 
@@ -188,29 +187,10 @@ func (a *analysis) anError(e interface{}, f *StructField, r *Rule) error {
 		panic("shouldn't reach")
 	}
 
-	if f != nil {
-		err.FieldName = f.Name
-		err.FieldTag = f.Tag
-		err.FieldType = f.Type.String()
-	}
-	if r != nil {
-		err.RuleName = r.Name
-	}
+	err.a = a
+	err.f = f
+	err.r = r
 
-	if fv, ok := a.fieldVarMap[f]; ok {
-		pos := a.fset.Position(fv.v.Pos())
-		err.FieldFileName = filenamehook(pos.Filename)
-		err.FieldFileLine = pos.Line
-		if f.Type.Kind == TypeKindInvalid {
-			err.FieldType = fv.v.Type().String()
-		}
-	}
-
-	obj := a.named.Obj()
-	pos := a.fset.Position(obj.Pos())
-	err.VtorName = obj.Name()
-	err.VtorFileName = filenamehook(pos.Filename)
-	err.VtorFileLine = pos.Line
 	return err
 }
 
@@ -291,7 +271,14 @@ func analyzeStructFields(a *analysis, structType *types.Struct, selector []*Stru
 		fsel := append(selector, f)
 		f.Key = makeFieldKey(a, fsel)
 		if _, ok := a.keys[f.Key]; ok {
-			return nil, a.anError(errFieldKeyConflict, f, nil)
+			// NOTE(mkopriva): this shouldn't happen given that
+			// makeFieldKey already checks for duplicates and if
+			// one is found then it modifies the key so as to make
+			// it unique, regardless this stays here just in case
+			// an update to makeFieldKey, or something else, breaks
+			// that expected behaviour.
+			panic("shouldn't reach")
+			return nil, nil
 		} else {
 			a.keys[f.Key] = 1
 		}
@@ -309,16 +296,19 @@ func analyzeStructFields(a *analysis, structType *types.Struct, selector []*Stru
 		if len(istag) == 0 && len(selector) == 0 {
 			if isErrorConstructor(fvar.Type()) {
 				if err := analyzeErrorHandlerField(a, f, false); err != nil {
+					// TODO
 					return nil, err
 				}
 				continue
 			} else if isErrorAggregator(fvar.Type()) {
 				if err := analyzeErrorHandlerField(a, f, true); err != nil {
+					// TODO
 					return nil, err
 				}
 				continue
 			} else if strings.ToLower(fvar.Name()) == "context" {
 				if err := analyzeContextOptionField(a, f); err != nil {
+					// TODO
 					return nil, err
 				}
 				continue
@@ -413,7 +403,6 @@ func analyzeType(a *analysis, t types.Type, selector []*StructField) (typ Type, 
 		typ.IsEmptyInterface = T.NumMethods() == 0
 		typ.CanIsValid = canIsValid(t)
 	case *types.Struct:
-
 		fields, err := analyzeStructFields(a, T, selector, !typ.IsImported)
 		if err != nil {
 			return Type{}, err
@@ -548,8 +537,7 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 			for _, arg := range r.Args {
 				if arg.Type == ArgTypeField {
 					if _, ok := a.info.SelectorMap[arg.Value]; !ok {
-						// TODO test
-						return a.anError(errFieldKeyUnknown, f, r)
+						return a.anError(&anError{Code: errRuleArgFieldUnknown, ra: arg}, f, r)
 					}
 				}
 			}
@@ -559,12 +547,19 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 			}
 
 			// Ensure a spec for the specified rule exists.
-			spec, ok := a.conf.ruleSpecMap[r.Name]
+			spec, ok := a.conf.customSpecMap[r.Name]
 			if !ok {
 				spec, ok = defaultRuleSpecMap[r.Name]
 				if !ok {
+					// TODO
 					return a.anError(errRuleUnknown, f, r)
 				}
+			}
+
+			// Ensure the number of arguments provided to
+			// the rule fits the rule's spec, else fail.
+			if ok := spec.argCount().check(len(r.Args)); !ok {
+				return a.anError(&anError{Code: errRuleArgCount}, f, r)
 			}
 
 			// Apply spec type-checking to the provided Type.
@@ -573,14 +568,19 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 				// nothing to do here
 			case RuleEnum:
 				if err := typeCheckRuleEnum(a, typ, r, f); err != nil {
+					// TODO
 					return err
 				}
 			case RuleBasic:
-				if err := s.check(a, r, typ, f); err != nil {
-					return err
+				if s.check != nil {
+					if err := s.check(a, r, typ, f); err != nil {
+						// TODO
+						return err
+					}
 				}
 			case RuleFunc:
 				if err := typeCheckRuleFunc(a, r, s, typ, f); err != nil {
+					// TODO
 					return a.anError(err, f, r)
 				}
 			}
@@ -593,6 +593,7 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 				return a.anError(errRuleKey, f, nil)
 			}
 			if err := tagcheck(a, tag.Key, *typ.Key, f); err != nil {
+				// TODO
 				return err
 			}
 		}
@@ -602,6 +603,7 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 				return a.anError(errRuleElem, f, nil)
 			}
 			if err := tagcheck(a, tag.Elem, *typ.Elem, f); err != nil {
+				// TODO
 				return err
 			}
 		}
@@ -611,10 +613,12 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 	for _, f := range fields {
 		if f.RuleTag != nil {
 			if err := tagcheck(a, f.RuleTag, f.Type, f); err != nil {
+				// TODO
 				return err
 			}
 		}
 		if err := typwalk(a, f.Type); err != nil {
+			// TODO
 			return err
 		}
 	}
@@ -627,6 +631,9 @@ func typeCheckRuleEnum(a *analysis, t Type, r *Rule, f *StructField) error {
 	typ := t.PtrBase()
 	if len(typ.Name) == 0 {
 		return a.anError(errRuleEnumTypeUnnamed, f, r)
+	}
+	if !typ.Kind.IsBasic() {
+		return a.anError(errRuleEnumType, f, r)
 	}
 
 	ident := typ.PkgPath + "." + typ.Name
@@ -650,6 +657,7 @@ func typeCheckRuleEnum(a *analysis, t Type, r *Rule, f *StructField) error {
 		enums = append(enums, Const{Name: name, PkgPath: pkgpath})
 	}
 	if len(enums) == 0 {
+		// TODO
 		return a.anError(errRuleEnumTypeNoConst, f, r)
 	}
 
@@ -659,34 +667,19 @@ func typeCheckRuleEnum(a *analysis, t Type, r *Rule, f *StructField) error {
 
 // checks whether the rule func can be applied to its related field.
 func typeCheckRuleFunc(a *analysis, r *Rule, rf RuleFunc, t Type, f *StructField) error {
-	if rf.BoolConn > RuleFuncBoolNone {
-		// func with bool connective but rule with no args, fail
-		if len(r.Args) < 1 {
-			return a.anError(errRuleFuncRuleArgCount, f, r)
-		}
-	} else {
-		// rule arg count and func arg count are not compatibale, fail
-		numreq := len(rf.ArgTypes[1:])
-		if rf.IsVariadic {
-			numreq -= 1
-		}
-		if numarg := len(r.Args); numreq > numarg || (numreq < numarg && !rf.IsVariadic) {
-			return a.anError(errRuleFuncRuleArgCount, f, r)
-		}
-	}
-
 	// field type cannot be converted to func 0th arg type, fail
 	fldType, argType := t.PtrBase(), rf.ArgTypes[0]
 	if rf.IsVariadic && len(rf.ArgTypes) == 1 {
 		argType = *argType.Elem
 	}
 	if !canConvert(argType, fldType) {
-		return a.anError(errRuleFuncFieldArgType, f, r)
+		return a.anError(&anError{Code: errRuleFuncFieldType}, f, r)
 	}
 
 	// optional check returns error, fail
 	if rf.check != nil {
 		if err := rf.check(a, r, t, f); err != nil {
+			// TODO
 			return err
 		}
 	}
@@ -699,7 +692,8 @@ func typeCheckRuleFunc(a *analysis, r *Rule, rf RuleFunc, t Type, f *StructField
 	for i, fatyp := range fatypes {
 		ra := r.Args[i]
 		if !canConvertRuleArg(a, fatyp, ra) {
-			return a.anError(&anError{Code: errRuleFuncRuleArgType, RuleArg: ra}, f, r)
+			// TODO
+			return a.anError(&anError{Code: errRuleFuncArgType, ra: ra}, f, r)
 		}
 	}
 	if rf.IsVariadic {
@@ -707,14 +701,16 @@ func typeCheckRuleFunc(a *analysis, r *Rule, rf RuleFunc, t Type, f *StructField
 		fatyp = *fatyp.Elem
 		for _, ra := range r.Args[len(fatypes):] {
 			if !canConvertRuleArg(a, fatyp, ra) {
-				return a.anError(&anError{Code: errRuleFuncRuleArgType, RuleArg: ra}, f, r)
+				// TODO
+				return a.anError(&anError{Code: errRuleFuncArgType, ra: ra}, f, r)
 			}
 		}
 	} else if rf.BoolConn > RuleFuncBoolNone {
 		fatyp := rf.ArgTypes[1]
 		for _, ra := range r.Args {
 			if !canConvertRuleArg(a, fatyp, ra) {
-				return a.anError(&anError{Code: errRuleFuncRuleArgType, RuleArg: ra}, f, r)
+				// TODO
+				return a.anError(&anError{Code: errRuleFuncArgType, ra: ra}, f, r)
 			}
 		}
 	}

@@ -78,3 +78,19 @@ const (
 	_
 	MyBaz
 )
+
+// enum without a (useful) const value
+type MyNoConst uint
+
+const (
+	_ MyNoConst = 1 << iota
+	_
+	_
+	myNoConst
+)
+
+type MyNonBasicType struct {
+	// ...
+}
+
+type MyNonBasicType2 []string

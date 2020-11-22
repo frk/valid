@@ -54,7 +54,10 @@ func (cmd *Command) Run() error {
 		return err
 	}
 
-	// 2. find & analyze custom rule functions
+	// 2. load type information for builtin rule funcs (used for error reporting)
+	analysis.LoadBuiltinFuncTypes(AST)
+
+	// 3. find & analyze custom rule functions
 	for _, rc := range cmd.CustomRules {
 		f, err := search.FindFunc(rc.funcPkg, rc.funcName, AST)
 		if err != nil {
@@ -75,7 +78,7 @@ func (cmd *Command) Run() error {
 			out.targInfos = make([]*generator.TargetAnalysis, len(file.Matches))
 
 			for k, match := range file.Matches {
-				// 3. analyze matched targets
+				// 4. analyze matched targets
 				aInfo := new(analysis.Info)
 				vs, err := aConf.Analyze(AST, match, aInfo)
 				if err != nil {
@@ -85,7 +88,7 @@ func (cmd *Command) Run() error {
 				out.targInfos[k] = &generator.TargetAnalysis{ValidatorStruct: vs, Info: aInfo}
 			}
 
-			// 4. generate code
+			// 5. generate code
 			if err := generator.Generate(&out.buf, pkg.Name, out.targInfos); err != nil {
 				return err
 			}
@@ -95,7 +98,7 @@ func (cmd *Command) Run() error {
 		result[i] = outFiles
 	}
 
-	// 5. write to file(s)
+	// 6. write to file(s)
 	for _, outFiles := range result {
 		for _, out := range outFiles {
 			if err := cmd.writeOutFile(out); err != nil {

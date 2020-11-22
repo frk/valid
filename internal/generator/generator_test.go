@@ -83,6 +83,8 @@ func TestGenerator(t *testing.T) {
 	}
 	pkg := pkgs[0]
 
+	analysis.LoadBuiltinFuncTypes(AST)
+
 	customrules := [][3]string{
 		{"myrule", "github.com/frk/isvalid/internal/testdata/mypkg", "MyRule"},
 		{"myrule2", "github.com/frk/isvalid/internal/testdata/mypkg", "MyRule2"},

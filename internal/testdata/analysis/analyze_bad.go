@@ -21,18 +21,34 @@ type AnalysisTestBAD_ContextOptionFieldTypeValidator struct {
 	Context int
 }
 
-type AnalysisTestBAD_EmptyValidator struct {
+type AnalysisTestBAD_ContextOptionFieldRequiredValidator struct {
+	F string `is:"required:@ctx"`
+}
+
+type AnalysisTestBAD_RuleArgFieldUnknownValidator struct {
+	F int64 `is:"gt:&x"`
+}
+
+type AnalysisTestBAD_ValidatorNoFieldValidator struct {
 	// ...
 }
 
-type AnalysisTestBAD_Empty2Validator struct {
+type AnalysisTestBAD_ValidatorNoField2Validator struct {
 	F string `is:"-"`
 }
 
-type AnalysisTestBAD_Empty3Validator struct {
+type AnalysisTestBAD_ValidatorNoField3Validator struct {
 	_ struct {
 		F string `is:"required"`
 	}
+}
+
+type AnalysisTestBAD_RuleUnknownValidator struct {
+	F string `is:"abracadabra:foobar"`
+}
+
+type AnalysisTestBAD_RuleUnknown2Validator struct {
+	F string `is:"notempty"`
 }
 
 type AnalysisTestBAD_RuleArgNumRequiredValidator struct {
@@ -151,8 +167,20 @@ type AnalysisTestBAD_RuleArgTypePhoneValidator struct {
 	F string `is:"phone:321"`
 }
 
+type AnalysisTestBAD_RuleArgType2PhoneValidator struct {
+	F string `is:"phone:true"`
+}
+
+type AnalysisTestBAD_RuleArgType3PhoneValidator struct {
+	F string `is:"phone:0.2"`
+}
+
 type AnalysisTestBAD_RuleArgValueCountryCodePhoneValidator struct {
 	F string `is:"phone:foo"`
+}
+
+type AnalysisTestBAD_RuleArgValueCountryCode2PhoneValidator struct {
+	F string `is:"phone:ab"`
 }
 
 type AnalysisTestBAD_RuleArgTypeReferenceKindPhoneValidator struct {
@@ -168,8 +196,20 @@ type AnalysisTestBAD_RuleArgTypeZipValidator struct {
 	F string `is:"zip:321"`
 }
 
+type AnalysisTestBAD_RuleArgType2ZipValidator struct {
+	F string `is:"zip:true"`
+}
+
+type AnalysisTestBAD_RuleArgType3ZipValidator struct {
+	F string `is:"zip:0.2"`
+}
+
 type AnalysisTestBAD_RuleArgValueCountryCodeZipValidator struct {
 	F string `is:"zip:foo"`
+}
+
+type AnalysisTestBAD_RuleArgValueCountryCode2ZipValidator struct {
+	F string `is:"zip:ab"`
 }
 
 type AnalysisTestBAD_RuleArgTypeReferenceKindZipValidator struct {
@@ -185,8 +225,20 @@ type AnalysisTestBAD_RuleArgTypeUUIDValidator struct {
 	F string `is:"uuid:-4"`
 }
 
+type AnalysisTestBAD_RuleArgType2UUIDValidator struct {
+	F string `is:"uuid:true"`
+}
+
+type AnalysisTestBAD_RuleArgType3UUIDValidator struct {
+	F string `is:"uuid:0.2"`
+}
+
 type AnalysisTestBAD_RuleArgValueUUIDVerUUIDValidator struct {
 	F string `is:"uuid:foo"`
+}
+
+type AnalysisTestBAD_RuleArgValueUUIDVer2UUIDValidator struct {
+	F string `is:"uuid:v8"`
 }
 
 type AnalysisTestBAD_RuleArgTypeReferenceKindUUIDValidator struct {
@@ -212,8 +264,20 @@ type AnalysisTestBAD_RuleArgTypeIPValidator struct {
 	F string `is:"ip:-4"`
 }
 
+type AnalysisTestBAD_RuleArgType2IPValidator struct {
+	F string `is:"ip:true"`
+}
+
+type AnalysisTestBAD_RuleArgType3IPValidator struct {
+	F string `is:"ip:0.2"`
+}
+
 type AnalysisTestBAD_RuleArgValueIPVerIPValidator struct {
 	F string `is:"ip:v7"`
+}
+
+type AnalysisTestBAD_RuleArgValueIPVer2IPValidator struct {
+	F string `is:"ip:foo"`
 }
 
 type AnalysisTestBAD_RuleArgTypeReferenceKindIPValidator struct {
@@ -238,8 +302,20 @@ type AnalysisTestBAD_RuleArgTypeMACValidator struct {
 	F string `is:"mac:-6"`
 }
 
+type AnalysisTestBAD_RuleArgType2MACValidator struct {
+	F string `is:"mac:true"`
+}
+
+type AnalysisTestBAD_RuleArgType3MACValidator struct {
+	F string `is:"mac:0.2"`
+}
+
 type AnalysisTestBAD_RuleArgValueMACVerMACValidator struct {
 	F string `is:"mac:v10"`
+}
+
+type AnalysisTestBAD_RuleArgValueMACVer2MACValidator struct {
+	F string `is:"mac:vv8"`
 }
 
 type AnalysisTestBAD_RuleArgTypeReferenceKindMACValidator struct {
@@ -260,8 +336,16 @@ type AnalysisTestBAD_TypeKindStringISOValidator struct {
 	F complex128 `is:"iso:1234"`
 }
 
-type AnalysisTestBAD_RuleArgValueISOStdISOValidator struct {
+type AnalysisTestBAD_RuleArgTypeISOValidator struct {
 	F string `is:"iso:foo"`
+}
+
+type AnalysisTestBAD_RuleArgType2ISOValidator struct {
+	F string `is:"iso:true"`
+}
+
+type AnalysisTestBAD_RuleArgType3ISOValidator struct {
+	F string `is:"iso:0.2"`
 }
 
 type AnalysisTestBAD_RuleArgTypeReferenceKindISOValidator struct {
@@ -281,8 +365,16 @@ type AnalysisTestBAD_TypeKindStringRFCValidator struct {
 	F uint64 `is:"rfc:1234"`
 }
 
-type AnalysisTestBAD_RuleArgValueRFCStdRFCValidator struct {
+type AnalysisTestBAD_RuleArgTypeRFCValidator struct {
 	F string `is:"rfc:foo"`
+}
+
+type AnalysisTestBAD_RuleArgType2RFCValidator struct {
+	F string `is:"rfc:true"`
+}
+
+type AnalysisTestBAD_RuleArgType3RFCValidator struct {
+	F string `is:"rfc:0.2"`
 }
 
 type AnalysisTestBAD_RuleArgTypeReferenceKindRFCValidator struct {
@@ -593,6 +685,10 @@ type AnalysisTestBAD_RuleArgValueBoundsRngValidator struct {
 	F float32 `is:"rng:2:1.23"`
 }
 
+type AnalysisTestBAD_RuleArgValueBounds2RngValidator struct {
+	F float32 `is:"rng::"`
+}
+
 type AnalysisTestBAD_RuleArgTypeReferenceKindRngValidator struct {
 	F int32 `is:"rng:&x:&y"`
 	x int32
@@ -627,6 +723,10 @@ type AnalysisTestBAD_RuleArgValueBoundsLenValidator struct {
 	F []string `is:"len:20:10"`
 }
 
+type AnalysisTestBAD_RuleArgValueBounds2LenValidator struct {
+	F []string `is:"len::"`
+}
+
 type AnalysisTestBAD_RuleArgTypeReferenceKindLenValidator struct {
 	F []int8 `is:"len:&x:&y"`
 	x int32
@@ -651,4 +751,48 @@ type AnalysisTestBAD_RuleFuncRuleArgTypeValidator struct {
 
 type AnalysisTestBAD_RuleFuncRuleArgType2Validator struct {
 	F string `is:"rulefunc2:123:true:false:abc"`
+}
+
+type AnalysisTestBAD_RuleEnumTypeUnnamedValidator struct {
+	F string `is:"enum"`
+}
+
+type AnalysisTestBAD_RuleEnumTypeUnnamed2Validator struct {
+	F uint32 `is:"enum"`
+}
+
+type AnalysisTestBAD_RuleEnumTypeValidator struct {
+	F mypkg.MyNonBasicType `is:"enum"`
+}
+
+type AnalysisTestBAD_RuleEnumType2Validator struct {
+	F mypkg.MyNonBasicType2 `is:"enum"`
+}
+
+type AnalysisTestBAD_RuleEnumTypeNoConstValidator struct {
+	F mypkg.MyNoConst `is:"enum"`
+}
+
+type AnalysisTestBAD_RuleKeyValidator struct {
+	F string `is:"[email]"`
+}
+
+type AnalysisTestBAD_RuleKey2Validator struct {
+	F []string `is:"[email]"`
+}
+
+type AnalysisTestBAD_RuleKey3Validator struct {
+	F map[string][]string `is:"[][email]"`
+}
+
+type AnalysisTestBAD_RuleElemValidator struct {
+	F string `is:"[]email"`
+}
+
+type AnalysisTestBAD_RuleElem2Validator struct {
+	F []string `is:"[][]email"`
+}
+
+type AnalysisTestBAD_RuleElem3Validator struct {
+	F []map[string]string `is:"[][]email,[]email"`
 }

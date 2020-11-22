@@ -143,6 +143,7 @@ type (
 		IsCustom() bool
 
 		ruleSpec()
+		argCount() ruleArgCount
 	}
 
 	// RuleNop represents a rule that should produce NO code.
@@ -159,9 +160,10 @@ type (
 	// RuleBasic represents a rule that should produce an expression using
 	// the basic comparison operators for carrying out its validation.
 	RuleBasic struct {
-		// Used for type-checking a Rule and its associated StructField's
-		// type. For RuleBasic this field is expected to be non-nil.
+		// Used for type-checking a Rule and its associated StructField's type.
 		check func(a *analysis, r *Rule, t Type, f *StructField) error
+		// arg count requirements, used for type-checking
+		amin, amax int
 	}
 
 	// RuleFunc represents a rule that uses functions for carrying out its
@@ -179,18 +181,24 @@ type (
 		IsVariadic bool
 		// Optional, indicates the boolean operator to be used between
 		// multiple calls of the function represented by RuleFunc.
-		// NOTE This can only be used with functions that take exactly
-		// two arguments and it should not be variadic.
+		// NOTE This can only be used with a function that takes
+		// exactly two arguments and that is not variadic.
 		BoolConn RuleFuncBoolConn
 		// Indicates that the generated code should use raw strings
 		// for any string arguments passed to the function.
 		UseRawStrings bool
 
+		// Indicates that this RuleFunc is a custom one.
+		iscustom bool
 		// Optional, used for additional function-specific type
 		// checking of the associated Rule and its StructField's type.
 		check func(a *analysis, r *Rule, t Type, f *StructField) error
-		// Indicates that this RuleFunc is a custom one.
-		iscustom bool
+		// If set, it is used by the spec to check the related rule's
+		// argument count. If left unset, the required argument count
+		// will be inferred from BoolConn and ArgTypes.
+		acount *ruleArgCount
+		// Used for error reporting.
+		typ *types.Func `cmp:"+"`
 	}
 )
 
@@ -227,17 +235,50 @@ func (f *StructField) ContainsRules() bool {
 	return walk(f.Type)
 }
 
+func (RuleNop) IsCustom() bool     { return true }
+func (RuleIsValid) IsCustom() bool { return true }
+func (RuleEnum) IsCustom() bool    { return true }
+func (RuleBasic) IsCustom() bool   { return false }
+func (r RuleFunc) IsCustom() bool  { return r.iscustom }
+
 func (RuleNop) ruleSpec()     {}
 func (RuleIsValid) ruleSpec() {}
 func (RuleEnum) ruleSpec()    {}
 func (RuleBasic) ruleSpec()   {}
 func (RuleFunc) ruleSpec()    {}
 
-func (RuleNop) IsCustom() bool     { return true }
-func (RuleIsValid) IsCustom() bool { return true }
-func (RuleEnum) IsCustom() bool    { return true }
-func (RuleBasic) IsCustom() bool   { return false }
-func (f RuleFunc) IsCustom() bool  { return f.iscustom }
+func (RuleNop) argCount() ruleArgCount     { return ruleArgCount{} }
+func (RuleIsValid) argCount() ruleArgCount { return ruleArgCount{} }
+func (RuleEnum) argCount() ruleArgCount    { return ruleArgCount{} }
+func (r RuleBasic) argCount() ruleArgCount { return ruleArgCount{min: r.amin, max: r.amax} }
+func (r RuleFunc) argCount() ruleArgCount {
+	if r.acount != nil {
+		return *r.acount
+	}
+
+	if r.BoolConn > RuleFuncBoolNone {
+		return ruleArgCount{1, -1}
+	}
+
+	expected := len(r.ArgTypes[1:]) // 1st is the field arg, which is implicit, no need to count it
+	if r.IsVariadic {
+		return ruleArgCount{expected - 1, -1}
+	}
+	return ruleArgCount{expected, expected}
+}
+
+// ruleArgCount represents the number of arguments a rule can take.
+// It is used for type checking and error reporting.
+type ruleArgCount struct {
+	min, max int
+}
+
+func (c ruleArgCount) check(num int) bool {
+	if num < c.min || (num > c.max && c.max != -1) {
+		return false
+	}
+	return true
+}
 
 // PtrBase ...
 func (t Type) PtrBase() Type {
@@ -399,6 +440,22 @@ const (
 	ArgTypeString
 	ArgTypeField
 )
+
+var argTypes = [...]string{
+	ArgTypeUnknown: "<unknown>",
+	ArgTypeBool:    "bool",
+	ArgTypeInt:     "int",
+	ArgTypeFloat:   "float",
+	ArgTypeString:  "string",
+	ArgTypeField:   "<field>",
+}
+
+func (t ArgType) String() string {
+	if int(t) < len(argTypes) {
+		return argTypes[t]
+	}
+	return "<invalid>"
+}
 
 // RuleFuncBoolConn indicates the boolean connective to be used
 // between multiple alls of a single RuleFunc.

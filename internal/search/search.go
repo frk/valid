@@ -269,8 +269,12 @@ func FindConstantsByType(pkgpath, name string, a AST) (consts []*types.Const) {
 // stores packages loaded by FindFunc.
 var pkgCache = struct {
 	sync.RWMutex
-	m map[string]*packages.Package
-}{m: make(map[string]*packages.Package)}
+	m   map[string]*packages.Package
+	err map[string]error
+}{
+	m:   make(map[string]*packages.Package),
+	err: make(map[string]error),
+}
 
 // FindFunc scans the package identified by pkgpath looking for a function
 // with the given name and, if successful, returns the go/types.Func
@@ -281,15 +285,17 @@ var pkgCache = struct {
 //
 // The pkgpath parameter should be the import path of a single package,
 // if it's a pattern or something else then the result is undefined.
-//
-// NOTE: FindFunc is specifically intended for finding type definitions of
-// functions that are supposed to be used as *custom validator functions*.
 func FindFunc(pkgpath, name string, a AST) (*types.Func, error) {
 	pkgCache.Lock()
 	defer pkgCache.Unlock()
 
 	pkg, ok := pkgCache.m[pkgpath]
 	if !ok {
+		// no need to re-attempt load if it failed before
+		if err, ok := pkgCache.err[pkgpath]; ok {
+			return nil, err
+		}
+
 		// It is probable that the target package will already be loaded
 		// in the AST instance supplied to the Search function, therefore
 		// look there next and only if it's not there attempt to load it.
@@ -297,9 +303,13 @@ func FindFunc(pkgpath, name string, a AST) (*types.Func, error) {
 			cfg := &packages.Config{Mode: packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo}
 			pkgs, err := packages.Load(cfg, pkgpath)
 			if err != nil || len(pkgs) == 0 {
-				return nil, pkgLoadError{pkgpath, name, err}
+				pe := pkgLoadError{pkgpath, name, err}
+				pkgCache.err[pkgpath] = pe
+				return nil, pe
 			} else if len(pkgs[0].Errors) > 0 {
-				return nil, pkgLoadError{pkgpath, name, pkgs[0].Errors[0]}
+				pe := pkgLoadError{pkgpath, name, pkgs[0].Errors[0]}
+				pkgCache.err[pkgpath] = pe
+				return nil, pe
 			}
 
 			pkg = pkgs[0]
