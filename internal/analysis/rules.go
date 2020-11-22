@@ -193,7 +193,6 @@ func isValidRuleLen(a *analysis, r *Rule, t Type, f *StructField) error {
 		if ra := r.Args[0]; len(ra.Value) > 0 {
 			u64, err := strconv.ParseUint(ra.Value, 10, 64)
 			if err != nil {
-				// TODO
 				return a.anError(&anError{Code: errRuleBasicArgTypeUint, ra: ra, err: err}, f, r)
 			}
 			lower = &u64
@@ -201,7 +200,6 @@ func isValidRuleLen(a *analysis, r *Rule, t Type, f *StructField) error {
 		if ra := r.Args[1]; len(ra.Value) > 0 {
 			u64, err := strconv.ParseUint(ra.Value, 10, 64)
 			if err != nil {
-				// TODO
 				return a.anError(&anError{Code: errRuleBasicArgTypeUint, ra: ra, err: err}, f, r)
 			}
 			upper = &u64
@@ -218,7 +216,6 @@ func isValidRuleLen(a *analysis, r *Rule, t Type, f *StructField) error {
 	typ := Type{Kind: TypeKindUint}
 	for _, ra := range r.Args {
 		if !canConvertRuleArg(a, typ, ra) {
-			// TODO
 			return a.anError(&anError{Code: errRuleBasicArgTypeUint, ra: ra}, f, r)
 		}
 	}
@@ -238,7 +235,6 @@ func isValidRuleRng(a *analysis, r *Rule, t Type, f *StructField) error {
 		if ra := r.Args[0]; len(ra.Value) > 0 {
 			f64, err := strconv.ParseFloat(ra.Value, 64)
 			if err != nil {
-				// TODO
 				return a.anError(&anError{Code: errRuleFuncArgType, ra: ra, err: err}, f, r)
 			}
 			lower = &f64
@@ -246,7 +242,6 @@ func isValidRuleRng(a *analysis, r *Rule, t Type, f *StructField) error {
 		if ra := r.Args[1]; len(ra.Value) > 0 {
 			f64, err := strconv.ParseFloat(ra.Value, 64)
 			if err != nil {
-				// TODO
 				return a.anError(&anError{Code: errRuleFuncArgType, ra: ra, err: err}, f, r)
 			}
 			upper = &f64
@@ -263,7 +258,6 @@ func isValidRuleRng(a *analysis, r *Rule, t Type, f *StructField) error {
 	typ := t.PtrBase()
 	for _, ra := range r.Args {
 		if !canConvertRuleArg(a, typ, ra) {
-			// TODO
 			return a.anError(&anError{Code: errRuleFuncArgType, ra: ra}, f, r)
 		}
 	}

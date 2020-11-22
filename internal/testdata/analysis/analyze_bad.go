@@ -10,6 +10,12 @@ type AnalysisTestBAD_ErrorHandlerFieldConflictValidator struct {
 	mypkg.MyErrorAggregator
 }
 
+type AnalysisTestBAD_ErrorHandlerFieldConflict2Validator struct {
+	F string `is:"required"`
+	mypkg.MyErrorAggregator
+	mypkg.MyErrorConstructor
+}
+
 type AnalysisTestBAD_ContextOptionFieldConflictValidator struct {
 	F       string `is:"required"`
 	Context string
@@ -673,6 +679,10 @@ type AnalysisTestBAD_RuleArgTypeStringRngValidator struct {
 	F uint64 `is:"rng:foo:bar"`
 }
 
+type AnalysisTestBAD_RuleArgTypeString2RngValidator struct {
+	F uint64 `is:"rng:123:bar"`
+}
+
 type AnalysisTestBAD_RuleArgTypeNintRngValidator struct {
 	F uint `is:"rng:-123:0"`
 }
@@ -795,4 +805,18 @@ type AnalysisTestBAD_RuleElem2Validator struct {
 
 type AnalysisTestBAD_RuleElem3Validator struct {
 	F []map[string]string `is:"[][]email,[]email"`
+}
+
+type AnalysisTestBAD_RuleArgCountKeyValidator struct {
+	F []map[string]string `is:"[][email:foo]"`
+}
+
+type AnalysisTestBAD_RuleArgCountElemValidator struct {
+	F []string `is:"[]email:foo"`
+}
+
+type AnalysisTestBAD_RuleArgCountSubfieldValidator struct {
+	F map[string]struct {
+		F string `is:"email:foo"`
+	}
 }

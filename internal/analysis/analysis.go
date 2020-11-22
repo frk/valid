@@ -3,15 +3,12 @@ package analysis
 import (
 	"go/token"
 	"go/types"
-	"log"
 	"strconv"
 	"strings"
 
 	"github.com/frk/isvalid/internal/search"
 	"github.com/frk/tagutil"
 )
-
-var _ = log.Println
 
 // A Config specifies the configuration for the analysis.
 type Config struct {
@@ -296,19 +293,16 @@ func analyzeStructFields(a *analysis, structType *types.Struct, selector []*Stru
 		if len(istag) == 0 && len(selector) == 0 {
 			if isErrorConstructor(fvar.Type()) {
 				if err := analyzeErrorHandlerField(a, f, false); err != nil {
-					// TODO
 					return nil, err
 				}
 				continue
 			} else if isErrorAggregator(fvar.Type()) {
 				if err := analyzeErrorHandlerField(a, f, true); err != nil {
-					// TODO
 					return nil, err
 				}
 				continue
 			} else if strings.ToLower(fvar.Name()) == "context" {
 				if err := analyzeContextOptionField(a, f); err != nil {
-					// TODO
 					return nil, err
 				}
 				continue
@@ -551,7 +545,6 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 			if !ok {
 				spec, ok = defaultRuleSpecMap[r.Name]
 				if !ok {
-					// TODO
 					return a.anError(errRuleUnknown, f, r)
 				}
 			}
@@ -568,19 +561,16 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 				// nothing to do here
 			case RuleEnum:
 				if err := typeCheckRuleEnum(a, typ, r, f); err != nil {
-					// TODO
 					return err
 				}
 			case RuleBasic:
 				if s.check != nil {
 					if err := s.check(a, r, typ, f); err != nil {
-						// TODO
 						return err
 					}
 				}
 			case RuleFunc:
 				if err := typeCheckRuleFunc(a, r, s, typ, f); err != nil {
-					// TODO
 					return a.anError(err, f, r)
 				}
 			}
@@ -593,7 +583,6 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 				return a.anError(errRuleKey, f, nil)
 			}
 			if err := tagcheck(a, tag.Key, *typ.Key, f); err != nil {
-				// TODO
 				return err
 			}
 		}
@@ -603,7 +592,6 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 				return a.anError(errRuleElem, f, nil)
 			}
 			if err := tagcheck(a, tag.Elem, *typ.Elem, f); err != nil {
-				// TODO
 				return err
 			}
 		}
@@ -613,12 +601,10 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 	for _, f := range fields {
 		if f.RuleTag != nil {
 			if err := tagcheck(a, f.RuleTag, f.Type, f); err != nil {
-				// TODO
 				return err
 			}
 		}
 		if err := typwalk(a, f.Type); err != nil {
-			// TODO
 			return err
 		}
 	}
@@ -657,7 +643,6 @@ func typeCheckRuleEnum(a *analysis, t Type, r *Rule, f *StructField) error {
 		enums = append(enums, Const{Name: name, PkgPath: pkgpath})
 	}
 	if len(enums) == 0 {
-		// TODO
 		return a.anError(errRuleEnumTypeNoConst, f, r)
 	}
 
@@ -679,7 +664,6 @@ func typeCheckRuleFunc(a *analysis, r *Rule, rf RuleFunc, t Type, f *StructField
 	// optional check returns error, fail
 	if rf.check != nil {
 		if err := rf.check(a, r, t, f); err != nil {
-			// TODO
 			return err
 		}
 	}
@@ -692,7 +676,6 @@ func typeCheckRuleFunc(a *analysis, r *Rule, rf RuleFunc, t Type, f *StructField
 	for i, fatyp := range fatypes {
 		ra := r.Args[i]
 		if !canConvertRuleArg(a, fatyp, ra) {
-			// TODO
 			return a.anError(&anError{Code: errRuleFuncArgType, ra: ra}, f, r)
 		}
 	}
@@ -701,7 +684,6 @@ func typeCheckRuleFunc(a *analysis, r *Rule, rf RuleFunc, t Type, f *StructField
 		fatyp = *fatyp.Elem
 		for _, ra := range r.Args[len(fatypes):] {
 			if !canConvertRuleArg(a, fatyp, ra) {
-				// TODO
 				return a.anError(&anError{Code: errRuleFuncArgType, ra: ra}, f, r)
 			}
 		}
@@ -709,7 +691,6 @@ func typeCheckRuleFunc(a *analysis, r *Rule, rf RuleFunc, t Type, f *StructField
 		fatyp := rf.ArgTypes[1]
 		for _, ra := range r.Args {
 			if !canConvertRuleArg(a, fatyp, ra) {
-				// TODO
 				return a.anError(&anError{Code: errRuleFuncArgType, ra: ra}, f, r)
 			}
 		}

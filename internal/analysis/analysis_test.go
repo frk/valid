@@ -163,6 +163,9 @@ func TestAnalysisRun(t *testing.T) {
 		name: "AnalysisTestBAD_ErrorHandlerFieldConflictValidator",
 		err:  &anError{Code: errErrorHandlerFieldConflict, a: &analysis{}, f: &StructField{}},
 	}, {
+		name: "AnalysisTestBAD_ErrorHandlerFieldConflict2Validator",
+		err:  &anError{Code: errErrorHandlerFieldConflict, a: &analysis{}, f: &StructField{}},
+	}, {
 		name: "AnalysisTestBAD_ContextOptionFieldConflictValidator",
 		err:  &anError{Code: errContextOptionFieldConflict, a: &analysis{}, f: &StructField{}},
 	}, {
@@ -855,6 +858,11 @@ func TestAnalysisRun(t *testing.T) {
 			ra: &RuleArg{Value: "foo", Type: ArgTypeString},
 		},
 	}, {
+		name: "AnalysisTestBAD_RuleArgTypeString2RngValidator",
+		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			ra: &RuleArg{Value: "bar", Type: ArgTypeString},
+		},
+	}, {
 		name: "AnalysisTestBAD_RuleArgTypeNintRngValidator",
 		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
 			ra: &RuleArg{Value: "-123", Type: ArgTypeInt},
@@ -982,6 +990,15 @@ func TestAnalysisRun(t *testing.T) {
 	}, {
 		name: "AnalysisTestBAD_RuleElem3Validator",
 		err:  &anError{Code: errRuleElem, a: &analysis{}, f: &StructField{}},
+	}, {
+		name: "AnalysisTestBAD_RuleArgCountKeyValidator",
+		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+	}, {
+		name: "AnalysisTestBAD_RuleArgCountElemValidator",
+		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+	}, {
+		name: "AnalysisTestBAD_RuleArgCountSubfieldValidator",
+		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
 		name: "AnalysisTestOK_ErrorConstructorValidator",
 		want: &ValidatorStruct{
