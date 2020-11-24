@@ -201,9 +201,9 @@ func prepareFragments(g *generator) {
 	}
 }
 
-func prepareFragment(g *generator, frag *fragment, rtag *analysis.RuleTag) {
+func prepareFragment(g *generator, frag *fragment, tn *analysis.TagNode) {
 	// first split rules:
-	for _, r := range rtag.Rules {
+	for _, r := range tn.Rules {
 		if r.Name == "required" {
 			frag.required = r
 		} else if r.Name == "notnil" {
@@ -221,23 +221,23 @@ func prepareFragment(g *generator, frag *fragment, rtag *analysis.RuleTag) {
 
 	switch frag.typ.Kind {
 	case analysis.TypeKindSlice, analysis.TypeKindArray:
-		if rtag.Elem != nil {
+		if tn.Elem != nil {
 			expr := GO.Ident{"e"}
 			elem := &fragment{f: frag.f, typ: *frag.typ.Elem, x: expr}
-			prepareFragment(g, elem, rtag.Elem)
+			prepareFragment(g, elem, tn.Elem)
 			frag.elem = elem
 		}
 	case analysis.TypeKindMap:
-		if rtag.Key != nil {
+		if tn.Key != nil {
 			expr := GO.Ident{"k"}
 			key := &fragment{f: frag.f, typ: *frag.typ.Key, x: expr}
-			prepareFragment(g, key, rtag.Key)
+			prepareFragment(g, key, tn.Key)
 			frag.key = key
 		}
-		if rtag.Elem != nil {
+		if tn.Elem != nil {
 			expr := GO.Ident{"e"}
 			elem := &fragment{f: frag.f, typ: *frag.typ.Elem, x: expr}
-			prepareFragment(g, elem, rtag.Elem)
+			prepareFragment(g, elem, tn.Elem)
 			frag.elem = elem
 		}
 	case analysis.TypeKindStruct:
@@ -512,38 +512,39 @@ func newExprForNotnil(g *generator, frag *fragment) GO.ExprNode {
 }
 
 func newIfStmt(g *generator, frag *fragment, r *analysis.Rule) (ifs GO.IfStmt) {
-	spec := g.info.RuleSpecMap[r.Name]
-	switch s := spec.(type) {
-	case analysis.RuleIsValid:
+	typ := g.info.RuleTypeMap[r.Name]
+	switch rt := typ.(type) {
+	// TODO deal with RuleTypeNop?
+	case analysis.RuleTypeIsValid:
 		return newIfStmtForIsValid(g, frag, r)
-	case analysis.RuleEnum:
+	case analysis.RuleTypeEnum:
 		return newIfStmtForEnum(g, frag, r)
-	case analysis.RuleBasic:
+	case analysis.RuleTypeBasic:
 		if r.Name == "len" {
 			return newIfStmtForLength(g, frag, r)
 		} else if r.Name == "rng" {
 			return newIfStmtForRange(g, frag, r)
 		}
 		return newIfStmtForBasic(g, frag, r)
-	case analysis.RuleFunc:
-		if s.BoolConn > analysis.RuleFuncBoolNone {
-			return newIfStmtForFuncChained(g, frag, r, s)
+	case analysis.RuleTypeFunc:
+		if rt.LOp > 0 {
+			return newIfStmtForFuncChained(g, frag, r, rt)
 		}
-		return newIfStmtForFunc(g, frag, r, s)
+		return newIfStmtForFunc(g, frag, r, rt)
 	}
 
 	panic("shouldn't reach")
 	return ifs
 }
 
-func newExprForArg(g *generator, t analysis.Type, a *analysis.RuleArg, rf *analysis.RuleFunc) (x GO.ExprNode) {
+func newExprForArg(g *generator, t analysis.Type, a *analysis.RuleArg, userawstring bool) (x GO.ExprNode) {
 	if a.Type == analysis.ArgTypeField {
-		return newExprForFieldArg(g, t, a, rf)
+		return newExprForFieldArg(g, t, a)
 	}
-	return newExprForConstArg(g, t, a, rf)
+	return newExprForConstArg(g, t, a, userawstring)
 }
 
-func newExprForFieldArg(g *generator, t analysis.Type, a *analysis.RuleArg, rf *analysis.RuleFunc) (x GO.ExprNode) {
+func newExprForFieldArg(g *generator, t analysis.Type, a *analysis.RuleArg) (x GO.ExprNode) {
 	var selector = g.info.SelectorMap[a.Value]
 	var last *analysis.StructField
 
@@ -562,10 +563,10 @@ func newExprForFieldArg(g *generator, t analysis.Type, a *analysis.RuleArg, rf *
 	return x
 }
 
-func newExprForConstArg(g *generator, t analysis.Type, a *analysis.RuleArg, rf *analysis.RuleFunc) (x GO.ExprNode) {
+func newExprForConstArg(g *generator, t analysis.Type, a *analysis.RuleArg, userawstring bool) (x GO.ExprNode) {
 	if t.IsEmptyInterface {
 		if a.Type == analysis.ArgTypeString {
-			if rf != nil && rf.UseRawStrings {
+			if userawstring {
 				return GO.RawStringLit(a.Value)
 			}
 			return GO.ValueLit(strconv.Quote(a.Value))
@@ -575,7 +576,7 @@ func newExprForConstArg(g *generator, t analysis.Type, a *analysis.RuleArg, rf *
 	}
 
 	if t.Kind == analysis.TypeKindString {
-		if rf != nil && rf.UseRawStrings {
+		if userawstring {
 			return GO.RawStringLit(a.Value)
 		}
 		return GO.ValueLit(strconv.Quote(a.Value))
@@ -615,7 +616,7 @@ func newExprForConstArg(g *generator, t analysis.Type, a *analysis.RuleArg, rf *
 		return x
 
 	case analysis.ArgTypeString:
-		if rf != nil && rf.UseRawStrings {
+		if userawstring {
 			x = GO.RawStringLit(a.Value)
 		} else {
 			x = GO.ValueLit(strconv.Quote(a.Value))
@@ -670,17 +671,17 @@ func newIfStmtForEnum(g *generator, frag *fragment, r *analysis.Rule) (ifs GO.If
 	return ifs
 }
 
-func newIfStmtForFunc(g *generator, frag *fragment, r *analysis.Rule, rf analysis.RuleFunc) (ifs GO.IfStmt) {
-	imp := addImport(g, rf.PkgPath)
+func newIfStmtForFunc(g *generator, frag *fragment, r *analysis.Rule, rt analysis.RuleTypeFunc) (ifs GO.IfStmt) {
+	imp := addImport(g, rt.PkgPath)
 	retStmt := newReturnStmtForError(g, frag, r)
 
-	fn := GO.QualifiedIdent{imp.name, rf.FuncName}
+	fn := GO.QualifiedIdent{imp.name, rt.FuncName}
 	call := GO.CallExpr{Fun: fn, Args: GO.ArgsList{List: frag.x}}
 	args := GO.ExprList{frag.x}
 
-	argtypes := rf.TypesForArgs(r.Args)
+	argtypes := rt.TypesForArgs(r.Args)
 	for i, a := range r.Args {
-		args = append(args, newExprForArg(g, argtypes[i], a, &rf))
+		args = append(args, newExprForArg(g, argtypes[i], a, (r.Name == "re")))
 
 		if r.Name == "re" {
 			// if this is the regexp rule, then add a registry
@@ -697,29 +698,29 @@ func newIfStmtForFunc(g *generator, frag *fragment, r *analysis.Rule, rf analysi
 	return ifs
 }
 
-func newIfStmtForFuncChained(g *generator, frag *fragment, r *analysis.Rule, rf analysis.RuleFunc) (ifs GO.IfStmt) {
-	imp := addImport(g, rf.PkgPath)
+func newIfStmtForFuncChained(g *generator, frag *fragment, r *analysis.Rule, rt analysis.RuleTypeFunc) (ifs GO.IfStmt) {
+	imp := addImport(g, rt.PkgPath)
 	retStmt := newReturnStmtForError(g, frag, r)
 
-	argtypes := rf.TypesForArgs(r.Args)
+	argtypes := rt.TypesForArgs(r.Args)
 	for i, a := range r.Args {
-		call := GO.CallExpr{Fun: GO.QualifiedIdent{imp.name, rf.FuncName}}
-		call.Args.List = GO.ExprList{frag.x, newExprForArg(g, argtypes[i], a, &rf)}
+		call := GO.CallExpr{Fun: GO.QualifiedIdent{imp.name, rt.FuncName}}
+		call.Args.List = GO.ExprList{frag.x, newExprForArg(g, argtypes[i], a, false)}
 
-		switch rf.BoolConn {
-		case analysis.RuleFuncBoolNot: // x || x || x....
+		switch rt.LOp {
+		case analysis.LogicalNot: // x || x || x....
 			if ifs.Cond != nil {
 				ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLOr, X: ifs.Cond, Y: call}
 			} else {
 				ifs.Cond = call
 			}
-		case analysis.RuleFuncBoolAnd: // !x || !x || !x....
+		case analysis.LogicalAnd: // !x || !x || !x....
 			if ifs.Cond != nil {
 				ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLOr, X: ifs.Cond, Y: GO.UnaryExpr{Op: GO.UnaryNot, X: call}}
 			} else {
 				ifs.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: call}
 			}
-		case analysis.RuleFuncBoolOr: // !x && !x && !x....
+		case analysis.LogicalOr: // !x && !x && !x....
 			if ifs.Cond != nil {
 				ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: ifs.Cond, Y: GO.UnaryExpr{Op: GO.UnaryNot, X: call}}
 			} else {
@@ -741,7 +742,7 @@ func newIfStmtForBasic(g *generator, frag *fragment, r *analysis.Rule) (ifs GO.I
 	logop := basicRuleToLogicalOp[r.Name]
 
 	for _, a := range r.Args {
-		cond := GO.BinaryExpr{Op: binop, X: frag.x, Y: newExprForArg(g, typ, a, nil)}
+		cond := GO.BinaryExpr{Op: binop, X: frag.x, Y: newExprForArg(g, typ, a, false)}
 		if ifs.Cond != nil {
 			ifs.Cond = GO.BinaryExpr{Op: logop, X: ifs.Cond, Y: cond}
 		} else {
@@ -757,8 +758,8 @@ func newIfStmtForRange(g *generator, frag *fragment, r *analysis.Rule) (ifs GO.I
 	a1, a2 := r.Args[0], r.Args[1]
 
 	ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLOr,
-		X: GO.BinaryExpr{Op: GO.BinaryLss, X: frag.x, Y: newExprForArg(g, frag.f.Type.PtrBase(), a1, nil)},
-		Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: frag.x, Y: newExprForArg(g, frag.f.Type.PtrBase(), a2, nil)}}
+		X: GO.BinaryExpr{Op: GO.BinaryLss, X: frag.x, Y: newExprForArg(g, frag.f.Type.PtrBase(), a1, false)},
+		Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: frag.x, Y: newExprForArg(g, frag.f.Type.PtrBase(), a2, false)}}
 	ifs.Cond = GO.ParenExpr{ifs.Cond}
 	ifs.Body.Add(newReturnStmtForError(g, frag, r))
 	return ifs
@@ -769,20 +770,20 @@ func newIfStmtForLength(g *generator, frag *fragment, r *analysis.Rule) (ifs GO.
 
 	if len(r.Args) == 1 {
 		a := r.Args[0]
-		ifs.Cond = GO.BinaryExpr{Op: GO.BinaryNeq, X: GO.CallLenExpr{frag.x}, Y: newExprForArg(g, typ, a, nil)}
+		ifs.Cond = GO.BinaryExpr{Op: GO.BinaryNeq, X: GO.CallLenExpr{frag.x}, Y: newExprForArg(g, typ, a, false)}
 		ifs.Body.Add(newReturnStmtForError(g, frag, r))
 	} else { // len(r.Args) == 2 is assumed
 		a1, a2 := r.Args[0], r.Args[1]
 		if len(a1.Value) > 0 && len(a2.Value) == 0 {
-			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLss, X: GO.CallLenExpr{frag.x}, Y: newExprForArg(g, typ, a1, nil)}
+			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLss, X: GO.CallLenExpr{frag.x}, Y: newExprForArg(g, typ, a1, false)}
 			ifs.Body.Add(newReturnStmtForError(g, frag, r))
 		} else if len(a1.Value) == 0 && len(a2.Value) > 0 {
-			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{frag.x}, Y: newExprForArg(g, typ, a2, nil)}
+			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{frag.x}, Y: newExprForArg(g, typ, a2, false)}
 			ifs.Body.Add(newReturnStmtForError(g, frag, r))
 		} else {
 			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLOr,
-				X: GO.BinaryExpr{Op: GO.BinaryLss, X: GO.CallLenExpr{frag.x}, Y: newExprForArg(g, typ, a1, nil)},
-				Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{frag.x}, Y: newExprForArg(g, typ, a2, nil)}}
+				X: GO.BinaryExpr{Op: GO.BinaryLss, X: GO.CallLenExpr{frag.x}, Y: newExprForArg(g, typ, a1, false)},
+				Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{frag.x}, Y: newExprForArg(g, typ, a2, false)}}
 			ifs.Cond = GO.ParenExpr{ifs.Cond}
 			ifs.Body.Add(newReturnStmtForError(g, frag, r))
 		}
@@ -830,16 +831,19 @@ func newReturnStmtForError(g *generator, frag *fragment, r *analysis.Rule) GO.St
 }
 
 func newExprForError(g *generator, frag *fragment, r *analysis.Rule) (errExpr GO.ExprNode) {
-	spec := g.info.RuleSpecMap[r.Name]
-	if spec.IsCustom() {
-		text := frag.f.Key + " is not valid" // default error text for custom specs
+	rt := g.info.RuleTypeMap[r.Name]
+	switch rt.(type) {
+	case analysis.RuleTypeIsValid, analysis.RuleTypeEnum, analysis.RuleTypeFunc:
+		if f, ok := rt.(analysis.RuleTypeFunc); !ok || f.IsCustom {
+			text := frag.f.Key + " is not valid" // default error text for custom specs
 
-		errText := GO.ValueLit(strconv.Quote(text))
-		g.file.importErrors = true
-		errExpr = GO.CallExpr{Fun: GO.QualifiedIdent{"errors", "New"},
-			Args: GO.ArgsList{List: errText}}
+			errText := GO.ValueLit(strconv.Quote(text))
+			g.file.importErrors = true
+			errExpr = GO.CallExpr{Fun: GO.QualifiedIdent{"errors", "New"},
+				Args: GO.ArgsList{List: errText}}
 
-		return errExpr
+			return errExpr
+		}
 	}
 
 	// Resolve the alternative form of the error message, currently only "len" needs this.

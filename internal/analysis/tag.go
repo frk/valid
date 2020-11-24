@@ -5,14 +5,18 @@ import (
 	"regexp"
 )
 
-type RuleTag struct {
-	Rules     []*Rule
-	Key, Elem *RuleTag
+// TagNode is a binary tree representation of a parsed "rule" tag.
+type TagNode struct {
+	// The list of rules contained in the node.
+	Rules []*Rule
+	// Key and Elem are the child nodes of the parent node.
+	Key, Elem *TagNode
 }
 
-func (rt *RuleTag) HasRuleRequired() bool {
-	if rt != nil {
-		for _, r := range rt.Rules {
+// HasRuleRequired reports whether or not the TagNode contains the rule "required".
+func (tn *TagNode) HasRuleRequired() bool {
+	if tn != nil {
+		for _, r := range tn.Rules {
 			if r.Name == "required" {
 				return true
 			}
@@ -21,9 +25,10 @@ func (rt *RuleTag) HasRuleRequired() bool {
 	return false
 }
 
-func (rt *RuleTag) HasRuleNotnil() bool {
-	if rt != nil {
-		for _, r := range rt.Rules {
+// HasRuleRequired reports whether or not the TagNode contains the rule "notnil".
+func (tn *TagNode) HasRuleNotnil() bool {
+	if tn != nil {
+		for _, r := range tn.Rules {
 			if r.Name == "notnil" {
 				return true
 			}
@@ -32,17 +37,17 @@ func (rt *RuleTag) HasRuleNotnil() bool {
 	return false
 }
 
-// ContainsRules reports whether or not the RuleTag rt, or any of
-// the RuleTags in the key-elem hierarchy of rt, contain validation rules.
-func (rt *RuleTag) ContainsRules() bool {
-	if rt != nil {
-		if len(rt.Rules) > 0 {
+// ContainsRules reports whether or not the TagNode tn, or any of
+// the TagNodes in the key-elem hierarchy of tn, contain validation rules.
+func (tn *TagNode) ContainsRules() bool {
+	if tn != nil {
+		if len(tn.Rules) > 0 {
 			return true
 		}
-		if rt.Key.ContainsRules() {
+		if tn.Key.ContainsRules() {
 			return true
 		}
-		if rt.Elem.ContainsRules() {
+		if tn.Elem.ContainsRules() {
 			return true
 		}
 	}
@@ -53,16 +58,40 @@ var rxInt = regexp.MustCompile(`^(?:0|-?[1-9][0-9]*)$`)
 var rxFloat = regexp.MustCompile(`^(?:(?:-?0|[1-9][0-9]*)?\.[0-9]+)$`)
 var rxBool = regexp.MustCompile(`^(?:false|true)$`)
 
-func parseRuleTag(tag string) (*RuleTag, error) {
+// parseRuleTag parses the given tag and returns a node that represents the
+// tag as a binary tree. Following is an *incomplete* attempt to describe the
+// expected format of the "rule" tag in EBNF:
+//
+//      node      = rule | [ "[" [ node ] "]" ] [ ( node | rule "," node ) ] .
+//      rule      = rule_name [ { ":" rule_arg } ] { "," rule } .
+//      rule_name = identifier .
+//      rule_arg  = | boolean_lit | integer_lit | float_lit | string_lit | quoted_string_lit | field_reference | context_property .
+//
+//      boolean_lit       = "true" | "false" .
+//      integer_lit       = "0" | [ "-" ] "1"…"9" { "0"…"9" } .
+//      float_lit         = [ "-" ] ( "0" | "1"…"9" { "0"…"9" } ) "." "0"…"9" { "0"…"9" } .
+//      string_lit        = .
+//      quoted_string_lit = `"` `"` .
+//
+//      field_reference     = "&" field_key .
+//      field_key           = identifier { field_key_separator identifier } .
+//      field_key_separator = "." | (* optionally specified by the user *)
+//
+//      context_property  = "@" identifier .
+//
+//      identifier        = letter { letter } .
+//      letter            = "A"…"Z" | "a"…"z" | "_" .
+//
+func parseRuleTag(tag string) (*TagNode, error) {
 	val, ok := reflect.StructTag(tag).Lookup("is")
 	if !ok || val == "-" || len(val) == 0 {
-		return &RuleTag{}, nil
+		return &TagNode{}, nil
 	}
 
 	// parser is invoked recursively to parse tags enclosed in square brackets.
-	var parser func(tag string) (*RuleTag, error)
-	parser = func(tag string) (*RuleTag, error) {
-		rt := &RuleTag{}
+	var parser func(tag string) (*TagNode, error)
+	parser = func(tag string) (*TagNode, error) {
+		tn := &TagNode{}
 		for tag != "" {
 			// skip leading space
 			i := 0
@@ -112,7 +141,7 @@ func parseRuleTag(tag string) (*RuleTag, error) {
 					if err != nil {
 						return nil, err
 					}
-					rt.Key = key
+					tn.Key = key
 				}
 				// recursively invoke parser for elem
 				if etag := tag[i:]; len(etag) > 1 {
@@ -121,11 +150,11 @@ func parseRuleTag(tag string) (*RuleTag, error) {
 					if err != nil {
 						return nil, err
 					}
-					rt.Elem = elem
+					tn.Elem = elem
 				}
 
 				// done; exit
-				return rt, nil
+				return tn, nil
 			}
 
 			// scan to the end of a rule's name
@@ -141,7 +170,7 @@ func parseRuleTag(tag string) (*RuleTag, error) {
 			}
 
 			r := &Rule{Name: tag[:i]}
-			rt.Rules = append(rt.Rules, r)
+			tn.Rules = append(tn.Rules, r)
 
 			// this rule's done; next or exit
 			if tag = tag[i:]; tag == "" {
@@ -237,7 +266,7 @@ func parseRuleTag(tag string) (*RuleTag, error) {
 				}
 			}
 		}
-		return rt, nil
+		return tn, nil
 	}
 
 	return parser(val)

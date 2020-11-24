@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/frk/isvalid/internal/search"
 	"github.com/frk/tagutil"
 )
 
@@ -20,9 +21,9 @@ type (
 		ErrorHandler *ErrorHandlerField
 		// Info on the validator type's field named "context" (case insensitive), or nil.
 		ContextOption *ContextOptionField
-		// Info on the validator type's "beforevalidate" (case insensitive) method, or nil.
+		// Info on the validator type's method named "beforevalidate" (case insensitive), or nil.
 		BeforeValidate *MethodInfo
-		// Info on the validator type's "aftervalidate" (case insensitive) method, or nil.
+		// Info on the validator type's method named "aftervalidate" (case insensitive), or nil.
 		AfterValidate *MethodInfo
 	}
 
@@ -44,7 +45,7 @@ type (
 		// Indicates whether or not the field is exported.
 		IsExported bool
 		// The field's analyzed "rule" struct tag.
-		RuleTag *RuleTag
+		RuleTag *TagNode
 	}
 
 	// StructFieldSelector is a list of fields that represents a chain of
@@ -119,56 +120,61 @@ type (
 		Name string
 	}
 
-	// Rule holds the information parsed from a "rule" tag (`is:"{rule}"`).
+	// Rule holds the basic rule information as parsed from a "rule" tag.
 	Rule struct {
-		// Name of the rule.
+		// The name of the rule.
 		Name string
-		// The args of the rule.
+		// The arguments of the rule.
 		Args []*RuleArg
-		// The context in which the rule should be applied.
+		// The context property of the rule.
 		Context string
 	}
 
-	// RuleArg represents a rule argument as parsed from a "rule" tag (`is:"{rule:arg}"`).
+	// RuleArg represents a rule argument as parsed from a "rule" tag.
 	RuleArg struct {
-		// The type of the arg value.
-		Type ArgType
-		// The arg value, may be empty string.
+		// The argument value, or empty string.
 		Value string
+		// The type of the argument value.
+		Type ArgType
 	}
 
-	// RuleSpec implementations specify the validity of a field-rule
-	// combo, as well as what code should be generated from a rule.
-	RuleSpec interface {
-		IsCustom() bool
-
-		ruleSpec()
+	// RuleType implementations indicate to the generator what code it should
+	// produce for a Rule. In addition to that a RuleType implementation also
+	// describes how a Rule, its Args, and its related StructField should be
+	// checked for correctness before code generation.
+	//
+	// NOTE(mkopriva): RuleType, instead of being a direct member of
+	// the Rule struct, is mapped to each Rule by the Rule's Name.
+	RuleType interface {
+		// Should return the expected argument count.
 		argCount() ruleArgCount
+		// Should check the given Rule for correctness.
+		checkRule(a *analysis, r *Rule, t Type, f *StructField) error
 	}
 
-	// RuleNop represents a rule that should produce NO code.
-	RuleNop struct{}
+	// RuleTypeNop is mapped to Rules that should produce NO code.
+	RuleTypeNop struct{}
 
-	// RuleIsValid represents a rule that should produce the "f.IsValid()"
-	// method invocation for the field associated with the rule.
-	RuleIsValid struct{}
+	// RuleTypeIsValid is mapped to Rules that should produce code that
+	// validates a value by invoking the "IsValid()" method on that value.
+	RuleTypeIsValid struct{}
 
-	// RuleEnum represents a rule that should produce code that checks the
-	// field's value against a set of constants declared with the field's type.
-	RuleEnum struct{}
+	// RuleTypeEnum is mapped to Rules that should produce code that validates
+	// a value against a set of constants declared with that value's type.
+	RuleTypeEnum struct{}
 
-	// RuleBasic represents a rule that should produce an expression using
-	// the basic comparison operators for carrying out its validation.
-	RuleBasic struct {
-		// Used for type-checking a Rule and its associated StructField's type.
+	// RuleTypeBasic is mapped to Rules that should produce code that
+	// validates a value using basic expressions with comparison operators.
+	RuleTypeBasic struct {
+		// check is a plugin used by the checkRule method.
 		check func(a *analysis, r *Rule, t Type, f *StructField) error
-		// arg count requirements, used for type-checking
+		// arg count requirements, used by the argCount method.
 		amin, amax int
 	}
 
-	// RuleFunc represents a rule that uses functions for carrying out its
-	// validation.
-	RuleFunc struct {
+	// RuleTypeFunc is mapped to Rules that should produce code that
+	// validates a value by invoking a function.
+	RuleTypeFunc struct {
 		// The name of the function.
 		FuncName string
 		// The function's package import path.
@@ -179,28 +185,242 @@ type (
 		ArgTypes []Type
 		// Indicates whether or not the function's signature is variadic.
 		IsVariadic bool
-		// Optional, indicates the boolean operator to be used between
-		// multiple calls of the function represented by RuleFunc.
-		// NOTE This can only be used with a function that takes
-		// exactly two arguments and that is not variadic.
-		BoolConn RuleFuncBoolConn
-		// Indicates that the generated code should use raw strings
-		// for any string arguments passed to the function.
-		UseRawStrings bool
-
-		// Indicates that this RuleFunc is a custom one.
-		iscustom bool
-		// Optional, used for additional function-specific type
-		// checking of the associated Rule and its StructField's type.
+		// NOTE(mkopriva): Although currently not enforced, this field is
+		// intended to be used only with binary functions, i.e. functions
+		// that take exactly two arguments.
+		//
+		// If set, the generator will produce one call expression for
+		// each of the associated Rule's arguments and then join those
+		// call expressions into a boolean expression using the *inverse*
+		// of the field's logical operator value.
+		LOp LogicalOperator
+		// Indicates that this is a custom user provided RuleTypeFunc.
+		IsCustom bool
+		// check is a plugin used by the checkRule method.
 		check func(a *analysis, r *Rule, t Type, f *StructField) error
-		// If set, it is used by the spec to check the related rule's
-		// argument count. If left unset, the required argument count
-		// will be inferred from BoolConn and ArgTypes.
+		// If set, it will be returned by the argCount method. If left
+		// unset, the argCount method will return a value inferred from
+		// the LOp and ArgTypes fields.
 		acount *ruleArgCount
 		// Used for error reporting.
 		typ *types.Func `cmp:"+"`
 	}
 )
+
+// accepts no args
+func (RuleTypeNop) argCount() ruleArgCount {
+	return ruleArgCount{}
+}
+
+func (rt RuleTypeNop) checkRule(a *analysis, r *Rule, t Type, f *StructField) error {
+	if ok := rt.argCount().check(len(r.Args)); !ok {
+		return a.anError(&anError{Code: errRuleArgCount}, f, r)
+	}
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+// accepts no args
+func (RuleTypeIsValid) argCount() ruleArgCount {
+	return ruleArgCount{}
+}
+
+func (rt RuleTypeIsValid) checkRule(a *analysis, r *Rule, t Type, f *StructField) error {
+	if ok := rt.argCount().check(len(r.Args)); !ok {
+		return a.anError(&anError{Code: errRuleArgCount}, f, r)
+	}
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+// accepts no args
+func (RuleTypeEnum) argCount() ruleArgCount {
+	return ruleArgCount{}
+}
+
+// checkRule checks whether the given Type is compatible with a RuleTypeEnum,
+// the *Rule and *StructField arguments are used for error reporting
+func (rt RuleTypeEnum) checkRule(a *analysis, r *Rule, t Type, f *StructField) error {
+	if ok := rt.argCount().check(len(r.Args)); !ok {
+		return a.anError(&anError{Code: errRuleArgCount}, f, r)
+	}
+
+	typ := t.PtrBase()
+	if len(typ.Name) == 0 {
+		return a.anError(errRuleEnumTypeUnnamed, f, r)
+	}
+	if !typ.Kind.IsBasic() {
+		return a.anError(errRuleEnumType, f, r)
+	}
+
+	ident := typ.PkgPath + "." + typ.Name
+	if _, ok := a.info.EnumMap[ident]; ok { // already done?
+		return nil
+	}
+
+	enums := []Const{}
+	consts := search.FindConstantsByType(typ.PkgPath, typ.Name, a.ast)
+	for _, c := range consts {
+		name := c.Name()
+		pkgpath := c.Pkg().Path()
+		// blank, skip
+		if name == "_" {
+			continue
+		}
+		// imported but not exported, skip
+		if a.pkgPath != pkgpath && !c.Exported() {
+			continue
+		}
+		enums = append(enums, Const{Name: name, PkgPath: pkgpath})
+	}
+	if len(enums) == 0 {
+		return a.anError(errRuleEnumTypeNoConst, f, r)
+	}
+
+	a.info.EnumMap[ident] = enums
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+// returns a count based on RuleTypeBasic's amin & amax values
+func (rt RuleTypeBasic) argCount() ruleArgCount {
+	return ruleArgCount{min: rt.amin, max: rt.amax}
+}
+
+// checkRule invokes the function of RuleTypeBasic's check field, if set
+func (rt RuleTypeBasic) checkRule(a *analysis, r *Rule, t Type, f *StructField) error {
+	if ok := rt.argCount().check(len(r.Args)); !ok {
+		return a.anError(&anError{Code: errRuleArgCount}, f, r)
+	}
+	if rt.check != nil {
+		return rt.check(a, r, t, f)
+	}
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+// returns a count based on RuleTypeFunc's properties
+func (rt RuleTypeFunc) argCount() ruleArgCount {
+	if rt.acount != nil {
+		return *rt.acount
+	} else if rt.LOp > 0 {
+		return ruleArgCount{1, -1}
+	}
+
+	// 1st is the field arg, which is implicit, no need to count it
+	expected := len(rt.ArgTypes[1:])
+	if rt.IsVariadic {
+		return ruleArgCount{expected - 1, -1}
+	}
+	return ruleArgCount{expected, expected}
+}
+
+func (rt RuleTypeFunc) checkRule(a *analysis, r *Rule, t Type, f *StructField) error {
+	if ok := rt.argCount().check(len(r.Args)); !ok {
+		return a.anError(&anError{Code: errRuleArgCount}, f, r)
+	}
+
+	// field type cannot be converted to func 0th arg type, fail
+	fldType, argType := t.PtrBase(), rt.ArgTypes[0]
+	if rt.IsVariadic && len(rt.ArgTypes) == 1 {
+		argType = *argType.Elem
+	}
+	if !canConvert(argType, fldType) {
+		return a.anError(&anError{Code: errRuleFuncFieldType}, f, r)
+	}
+
+	// optional check returns error, fail
+	if rt.check != nil {
+		if err := rt.check(a, r, t, f); err != nil {
+			return err
+		}
+	}
+
+	// rule arg cannot be converted to func arg, fail
+	fatypes := rt.ArgTypes[1:]
+	if rt.IsVariadic && len(fatypes) > 0 {
+		fatypes = fatypes[:len(fatypes)-1]
+	}
+	for i, fatyp := range fatypes {
+		ra := r.Args[i]
+		if !canConvertRuleArg(a, fatyp, ra) {
+			return a.anError(&anError{Code: errRuleFuncArgType, ra: ra}, f, r)
+		}
+	}
+	if rt.IsVariadic {
+		fatyp := rt.ArgTypes[len(rt.ArgTypes)-1]
+		fatyp = *fatyp.Elem
+		for _, ra := range r.Args[len(fatypes):] {
+			if !canConvertRuleArg(a, fatyp, ra) {
+				return a.anError(&anError{Code: errRuleFuncArgType, ra: ra}, f, r)
+			}
+		}
+	} else if rt.LOp > 0 {
+		fatyp := rt.ArgTypes[1]
+		for _, ra := range r.Args {
+			if !canConvertRuleArg(a, fatyp, ra) {
+				return a.anError(&anError{Code: errRuleFuncArgType, ra: ra}, f, r)
+			}
+		}
+	}
+	return nil
+}
+
+func (rt *RuleTypeFunc) PkgName() string {
+	if len(rt.PkgPath) > 0 {
+		if i := strings.LastIndexByte(rt.PkgPath, '/'); i > -1 {
+			return rt.PkgPath[i+1:]
+		}
+		return rt.PkgPath
+	}
+	return ""
+}
+
+// TypesForArgs returns an adjusted version of the RuleTypeFunc's ArgTypes slice.
+// The returned Type slice will match in length the given slice of RuleArgs.
+func (rt *RuleTypeFunc) TypesForArgs(args []*RuleArg) (types []Type) {
+	types = append(types, rt.ArgTypes[1:]...)
+	if rt.IsVariadic {
+		last := rt.ArgTypes[len(rt.ArgTypes)-1].Elem
+		if len(types) > 0 {
+			types[len(types)-1] = *last
+		} else {
+			types = []Type{*last}
+		}
+
+		diff := len(args) - len(types)
+		for i := 0; i < diff; i++ {
+			types = append(types, *last)
+		}
+		return types
+	}
+
+	last := rt.ArgTypes[len(rt.ArgTypes)-1]
+	diff := len(args) - len(types)
+	for i := 0; i < diff; i++ {
+		types = append(types, last)
+	}
+	return types
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+// ruleArgCount is a helper type that represents the number of arguments
+// a rule can take. It is used for type checking and error reporting.
+type ruleArgCount struct {
+	min, max int
+}
+
+func (c ruleArgCount) check(num int) bool {
+	if num < c.min || (num > c.max && c.max != -1) {
+		return false
+	}
+	return true
+}
 
 // ContainsRules reports whether or not the StructField f, or any of
 // the StructFields in the type hierarchy of f, contain validation rules.
@@ -235,52 +455,7 @@ func (f *StructField) ContainsRules() bool {
 	return walk(f.Type)
 }
 
-func (RuleNop) IsCustom() bool     { return true }
-func (RuleIsValid) IsCustom() bool { return true }
-func (RuleEnum) IsCustom() bool    { return true }
-func (RuleBasic) IsCustom() bool   { return false }
-func (r RuleFunc) IsCustom() bool  { return r.iscustom }
-
-func (RuleNop) ruleSpec()     {}
-func (RuleIsValid) ruleSpec() {}
-func (RuleEnum) ruleSpec()    {}
-func (RuleBasic) ruleSpec()   {}
-func (RuleFunc) ruleSpec()    {}
-
-func (RuleNop) argCount() ruleArgCount     { return ruleArgCount{} }
-func (RuleIsValid) argCount() ruleArgCount { return ruleArgCount{} }
-func (RuleEnum) argCount() ruleArgCount    { return ruleArgCount{} }
-func (r RuleBasic) argCount() ruleArgCount { return ruleArgCount{min: r.amin, max: r.amax} }
-func (r RuleFunc) argCount() ruleArgCount {
-	if r.acount != nil {
-		return *r.acount
-	}
-
-	if r.BoolConn > RuleFuncBoolNone {
-		return ruleArgCount{1, -1}
-	}
-
-	expected := len(r.ArgTypes[1:]) // 1st is the field arg, which is implicit, no need to count it
-	if r.IsVariadic {
-		return ruleArgCount{expected - 1, -1}
-	}
-	return ruleArgCount{expected, expected}
-}
-
-// ruleArgCount represents the number of arguments a rule can take.
-// It is used for type checking and error reporting.
-type ruleArgCount struct {
-	min, max int
-}
-
-func (c ruleArgCount) check(num int) bool {
-	if num < c.min || (num > c.max && c.max != -1) {
-		return false
-	}
-	return true
-}
-
-// PtrBase ...
+// PtrBase returns the pointer base type of t.
 func (t Type) PtrBase() Type {
 	for t.Kind == TypeKindPtr {
 		t = *t.Elem
@@ -294,6 +469,7 @@ func (t Type) CanIndex() bool {
 		(t.Kind == TypeKindPtr && t.Elem.Kind == TypeKindArray)
 }
 
+// String retruns a string representation of the t Type.
 func (t Type) String() string {
 	if len(t.Name) > 0 {
 		if t.IsImported {
@@ -392,43 +568,6 @@ func (a *RuleArg) IsUInt() bool {
 	return a.Type == ArgTypeInt && a.Value[0] != '-'
 }
 
-func (f *RuleFunc) PkgName() string {
-	if len(f.PkgPath) > 0 {
-		if i := strings.LastIndexByte(f.PkgPath, '/'); i > -1 {
-			return f.PkgPath[i+1:]
-		}
-		return f.PkgPath
-	}
-	return ""
-}
-
-// TypesForArgs returns an adjusted version of the RuleFunc's ArgTypes slice.
-// The returned Type slice will match in length the given slice of RuleArgs.
-func (f *RuleFunc) TypesForArgs(args []*RuleArg) (types []Type) {
-	types = append(types, f.ArgTypes[1:]...)
-	if f.IsVariadic {
-		last := f.ArgTypes[len(f.ArgTypes)-1].Elem
-		if len(types) > 0 {
-			types[len(types)-1] = *last
-		} else {
-			types = []Type{*last}
-		}
-
-		diff := len(args) - len(types)
-		for i := 0; i < diff; i++ {
-			types = append(types, *last)
-		}
-		return types
-	}
-
-	last := f.ArgTypes[len(f.ArgTypes)-1]
-	diff := len(args) - len(types)
-	for i := 0; i < diff; i++ {
-		types = append(types, last)
-	}
-	return types
-}
-
 // ArgType indicates the type of a rule arg value.
 type ArgType uint
 
@@ -457,15 +596,19 @@ func (t ArgType) String() string {
 	return "<invalid>"
 }
 
-// RuleFuncBoolConn indicates the boolean connective to be used
-// between multiple alls of a single RuleFunc.
-type RuleFuncBoolConn uint
+// LogicalOperator represents the logical operator that, when used between
+// multiple calls of a RuleType function would produce the boolean value true.
+//
+// NOTE(mkopriva): Because the generated code will be looking for invalid values, as
+// opposed to valid ones, the actual expressions generated based on these operators
+// will be the inverse of what they represent, see the comments next to the operators.
+type LogicalOperator uint
 
 const (
-	RuleFuncBoolNone RuleFuncBoolConn = iota
-	RuleFuncBoolNot
-	RuleFuncBoolAnd
-	RuleFuncBoolOr
+	_          LogicalOperator = iota
+	LogicalNot                 // x || x || x....
+	LogicalAnd                 // !x || !x || !x....
+	LogicalOr                  // !x && !x && !x....
 )
 
 // TypeKind indicates the specific kind of a Go type.

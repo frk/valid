@@ -55,7 +55,7 @@ func (cmd *Command) Run() error {
 	}
 
 	// 2. load type information for builtin rule funcs (used for error reporting)
-	analysis.LoadBuiltinFuncTypes(AST)
+	analysis.LoadRuleTypeFunc(AST)
 
 	// 3. find & analyze custom rule functions
 	for _, rc := range cmd.CustomRules {

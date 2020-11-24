@@ -182,15 +182,15 @@ func (e *anError) RuleArgNumWord() string {
 }
 
 func (e *anError) RuleArgCount() (out string) {
-	spec, ok := e.a.conf.customSpecMap[e.r.Name]
+	rtyp, ok := e.a.conf.customTypeMap[e.r.Name]
 	if !ok {
-		spec, ok = defaultRuleSpecMap[e.r.Name]
+		rtyp, ok = defaultRuleTypeMap[e.r.Name]
 		if !ok {
 			return "<unknown-argument-count>"
 		}
 	}
 
-	count := spec.argCount()
+	count := rtyp.argCount()
 	if count.min == count.max {
 		return strconv.Itoa(count.min)
 	}
@@ -208,9 +208,9 @@ func (e *anError) RuleArgCount() (out string) {
 }
 
 func (e *anError) RuleArgCountWord() (out string) {
-	spec, ok := e.a.conf.customSpecMap[e.r.Name]
+	spec, ok := e.a.conf.customTypeMap[e.r.Name]
 	if !ok {
-		spec, ok = defaultRuleSpecMap[e.r.Name]
+		spec, ok = defaultRuleTypeMap[e.r.Name]
 		if !ok {
 			return "arguments"
 		}
@@ -240,26 +240,26 @@ func (e *anError) FuncType() (out string) {
 }
 
 func (e *anError) FuncFieldType() (out string) {
-	spec, ok := e.a.conf.customSpecMap[e.r.Name]
+	spec, ok := e.a.conf.customTypeMap[e.r.Name]
 	if !ok {
-		spec, ok = defaultRuleSpecMap[e.r.Name]
+		spec, ok = defaultRuleTypeMap[e.r.Name]
 	}
-	if rf, ok := spec.(RuleFunc); ok {
-		return rf.ArgTypes[0].String()
+	if rt, ok := spec.(RuleTypeFunc); ok {
+		return rt.ArgTypes[0].String()
 	}
 	return "<unknown-func>"
 }
 
 func (e *anError) FuncArgType() (out string) {
-	spec, ok := e.a.conf.customSpecMap[e.r.Name]
+	spec, ok := e.a.conf.customTypeMap[e.r.Name]
 	if !ok {
-		spec, ok = defaultRuleSpecMap[e.r.Name]
+		spec, ok = defaultRuleTypeMap[e.r.Name]
 	}
 
-	switch rs := spec.(type) {
-	case RuleBasic:
+	switch rt := spec.(type) {
+	case RuleTypeBasic:
 		return e.f.Type.String()
-	case RuleFunc:
+	case RuleTypeFunc:
 		var pos int
 		for i, ra := range e.r.Args {
 			if e.ra == ra {
@@ -268,13 +268,13 @@ func (e *anError) FuncArgType() (out string) {
 			}
 		}
 
-		if rs.IsVariadic && pos >= (len(rs.ArgTypes)-1) {
-			return rs.ArgTypes[len(rs.ArgTypes)-1].Elem.String()
+		if rt.IsVariadic && pos >= (len(rt.ArgTypes)-1) {
+			return rt.ArgTypes[len(rt.ArgTypes)-1].Elem.String()
 		}
-		if rs.BoolConn > RuleFuncBoolNone {
-			return rs.ArgTypes[1].String()
+		if rt.LOp > 0 {
+			return rt.ArgTypes[1].String()
 		}
-		return rs.ArgTypes[pos].String()
+		return rt.ArgTypes[pos].String()
 	}
 
 	return "<unknown-arg-type>"

@@ -20,92 +20,92 @@ var (
 	typeEmptyIface  = Type{Kind: TypeKindInterface, IsEmptyInterface: true}
 )
 
-var defaultRuleSpecMap = map[string]RuleSpec{
+var defaultRuleTypeMap = map[string]RuleType{
 	// speciél
-	"-isvalid": RuleNop{},
-	"isvalid":  RuleIsValid{},
-	"enum":     RuleEnum{},
+	"-isvalid": RuleTypeNop{},
+	"isvalid":  RuleTypeIsValid{},
+	"enum":     RuleTypeEnum{},
 
 	// basic rules
-	"required": RuleBasic{},
-	"notnil":   RuleBasic{check: isValidRuleNotnil},
-	"rng":      RuleBasic{check: isValidRuleRng, amin: 2, amax: 2},
-	"len":      RuleBasic{check: isValidRuleLen, amin: 1, amax: 2},
+	"required": RuleTypeBasic{},
+	"notnil":   RuleTypeBasic{check: isValidRuleNotnil},
+	"rng":      RuleTypeBasic{check: isValidRuleRng, amin: 2, amax: 2},
+	"len":      RuleTypeBasic{check: isValidRuleLen, amin: 1, amax: 2},
 
-	"eq":  RuleBasic{check: isValidRuleValueComparison, amin: 1, amax: -1},
-	"ne":  RuleBasic{check: isValidRuleValueComparison, amin: 1, amax: -1},
-	"gt":  RuleBasic{check: isValidRuleNumberComparison, amin: 1, amax: 1},
-	"lt":  RuleBasic{check: isValidRuleNumberComparison, amin: 1, amax: 1},
-	"gte": RuleBasic{check: isValidRuleNumberComparison, amin: 1, amax: 1},
-	"lte": RuleBasic{check: isValidRuleNumberComparison, amin: 1, amax: 1},
-	"min": RuleBasic{check: isValidRuleNumberComparison, amin: 1, amax: 1},
-	"max": RuleBasic{check: isValidRuleNumberComparison, amin: 1, amax: 1},
+	"eq":  RuleTypeBasic{check: isValidRuleValueComparison, amin: 1, amax: -1},
+	"ne":  RuleTypeBasic{check: isValidRuleValueComparison, amin: 1, amax: -1},
+	"gt":  RuleTypeBasic{check: isValidRuleNumberComparison, amin: 1, amax: 1},
+	"lt":  RuleTypeBasic{check: isValidRuleNumberComparison, amin: 1, amax: 1},
+	"gte": RuleTypeBasic{check: isValidRuleNumberComparison, amin: 1, amax: 1},
+	"lte": RuleTypeBasic{check: isValidRuleNumberComparison, amin: 1, amax: 1},
+	"min": RuleTypeBasic{check: isValidRuleNumberComparison, amin: 1, amax: 1},
+	"max": RuleTypeBasic{check: isValidRuleNumberComparison, amin: 1, amax: 1},
 
 	// predefined functions
-	"email":    RuleFunc{FuncName: "Email", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
-	"url":      RuleFunc{FuncName: "URL", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
-	"uri":      RuleFunc{FuncName: "URI", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
-	"pan":      RuleFunc{FuncName: "PAN", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
-	"cvv":      RuleFunc{FuncName: "CVV", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
-	"ssn":      RuleFunc{FuncName: "SSN", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
-	"ein":      RuleFunc{FuncName: "EIN", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
-	"numeric":  RuleFunc{FuncName: "Numeric", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
-	"hex":      RuleFunc{FuncName: "Hex", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
-	"hexcolor": RuleFunc{FuncName: "HexColor", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
-	"alphanum": RuleFunc{FuncName: "Alphanum", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
-	"cidr":     RuleFunc{FuncName: "CIDR", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
+	"email":    RuleTypeFunc{FuncName: "Email", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
+	"url":      RuleTypeFunc{FuncName: "URL", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
+	"uri":      RuleTypeFunc{FuncName: "URI", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
+	"pan":      RuleTypeFunc{FuncName: "PAN", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
+	"cvv":      RuleTypeFunc{FuncName: "CVV", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
+	"ssn":      RuleTypeFunc{FuncName: "SSN", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
+	"ein":      RuleTypeFunc{FuncName: "EIN", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
+	"numeric":  RuleTypeFunc{FuncName: "Numeric", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
+	"hex":      RuleTypeFunc{FuncName: "Hex", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
+	"hexcolor": RuleTypeFunc{FuncName: "HexColor", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
+	"alphanum": RuleTypeFunc{FuncName: "Alphanum", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
+	"cidr":     RuleTypeFunc{FuncName: "CIDR", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
 
-	"phone": RuleFunc{
+	"phone": RuleTypeFunc{
 		FuncName: "Phone", PkgPath: pkgisvalid, IsVariadic: true,
 		ArgTypes: []Type{typeString, typeStringSlice},
 		check:    isValidCountryCode},
-	"zip": RuleFunc{
+	"zip": RuleTypeFunc{
 		FuncName: "Zip", PkgPath: pkgisvalid, IsVariadic: true,
 		ArgTypes: []Type{typeString, typeStringSlice},
 		check:    isValidCountryCode},
-	"uuid": RuleFunc{
+	"uuid": RuleTypeFunc{
 		FuncName: "UUID", PkgPath: pkgisvalid, IsVariadic: true,
 		ArgTypes: []Type{typeString, typeIntSlice},
 		check:    isValidRuleUUID, acount: &ruleArgCount{min: 0, max: 5}},
-	"ip": RuleFunc{
+	"ip": RuleTypeFunc{
 		FuncName: "IP", PkgPath: pkgisvalid, IsVariadic: true,
 		ArgTypes: []Type{typeString, typeIntSlice},
 		check:    isValidRuleIP, acount: &ruleArgCount{min: 0, max: 2}},
-	"mac": RuleFunc{
+	"mac": RuleTypeFunc{
 		FuncName: "MAC", PkgPath: pkgisvalid, IsVariadic: true,
 		ArgTypes: []Type{typeString, typeIntSlice},
 		check:    isValidRuleMAC, acount: &ruleArgCount{min: 0, max: 2}},
-	"iso": RuleFunc{
+	"iso": RuleTypeFunc{
 		FuncName: "ISO", PkgPath: pkgisvalid,
 		ArgTypes: []Type{typeString, typeInt},
 		check:    isValidRuleISO},
-	"rfc": RuleFunc{
+	"rfc": RuleTypeFunc{
 		FuncName: "RFC", PkgPath: pkgisvalid,
 		ArgTypes: []Type{typeString, typeInt},
 		check:    isValidRuleRFC},
-	"re": RuleFunc{
+	"re": RuleTypeFunc{
 		FuncName: "Match", PkgPath: pkgisvalid,
-		ArgTypes: []Type{typeString, typeString}, UseRawStrings: true,
-		check: isValidRuleRegexp},
-	"prefix": RuleFunc{
+		ArgTypes: []Type{typeString, typeString},
+		check:    isValidRuleRegexp},
+	"prefix": RuleTypeFunc{
 		FuncName: "HasPrefix", PkgPath: "strings",
 		ArgTypes: []Type{typeString, typeString},
-		BoolConn: RuleFuncBoolOr},
-	"suffix": RuleFunc{
+		LOp:      LogicalOr},
+	"suffix": RuleTypeFunc{
 		FuncName: "HasSuffix", PkgPath: "strings",
 		ArgTypes: []Type{typeString, typeString},
-		BoolConn: RuleFuncBoolOr},
-	"contains": RuleFunc{
+		LOp:      LogicalOr},
+	"contains": RuleTypeFunc{
 		FuncName: "Contains", PkgPath: "strings",
 		ArgTypes: []Type{typeString, typeString},
-		BoolConn: RuleFuncBoolOr},
+		LOp:      LogicalOr},
 }
 
-// LoadBuiltinFuncTypes loads the type information for builtin rule functions.
-// The function should be invoked only once and before executing the first analysis.
-func LoadBuiltinFuncTypes(ast search.AST) {
-	for rule, spec := range defaultRuleSpecMap {
-		rf, ok := spec.(RuleFunc)
+// LoadRuleTypeFunc loads info for pre-defined function rule types. LoadRuleTypeFunc
+// should be invoked only once and before starting the first analysis.
+func LoadRuleTypeFunc(ast search.AST) {
+	for rule, spec := range defaultRuleTypeMap {
+		rf, ok := spec.(RuleTypeFunc)
 		if !ok {
 			continue
 		}
@@ -126,7 +126,7 @@ func LoadBuiltinFuncTypes(ast search.AST) {
 		}
 
 		rf.typ = typ
-		defaultRuleSpecMap[rule] = rf
+		defaultRuleTypeMap[rule] = rf
 	}
 }
 

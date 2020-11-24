@@ -26,8 +26,8 @@ type Config struct {
 	// This field is only used if FieldKeyJoin is set to true.
 	FieldKeySeparator string
 
-	// map of custom RuleSpecs
-	customSpecMap map[string]RuleSpec
+	// map of custom RuleTypes
+	customTypeMap map[string]RuleType
 }
 
 // AddRuleFunc is used to register a custom RuleFunc with the Config. The
@@ -47,19 +47,19 @@ func (c *Config) AddRuleFunc(ruleName string, typ *types.Func) error {
 		return &anError{Code: errRuleFuncSignature, fn: typ}
 	}
 
-	rf := RuleFunc{iscustom: true}
-	rf.FuncName = typ.Name()
-	rf.PkgPath = typ.Pkg().Path()
-	rf.IsVariadic = sig.Variadic()
-	rf.typ = typ
+	rt := RuleTypeFunc{IsCustom: true}
+	rt.FuncName = typ.Name()
+	rt.PkgPath = typ.Pkg().Path()
+	rt.IsVariadic = sig.Variadic()
+	rt.typ = typ
 	for i := 0; i < p.Len(); i++ {
-		rf.ArgTypes = append(rf.ArgTypes, analyzeType0(p.At(i).Type()))
+		rt.ArgTypes = append(rt.ArgTypes, analyzeType0(p.At(i).Type()))
 	}
 
-	if c.customSpecMap == nil {
-		c.customSpecMap = make(map[string]RuleSpec)
+	if c.customTypeMap == nil {
+		c.customTypeMap = make(map[string]RuleType)
 	}
-	c.customSpecMap[ruleName] = rf
+	c.customTypeMap[ruleName] = rt
 	return nil
 }
 
@@ -95,12 +95,12 @@ func (c Config) Analyze(ast search.AST, match *search.Match, info *Info) (*Valid
 	}
 
 	// merge the rule func maps into one for the generator to use
-	a.info.RuleSpecMap = make(map[string]RuleSpec)
-	for k, v := range defaultRuleSpecMap {
-		a.info.RuleSpecMap[k] = v
+	a.info.RuleTypeMap = make(map[string]RuleType)
+	for k, v := range defaultRuleTypeMap {
+		a.info.RuleTypeMap[k] = v
 	}
-	for k, v := range c.customSpecMap {
-		a.info.RuleSpecMap[k] = v
+	for k, v := range c.customTypeMap {
+		a.info.RuleTypeMap[k] = v
 	}
 
 	return vs, nil
@@ -117,8 +117,8 @@ type Info struct {
 	TypeName string
 	// The soruce position of the ValidatorStruct's type name.
 	TypeNamePos token.Pos
-	// RuleSpecMap will be populated by all the registered RuleSpecs.
-	RuleSpecMap map[string]RuleSpec
+	// RuleTypeMap will be populated by all the registered RuleTypes.
+	RuleTypeMap map[string]RuleType
 	// SelectorMap maps field keys to their related field selectors.
 	SelectorMap map[string]StructFieldSelector
 	// EnumMap maps package-path qualified type names to a slice of
@@ -500,9 +500,9 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 	}
 
 	// tagcheck checks the given tag's Rules and, if the tag has a Key or Elem then
-	// tagcheck will recursively invoke itself with those Key/Elem instances of *RuleTag.
-	var tagcheck func(a *analysis, tag *RuleTag, typ Type, f *StructField) error
-	tagcheck = func(a *analysis, tag *RuleTag, typ Type, f *StructField) error {
+	// tagcheck will recursively invoke itself with those Key/Elem instances of *TagNode.
+	var tagcheck func(a *analysis, tag *TagNode, typ Type, f *StructField) error
+	tagcheck = func(a *analysis, tag *TagNode, typ Type, f *StructField) error {
 
 		// First handle the "isvalid" rule. The rule does not have to be specified explicitly,
 		// instead it will be applied automatically if a type implements the "IsValid() bool" method.
@@ -541,38 +541,16 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 			}
 
 			// Ensure a spec for the specified rule exists.
-			spec, ok := a.conf.customSpecMap[r.Name]
+			rt, ok := a.conf.customTypeMap[r.Name]
 			if !ok {
-				spec, ok = defaultRuleSpecMap[r.Name]
+				rt, ok = defaultRuleTypeMap[r.Name]
 				if !ok {
 					return a.anError(errRuleUnknown, f, r)
 				}
 			}
 
-			// Ensure the number of arguments provided to
-			// the rule fits the rule's spec, else fail.
-			if ok := spec.argCount().check(len(r.Args)); !ok {
-				return a.anError(&anError{Code: errRuleArgCount}, f, r)
-			}
-
-			// Apply spec type-checking to the provided Type.
-			switch s := spec.(type) {
-			case RuleNop, RuleIsValid:
-				// nothing to do here
-			case RuleEnum:
-				if err := typeCheckRuleEnum(a, typ, r, f); err != nil {
-					return err
-				}
-			case RuleBasic:
-				if s.check != nil {
-					if err := s.check(a, r, typ, f); err != nil {
-						return err
-					}
-				}
-			case RuleFunc:
-				if err := typeCheckRuleFunc(a, r, s, typ, f); err != nil {
-					return a.anError(err, f, r)
-				}
+			if err := rt.checkRule(a, r, typ, f); err != nil {
+				return err
 			}
 		}
 
@@ -612,7 +590,7 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 }
 
 // typeCheckRuleEnum checks whether the given Type can be used together
-// with a RuleEnum. (r & f are used for error reporting)
+// with a RuleTypeEnum. (r & f are used for error reporting)
 func typeCheckRuleEnum(a *analysis, t Type, r *Rule, f *StructField) error {
 	typ := t.PtrBase()
 	if len(typ.Name) == 0 {
@@ -647,54 +625,6 @@ func typeCheckRuleEnum(a *analysis, t Type, r *Rule, f *StructField) error {
 	}
 
 	a.info.EnumMap[ident] = enums
-	return nil
-}
-
-// checks whether the rule func can be applied to its related field.
-func typeCheckRuleFunc(a *analysis, r *Rule, rf RuleFunc, t Type, f *StructField) error {
-	// field type cannot be converted to func 0th arg type, fail
-	fldType, argType := t.PtrBase(), rf.ArgTypes[0]
-	if rf.IsVariadic && len(rf.ArgTypes) == 1 {
-		argType = *argType.Elem
-	}
-	if !canConvert(argType, fldType) {
-		return a.anError(&anError{Code: errRuleFuncFieldType}, f, r)
-	}
-
-	// optional check returns error, fail
-	if rf.check != nil {
-		if err := rf.check(a, r, t, f); err != nil {
-			return err
-		}
-	}
-
-	// rule arg cannot be converted to func arg, fail
-	fatypes := rf.ArgTypes[1:]
-	if rf.IsVariadic && len(fatypes) > 0 {
-		fatypes = fatypes[:len(fatypes)-1]
-	}
-	for i, fatyp := range fatypes {
-		ra := r.Args[i]
-		if !canConvertRuleArg(a, fatyp, ra) {
-			return a.anError(&anError{Code: errRuleFuncArgType, ra: ra}, f, r)
-		}
-	}
-	if rf.IsVariadic {
-		fatyp := rf.ArgTypes[len(rf.ArgTypes)-1]
-		fatyp = *fatyp.Elem
-		for _, ra := range r.Args[len(fatypes):] {
-			if !canConvertRuleArg(a, fatyp, ra) {
-				return a.anError(&anError{Code: errRuleFuncArgType, ra: ra}, f, r)
-			}
-		}
-	} else if rf.BoolConn > RuleFuncBoolNone {
-		fatyp := rf.ArgTypes[1]
-		for _, ra := range r.Args {
-			if !canConvertRuleArg(a, fatyp, ra) {
-				return a.anError(&anError{Code: errRuleFuncArgType, ra: ra}, f, r)
-			}
-		}
-	}
 	return nil
 }
 

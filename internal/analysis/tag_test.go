@@ -10,33 +10,33 @@ func TestParseRuleTag(t *testing.T) {
 	tests := []struct {
 		tag  string
 		err  error
-		want *RuleTag
+		want *TagNode
 	}{{
 		tag:  ``,
-		want: &RuleTag{},
+		want: &TagNode{},
 	}, {
 		tag:  `json:"foo,omitempty" xml:">abc"`,
-		want: &RuleTag{},
+		want: &TagNode{},
 	}, {
 		tag:  `json:"foo,omitempty" is:"r1" xml:">abc"`,
-		want: &RuleTag{Rules: []*Rule{{Name: "r1"}}},
+		want: &TagNode{Rules: []*Rule{{Name: "r1"}}},
 	}, {
 		tag:  `is:"-"`,
-		want: &RuleTag{},
+		want: &TagNode{},
 	}, {
 		// single plain rule
 		tag:  `is:"rule"`,
-		want: &RuleTag{Rules: []*Rule{{Name: "rule"}}},
+		want: &TagNode{Rules: []*Rule{{Name: "rule"}}},
 	}, {
 		// single rule with arg
 		tag: `is:"rule:arg"`,
-		want: &RuleTag{Rules: []*Rule{{Name: "rule", Args: []*RuleArg{
+		want: &TagNode{Rules: []*Rule{{Name: "rule", Args: []*RuleArg{
 			{Value: "arg", Type: ArgTypeString},
 		}}}},
 	}, {
 		// single rule with args
 		tag: `is:"rule:arg:123:true:0.0064"`,
-		want: &RuleTag{Rules: []*Rule{{Name: "rule", Args: []*RuleArg{
+		want: &TagNode{Rules: []*Rule{{Name: "rule", Args: []*RuleArg{
 			{Value: "arg", Type: ArgTypeString},
 			{Value: "123", Type: ArgTypeInt},
 			{Value: "true", Type: ArgTypeBool},
@@ -45,13 +45,13 @@ func TestParseRuleTag(t *testing.T) {
 	}, {
 		// single rule with empty arg
 		tag: `is:"rule:"`,
-		want: &RuleTag{Rules: []*Rule{{Name: "rule", Args: []*RuleArg{
+		want: &TagNode{Rules: []*Rule{{Name: "rule", Args: []*RuleArg{
 			{Value: "", Type: ArgTypeUnknown},
 		}}}},
 	}, {
 		// single rule with empty args
 		tag: `is:"rule::::"`,
-		want: &RuleTag{Rules: []*Rule{{Name: "rule", Args: []*RuleArg{
+		want: &TagNode{Rules: []*Rule{{Name: "rule", Args: []*RuleArg{
 			{Value: "", Type: ArgTypeUnknown},
 			{Value: "", Type: ArgTypeUnknown},
 			{Value: "", Type: ArgTypeUnknown},
@@ -60,7 +60,7 @@ func TestParseRuleTag(t *testing.T) {
 	}, {
 		// single rule with empty & non-empty args
 		tag: `is:"rule:arg::true:::0.0064:"`,
-		want: &RuleTag{Rules: []*Rule{{Name: "rule", Args: []*RuleArg{
+		want: &TagNode{Rules: []*Rule{{Name: "rule", Args: []*RuleArg{
 			{Value: "arg", Type: ArgTypeString},
 			{Value: "", Type: ArgTypeUnknown},
 			{Value: "true", Type: ArgTypeBool},
@@ -72,19 +72,19 @@ func TestParseRuleTag(t *testing.T) {
 	}, {
 		// single rule with quoted arg
 		tag: `is:"rule:\"arg\""`,
-		want: &RuleTag{Rules: []*Rule{{Name: "rule", Args: []*RuleArg{
+		want: &TagNode{Rules: []*Rule{{Name: "rule", Args: []*RuleArg{
 			{Value: "arg", Type: ArgTypeString},
 		}}}},
 	}, {
 		// single rule with quoted arg
 		tag: `is:"rule:\"foo \\\"bar\\\" baz\""`,
-		want: &RuleTag{Rules: []*Rule{{Name: "rule", Args: []*RuleArg{
+		want: &TagNode{Rules: []*Rule{{Name: "rule", Args: []*RuleArg{
 			{Value: "foo \\\"bar\\\" baz", Type: ArgTypeString},
 		}}}},
 	}, {
 		// single rule with quoted, empty, and non-empty args
 		tag: `is:"rule:\"foo\":bar:\"\":123::\"b \\\"a\\\" z\""`,
-		want: &RuleTag{Rules: []*Rule{{Name: "rule", Args: []*RuleArg{
+		want: &TagNode{Rules: []*Rule{{Name: "rule", Args: []*RuleArg{
 			{Value: "foo", Type: ArgTypeString},
 			{Value: "bar", Type: ArgTypeString},
 			{Value: "", Type: ArgTypeString},
@@ -95,61 +95,61 @@ func TestParseRuleTag(t *testing.T) {
 	}, {
 		// multiple plain rules
 		tag: `is:"ra,re,ri,ru,ro"`,
-		want: &RuleTag{Rules: []*Rule{
+		want: &TagNode{Rules: []*Rule{
 			{Name: "ra"}, {Name: "re"}, {Name: "ri"}, {Name: "ru"}, {Name: "ro"},
 		}},
 	}, {
 		// multiple plain rules (omit empty rules)
 		tag: `is:"ra,,,re,ri,,"`,
-		want: &RuleTag{Rules: []*Rule{
+		want: &TagNode{Rules: []*Rule{
 			{Name: "ra"}, {Name: "re"}, {Name: "ri"},
 		}},
 	}, {
 		// multiple rules with args
 		tag: `is:"ra:a:b:c,re:foo::321:,ri:1:2:3"`,
-		want: &RuleTag{Rules: []*Rule{
+		want: &TagNode{Rules: []*Rule{
 			{Name: "ra", Args: []*RuleArg{
-				{ArgTypeString, "a"},
-				{ArgTypeString, "b"},
-				{ArgTypeString, "c"},
+				{"a", ArgTypeString},
+				{"b", ArgTypeString},
+				{"c", ArgTypeString},
 			}},
 			{Name: "re", Args: []*RuleArg{
-				{ArgTypeString, "foo"},
-				{ArgTypeUnknown, ""},
-				{ArgTypeInt, "321"},
-				{ArgTypeUnknown, ""},
+				{"foo", ArgTypeString},
+				{"", ArgTypeUnknown},
+				{"321", ArgTypeInt},
+				{"", ArgTypeUnknown},
 			}},
 			{Name: "ri", Args: []*RuleArg{
-				{ArgTypeInt, "1"},
-				{ArgTypeInt, "2"},
-				{ArgTypeInt, "3"},
+				{"1", ArgTypeInt},
+				{"2", ArgTypeInt},
+				{"3", ArgTypeInt},
 			}},
 		}},
 	}, {
 		// nested rule (elem)
 		tag: `is:"[]ra"`,
-		want: &RuleTag{Elem: &RuleTag{
+		want: &TagNode{Elem: &TagNode{
 			Rules: []*Rule{{Name: "ra"}},
 		}},
 	}, {
 		// nested rule (elem [levels])
 		tag: `is:"[][][][]ra"`,
-		want: &RuleTag{
-			Elem: &RuleTag{Elem: &RuleTag{Elem: &RuleTag{Elem: &RuleTag{
+		want: &TagNode{
+			Elem: &TagNode{Elem: &TagNode{Elem: &TagNode{Elem: &TagNode{
 				Rules: []*Rule{{Name: "ra"}},
 			}}}},
 		},
 	}, {
 		// nested rules (elem [levels])
 		tag: `is:"[]ra,re,[]re,ri,[]ri,ru,[]ru,ro"`,
-		want: &RuleTag{
-			Elem: &RuleTag{
+		want: &TagNode{
+			Elem: &TagNode{
 				Rules: []*Rule{{Name: "ra"}, {Name: "re"}},
-				Elem: &RuleTag{
+				Elem: &TagNode{
 					Rules: []*Rule{{Name: "re"}, {Name: "ri"}},
-					Elem: &RuleTag{
+					Elem: &TagNode{
 						Rules: []*Rule{{Name: "ri"}, {Name: "ru"}},
-						Elem: &RuleTag{
+						Elem: &TagNode{
 							Rules: []*Rule{{Name: "ru"}, {Name: "ro"}},
 						},
 					},
@@ -159,28 +159,28 @@ func TestParseRuleTag(t *testing.T) {
 	}, {
 		// nested rule (key)
 		tag: `is:"[ra]"`,
-		want: &RuleTag{Key: &RuleTag{
+		want: &TagNode{Key: &TagNode{
 			Rules: []*Rule{{Name: "ra"}},
 		}},
 	}, {
 		// nested rule (key [levels])
 		tag: `is:"[[[[ra]]]]"`,
-		want: &RuleTag{
-			Key: &RuleTag{Key: &RuleTag{Key: &RuleTag{Key: &RuleTag{
+		want: &TagNode{
+			Key: &TagNode{Key: &TagNode{Key: &TagNode{Key: &TagNode{
 				Rules: []*Rule{{Name: "ra"}},
 			}}}},
 		},
 	}, {
 		// nested rules (key [levels])
 		tag: `is:"[ra,re,[re,ri,[ri,ru,[ru,ro]]]]"`,
-		want: &RuleTag{
-			Key: &RuleTag{
+		want: &TagNode{
+			Key: &TagNode{
 				Rules: []*Rule{{Name: "ra"}, {Name: "re"}},
-				Key: &RuleTag{
+				Key: &TagNode{
 					Rules: []*Rule{{Name: "re"}, {Name: "ri"}},
-					Key: &RuleTag{
+					Key: &TagNode{
 						Rules: []*Rule{{Name: "ri"}, {Name: "ru"}},
-						Key: &RuleTag{
+						Key: &TagNode{
 							Rules: []*Rule{{Name: "ru"}, {Name: "ro"}},
 						},
 					},
@@ -190,45 +190,45 @@ func TestParseRuleTag(t *testing.T) {
 	}, {
 		// nested rules (key & elem)
 		tag: `is:"[ra]re"`,
-		want: &RuleTag{Key: &RuleTag{
+		want: &TagNode{Key: &TagNode{
 			Rules: []*Rule{{Name: "ra"}},
-		}, Elem: &RuleTag{
+		}, Elem: &TagNode{
 			Rules: []*Rule{{Name: "re"}},
 		}},
 	}, {
 		// nested rules (key & elem [levels])
 		tag: `is:"[[[[ra]]]][][][]re"`,
-		want: &RuleTag{
-			Key: &RuleTag{Key: &RuleTag{Key: &RuleTag{Key: &RuleTag{
+		want: &TagNode{
+			Key: &TagNode{Key: &TagNode{Key: &TagNode{Key: &TagNode{
 				Rules: []*Rule{{Name: "ra"}},
 			}}}},
-			Elem: &RuleTag{Elem: &RuleTag{Elem: &RuleTag{Elem: &RuleTag{
+			Elem: &TagNode{Elem: &TagNode{Elem: &TagNode{Elem: &TagNode{
 				Rules: []*Rule{{Name: "re"}},
 			}}}},
 		},
 	}, {
 		// nested rules (key & elems [levels])
 		tag: `is:"[ra,re,[re,ri,[ri,ru,[ru,ro]]]]ra,re,[]re,ri,[]ri,ru,[]ru,ro"`,
-		want: &RuleTag{
-			Key: &RuleTag{
+		want: &TagNode{
+			Key: &TagNode{
 				Rules: []*Rule{{Name: "ra"}, {Name: "re"}},
-				Key: &RuleTag{
+				Key: &TagNode{
 					Rules: []*Rule{{Name: "re"}, {Name: "ri"}},
-					Key: &RuleTag{
+					Key: &TagNode{
 						Rules: []*Rule{{Name: "ri"}, {Name: "ru"}},
-						Key: &RuleTag{
+						Key: &TagNode{
 							Rules: []*Rule{{Name: "ru"}, {Name: "ro"}},
 						},
 					},
 				},
 			},
-			Elem: &RuleTag{
+			Elem: &TagNode{
 				Rules: []*Rule{{Name: "ra"}, {Name: "re"}},
-				Elem: &RuleTag{
+				Elem: &TagNode{
 					Rules: []*Rule{{Name: "re"}, {Name: "ri"}},
-					Elem: &RuleTag{
+					Elem: &TagNode{
 						Rules: []*Rule{{Name: "ri"}, {Name: "ru"}},
-						Elem: &RuleTag{
+						Elem: &TagNode{
 							Rules: []*Rule{{Name: "ru"}, {Name: "ro"}},
 						},
 					},
@@ -240,8 +240,8 @@ func TestParseRuleTag(t *testing.T) {
 		tag: `is:"[ra,re:1:2:3,[re::\"]]\\\"[]]\":foo,ri:@my_ctx,[ri:&MyField:::-321,ru:\"  \",[ru,ro:\"]\"]` +
 			`ro:\"[\",ru]ru:foo:123::&MyOtherField:]ri:@my_ctx,re::\"]]\\\"[]]\":foo]ra:xyz:,re:&mykey:@MyCtx,` +
 			`[la:\"]heee![\"]re,ri:,[le:a,li:b,lu:c]ri:\"foo \\\"]]]\":,ru::-abc,[c:lu,b:li,a:le]ru,ro:\"[foo]\":"`,
-		want: &RuleTag{
-			Key: &RuleTag{
+		want: &TagNode{
+			Key: &TagNode{
 				Rules: []*Rule{
 					{Name: "ra"},
 					{Name: "re", Args: []*RuleArg{
@@ -250,7 +250,7 @@ func TestParseRuleTag(t *testing.T) {
 						{Value: "3", Type: ArgTypeInt},
 					}},
 				},
-				Key: &RuleTag{
+				Key: &TagNode{
 					Rules: []*Rule{
 						{Name: "re", Args: []*RuleArg{
 							{Value: "", Type: ArgTypeUnknown},
@@ -259,7 +259,7 @@ func TestParseRuleTag(t *testing.T) {
 						}},
 						{Name: "ri", Context: "my_ctx"},
 					},
-					Key: &RuleTag{
+					Key: &TagNode{
 						Rules: []*Rule{
 							{Name: "ri", Args: []*RuleArg{
 								{Value: "MyField", Type: ArgTypeField},
@@ -271,7 +271,7 @@ func TestParseRuleTag(t *testing.T) {
 								{Value: "  ", Type: ArgTypeString},
 							}},
 						},
-						Key: &RuleTag{
+						Key: &TagNode{
 							Rules: []*Rule{
 								{Name: "ru"},
 								{Name: "ro", Args: []*RuleArg{
@@ -279,7 +279,7 @@ func TestParseRuleTag(t *testing.T) {
 								}},
 							},
 						},
-						Elem: &RuleTag{
+						Elem: &TagNode{
 							Rules: []*Rule{
 								{Name: "ro", Args: []*RuleArg{
 									{Value: "[", Type: ArgTypeString},
@@ -288,7 +288,7 @@ func TestParseRuleTag(t *testing.T) {
 							},
 						},
 					},
-					Elem: &RuleTag{
+					Elem: &TagNode{
 						Rules: []*Rule{
 							{Name: "ru", Args: []*RuleArg{
 								{Value: "foo", Type: ArgTypeString},
@@ -300,7 +300,7 @@ func TestParseRuleTag(t *testing.T) {
 						},
 					},
 				},
-				Elem: &RuleTag{
+				Elem: &TagNode{
 					Rules: []*Rule{
 						{Name: "ri", Context: "my_ctx"},
 						{Name: "re", Args: []*RuleArg{
@@ -311,7 +311,7 @@ func TestParseRuleTag(t *testing.T) {
 					},
 				},
 			},
-			Elem: &RuleTag{
+			Elem: &TagNode{
 				Rules: []*Rule{
 					{Name: "ra", Args: []*RuleArg{
 						{Value: "xyz", Type: ArgTypeString},
@@ -321,26 +321,26 @@ func TestParseRuleTag(t *testing.T) {
 						{Value: "mykey", Type: ArgTypeField},
 					}},
 				},
-				Key: &RuleTag{
+				Key: &TagNode{
 					Rules: []*Rule{{Name: "la", Args: []*RuleArg{
 						{Value: "]heee![", Type: ArgTypeString},
 					}}},
 				},
-				Elem: &RuleTag{
+				Elem: &TagNode{
 					Rules: []*Rule{
 						{Name: "re"},
 						{Name: "ri", Args: []*RuleArg{
 							{Value: "", Type: ArgTypeUnknown},
 						}},
 					},
-					Key: &RuleTag{
+					Key: &TagNode{
 						Rules: []*Rule{
 							{Name: "le", Args: []*RuleArg{{Value: "a", Type: ArgTypeString}}},
 							{Name: "li", Args: []*RuleArg{{Value: "b", Type: ArgTypeString}}},
 							{Name: "lu", Args: []*RuleArg{{Value: "c", Type: ArgTypeString}}},
 						},
 					},
-					Elem: &RuleTag{
+					Elem: &TagNode{
 						Rules: []*Rule{
 							{Name: "ri", Args: []*RuleArg{
 								{Value: "foo \\\"]]]", Type: ArgTypeString},
@@ -351,14 +351,14 @@ func TestParseRuleTag(t *testing.T) {
 								{Value: "-abc", Type: ArgTypeString},
 							}},
 						},
-						Key: &RuleTag{
+						Key: &TagNode{
 							Rules: []*Rule{
 								{Name: "c", Args: []*RuleArg{{Value: "lu", Type: ArgTypeString}}},
 								{Name: "b", Args: []*RuleArg{{Value: "li", Type: ArgTypeString}}},
 								{Name: "a", Args: []*RuleArg{{Value: "le", Type: ArgTypeString}}},
 							},
 						},
-						Elem: &RuleTag{
+						Elem: &TagNode{
 							Rules: []*Rule{
 								{Name: "ru"},
 								{Name: "ro", Args: []*RuleArg{
