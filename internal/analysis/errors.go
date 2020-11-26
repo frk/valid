@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
-
-	"github.com/frk/tagutil"
 )
 
 type anError struct {
@@ -55,14 +53,6 @@ func (e *anError) VtorContextOption() string {
 
 func (e *anError) FieldName() string {
 	return e.f.Name
-}
-
-func (e *anError) FieldKey() string {
-	return e.f.Key
-}
-
-func (e *anError) FieldTag() tagutil.Tag {
-	return e.f.Tag
 }
 
 func (e *anError) FieldType() string {
@@ -182,15 +172,15 @@ func (e *anError) RuleArgNumWord() string {
 }
 
 func (e *anError) RuleArgCount() (out string) {
-	rtyp, ok := e.a.conf.customTypeMap[e.r.Name]
+	rt, ok := e.a.conf.customTypeMap[e.r.Name]
 	if !ok {
-		rtyp, ok = defaultRuleTypeMap[e.r.Name]
+		rt, ok = defaultRuleTypeMap[e.r.Name]
 		if !ok {
 			return "<unknown-argument-count>"
 		}
 	}
 
-	count := rtyp.argCount()
+	count := rt.argCount()
 	if count.min == count.max {
 		return strconv.Itoa(count.min)
 	}
@@ -208,15 +198,15 @@ func (e *anError) RuleArgCount() (out string) {
 }
 
 func (e *anError) RuleArgCountWord() (out string) {
-	spec, ok := e.a.conf.customTypeMap[e.r.Name]
+	rt, ok := e.a.conf.customTypeMap[e.r.Name]
 	if !ok {
-		spec, ok = defaultRuleTypeMap[e.r.Name]
+		rt, ok = defaultRuleTypeMap[e.r.Name]
 		if !ok {
 			return "arguments"
 		}
 	}
 
-	count := spec.argCount()
+	count := rt.argCount()
 	if count.min == 1 && count.max == 1 {
 		return "argument"
 	}
@@ -227,36 +217,28 @@ func (e *anError) FuncNameQualified() (out string) {
 	return e.fn.Pkg().Name() + "." + e.fn.Name()
 }
 
-func (e *anError) FuncName() (out string) {
-	return e.fn.Name()
-}
-
-func (e *anError) FuncPkg() (out string) {
-	return e.fn.Pkg().Path()
-}
-
 func (e *anError) FuncType() (out string) {
 	return e.fn.Type().String()
 }
 
 func (e *anError) FuncFieldType() (out string) {
-	spec, ok := e.a.conf.customTypeMap[e.r.Name]
+	rt, ok := e.a.conf.customTypeMap[e.r.Name]
 	if !ok {
-		spec, ok = defaultRuleTypeMap[e.r.Name]
+		rt, ok = defaultRuleTypeMap[e.r.Name]
 	}
-	if rt, ok := spec.(RuleTypeFunc); ok {
-		return rt.ArgTypes[0].String()
+	if fn, ok := rt.(RuleTypeFunc); ok {
+		return fn.ArgTypes[0].String()
 	}
 	return "<unknown-func>"
 }
 
 func (e *anError) FuncArgType() (out string) {
-	spec, ok := e.a.conf.customTypeMap[e.r.Name]
+	rt, ok := e.a.conf.customTypeMap[e.r.Name]
 	if !ok {
-		spec, ok = defaultRuleTypeMap[e.r.Name]
+		rt, ok = defaultRuleTypeMap[e.r.Name]
 	}
 
-	switch rt := spec.(type) {
+	switch rx := rt.(type) {
 	case RuleTypeBasic:
 		return e.f.Type.String()
 	case RuleTypeFunc:
@@ -268,13 +250,13 @@ func (e *anError) FuncArgType() (out string) {
 			}
 		}
 
-		if rt.IsVariadic && pos >= (len(rt.ArgTypes)-1) {
-			return rt.ArgTypes[len(rt.ArgTypes)-1].Elem.String()
+		if rx.IsVariadic && pos >= (len(rx.ArgTypes)-1) {
+			return rx.ArgTypes[len(rx.ArgTypes)-1].Elem.String()
 		}
-		if rt.LOp > 0 {
-			return rt.ArgTypes[1].String()
+		if rx.LOp > 0 {
+			return rx.ArgTypes[1].String()
 		}
-		return rt.ArgTypes[pos].String()
+		return rx.ArgTypes[pos].String()
 	}
 
 	return "<unknown-arg-type>"

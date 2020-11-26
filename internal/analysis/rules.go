@@ -85,8 +85,8 @@ var defaultRuleTypeMap = map[string]RuleType{
 		check:    isValidRuleRFC},
 	"re": RuleTypeFunc{
 		FuncName: "Match", PkgPath: pkgisvalid,
-		ArgTypes: []Type{typeString, typeString},
-		check:    isValidRuleRegexp},
+		ArgTypes:     []Type{typeString, typeString},
+		UseRawString: true, check: isValidRuleRegexp},
 	"prefix": RuleTypeFunc{
 		FuncName: "HasPrefix", PkgPath: "strings",
 		ArgTypes: []Type{typeString, typeString},
@@ -104,13 +104,13 @@ var defaultRuleTypeMap = map[string]RuleType{
 // LoadRuleTypeFunc loads info for pre-defined function rule types. LoadRuleTypeFunc
 // should be invoked only once and before starting the first analysis.
 func LoadRuleTypeFunc(ast search.AST) {
-	for rule, spec := range defaultRuleTypeMap {
-		rf, ok := spec.(RuleTypeFunc)
+	for rule, rt := range defaultRuleTypeMap {
+		fn, ok := rt.(RuleTypeFunc)
 		if !ok {
 			continue
 		}
 
-		typ, err := search.FindFunc(rf.PkgPath, rf.FuncName, ast)
+		typ, err := search.FindFunc(fn.PkgPath, fn.FuncName, ast)
 		if err != nil {
 			// It is possible that the user of the cmd/isvalid tool does not
 			// have github.com/frk/isvalid source on the user's machine, which
@@ -125,15 +125,15 @@ func LoadRuleTypeFunc(ast search.AST) {
 			continue
 		}
 
-		rf.typ = typ
-		defaultRuleTypeMap[rule] = rf
+		fn.typ = typ
+		defaultRuleTypeMap[rule] = fn
 	}
 }
 
 func isValidRuleNotnil(a *analysis, r *Rule, t Type, f *StructField) error {
 	// field's type must be nilable
 	if !hasTypeKind(t, TypeKindPtr, TypeKindSlice, TypeKindMap, TypeKindInterface) {
-		return a.anError(errRuleFieldNonNilable, f, r)
+		return &anError{Code: errRuleFieldNonNilable, a: a, f: f, r: r}
 	}
 	return nil
 }
@@ -143,7 +143,8 @@ func isValidRuleRegexp(a *analysis, r *Rule, t Type, f *StructField) error {
 	for _, ra := range r.Args {
 		if ra.Type != ArgTypeField {
 			if _, err := regexp.Compile(ra.Value); err != nil {
-				return a.anError(&anError{Code: errRuleArgValueRegexp, ra: ra, err: err}, f, r)
+				return &anError{Code: errRuleArgValueRegexp, a: a,
+					f: f, r: r, ra: ra, err: err}
 			}
 		}
 	}
@@ -156,7 +157,7 @@ func isValidRuleValueComparison(a *analysis, r *Rule, t Type, f *StructField) er
 	typ := t.PtrBase()
 	for _, ra := range r.Args {
 		if !canConvertRuleArg(a, typ, ra) {
-			return a.anError(&anError{Code: errRuleBasicArgType, ra: ra}, f, r)
+			return &anError{Code: errRuleBasicArgType, a: a, f: f, r: r, ra: ra}
 		}
 	}
 	return nil
@@ -173,7 +174,7 @@ func isValidRuleNumberComparison(a *analysis, r *Rule, t Type, f *StructField) e
 	typ := t.PtrBase()
 	for _, ra := range r.Args {
 		if !canConvertRuleArg(a, typ, ra) {
-			return a.anError(&anError{Code: errRuleBasicArgType, ra: ra}, f, r)
+			return &anError{Code: errRuleBasicArgType, a: a, f: f, r: r, ra: ra}
 		}
 	}
 	return nil
@@ -184,7 +185,7 @@ func isValidRuleLen(a *analysis, r *Rule, t Type, f *StructField) error {
 	// associated field's type must have length
 	t = t.PtrBase()
 	if !hasTypeKind(t, TypeKindString, TypeKindArray, TypeKindSlice, TypeKindMap) {
-		return a.anError(errRuleFieldLengthless, f, r)
+		return &anError{Code: errRuleFieldLengthless, a: a, f: f, r: r}
 	}
 
 	// if 2, then make sure the values represent valid upper to lower bounds
@@ -193,14 +194,14 @@ func isValidRuleLen(a *analysis, r *Rule, t Type, f *StructField) error {
 		if ra := r.Args[0]; len(ra.Value) > 0 {
 			u64, err := strconv.ParseUint(ra.Value, 10, 64)
 			if err != nil {
-				return a.anError(&anError{Code: errRuleBasicArgTypeUint, ra: ra, err: err}, f, r)
+				return &anError{Code: errRuleBasicArgTypeUint, a: a, f: f, r: r, ra: ra, err: err}
 			}
 			lower = &u64
 		}
 		if ra := r.Args[1]; len(ra.Value) > 0 {
 			u64, err := strconv.ParseUint(ra.Value, 10, 64)
 			if err != nil {
-				return a.anError(&anError{Code: errRuleBasicArgTypeUint, ra: ra, err: err}, f, r)
+				return &anError{Code: errRuleBasicArgTypeUint, a: a, f: f, r: r, ra: ra, err: err}
 			}
 			upper = &u64
 		}
@@ -208,7 +209,7 @@ func isValidRuleLen(a *analysis, r *Rule, t Type, f *StructField) error {
 		// make sure at least one bound was specified and if both then
 		// ensure that the lower bound is less than the upper bound
 		if (lower == nil && upper == nil) || (lower != nil && upper != nil && *lower >= *upper) {
-			return a.anError(&anError{Code: errRuleArgValueBounds}, f, r)
+			return &anError{Code: errRuleArgValueBounds, a: a, f: f, r: r}
 		}
 	}
 
@@ -216,7 +217,7 @@ func isValidRuleLen(a *analysis, r *Rule, t Type, f *StructField) error {
 	typ := Type{Kind: TypeKindUint}
 	for _, ra := range r.Args {
 		if !canConvertRuleArg(a, typ, ra) {
-			return a.anError(&anError{Code: errRuleBasicArgTypeUint, ra: ra}, f, r)
+			return &anError{Code: errRuleBasicArgTypeUint, a: a, f: f, r: r, ra: ra}
 		}
 	}
 	return nil
@@ -235,14 +236,14 @@ func isValidRuleRng(a *analysis, r *Rule, t Type, f *StructField) error {
 		if ra := r.Args[0]; len(ra.Value) > 0 {
 			f64, err := strconv.ParseFloat(ra.Value, 64)
 			if err != nil {
-				return a.anError(&anError{Code: errRuleFuncArgType, ra: ra, err: err}, f, r)
+				return &anError{Code: errRuleFuncArgType, a: a, f: f, r: r, ra: ra, err: err}
 			}
 			lower = &f64
 		}
 		if ra := r.Args[1]; len(ra.Value) > 0 {
 			f64, err := strconv.ParseFloat(ra.Value, 64)
 			if err != nil {
-				return a.anError(&anError{Code: errRuleFuncArgType, ra: ra, err: err}, f, r)
+				return &anError{Code: errRuleFuncArgType, a: a, f: f, r: r, ra: ra, err: err}
 			}
 			upper = &f64
 		}
@@ -250,7 +251,7 @@ func isValidRuleRng(a *analysis, r *Rule, t Type, f *StructField) error {
 		// make sure at least one bound was specified and if both then
 		// ensure that the lower bound is less than the upper bound
 		if (lower == nil && upper == nil) || (lower != nil && upper != nil && *lower >= *upper) {
-			return a.anError(&anError{Code: errRuleArgValueBounds}, f, r)
+			return &anError{Code: errRuleArgValueBounds, a: a, f: f, r: r}
 		}
 	}
 
@@ -258,7 +259,7 @@ func isValidRuleRng(a *analysis, r *Rule, t Type, f *StructField) error {
 	typ := t.PtrBase()
 	for _, ra := range r.Args {
 		if !canConvertRuleArg(a, typ, ra) {
-			return a.anError(&anError{Code: errRuleFuncArgType, ra: ra}, f, r)
+			return &anError{Code: errRuleFuncArgType, a: a, f: f, r: r, ra: ra}
 		}
 	}
 
@@ -273,7 +274,7 @@ func isValidRuleUUID(a *analysis, r *Rule, t Type, f *StructField) error {
 	for _, ra := range r.Args {
 		if ra.Type == ArgTypeString || ra.IsUInt() {
 			if !rxUUIDVer.MatchString(ra.Value) {
-				return a.anError(&anError{Code: errRuleArgValueUUIDVer, ra: ra}, f, r)
+				return &anError{Code: errRuleArgValueUUIDVer, a: a, f: f, r: r, ra: ra}
 			}
 
 			if len(ra.Value) > 1 && (ra.Value[0] == 'v' || ra.Value[0] == 'V') {
@@ -281,12 +282,12 @@ func isValidRuleUUID(a *analysis, r *Rule, t Type, f *StructField) error {
 				ra.Type = ArgTypeInt
 			}
 			if _, exists := versions[ra.Value]; exists {
-				return a.anError(&anError{Code: errRuleArgValueConflict, ra: ra}, f, r)
+				return &anError{Code: errRuleArgValueConflict, a: a, f: f, r: r, ra: ra}
 			} else {
 				versions[ra.Value] = struct{}{}
 			}
 		} else if ra.Type != ArgTypeField {
-			return a.anError(&anError{Code: errRuleFuncArgType, ra: ra}, f, r)
+			return &anError{Code: errRuleFuncArgType, a: a, f: f, r: r, ra: ra}
 		}
 	}
 	return nil
@@ -300,7 +301,7 @@ func isValidRuleIP(a *analysis, r *Rule, t Type, f *StructField) error {
 	for _, ra := range r.Args {
 		if ra.Type == ArgTypeString || ra.IsUInt() {
 			if !rxIPVer.MatchString(ra.Value) {
-				return a.anError(&anError{Code: errRuleArgValueIPVer, ra: ra}, f, r)
+				return &anError{Code: errRuleArgValueIPVer, a: a, f: f, r: r, ra: ra}
 			}
 
 			if len(ra.Value) > 1 && (ra.Value[0] == 'v' || ra.Value[0] == 'V') {
@@ -308,12 +309,12 @@ func isValidRuleIP(a *analysis, r *Rule, t Type, f *StructField) error {
 				ra.Type = ArgTypeInt
 			}
 			if len(version) > 0 && version == ra.Value {
-				return a.anError(&anError{Code: errRuleArgValueConflict, ra: ra}, f, r)
+				return &anError{Code: errRuleArgValueConflict, a: a, f: f, r: r, ra: ra}
 			} else {
 				version = ra.Value
 			}
 		} else if ra.Type != ArgTypeField {
-			return a.anError(&anError{Code: errRuleFuncArgType, ra: ra}, f, r)
+			return &anError{Code: errRuleFuncArgType, a: a, f: f, r: r, ra: ra}
 		}
 	}
 	return nil
@@ -327,7 +328,7 @@ func isValidRuleMAC(a *analysis, r *Rule, t Type, f *StructField) error {
 	for _, ra := range r.Args {
 		if ra.Type == ArgTypeString || ra.IsUInt() {
 			if !rxMACVer.MatchString(ra.Value) {
-				return a.anError(&anError{Code: errRuleArgValueMACVer, ra: ra}, f, r)
+				return &anError{Code: errRuleArgValueMACVer, a: a, f: f, r: r, ra: ra}
 			}
 
 			if len(ra.Value) > 1 && (ra.Value[0] == 'v' || ra.Value[0] == 'V') {
@@ -335,12 +336,12 @@ func isValidRuleMAC(a *analysis, r *Rule, t Type, f *StructField) error {
 				ra.Type = ArgTypeInt
 			}
 			if len(version) > 0 && version == ra.Value {
-				return a.anError(&anError{Code: errRuleArgValueConflict, ra: ra}, f, r)
+				return &anError{Code: errRuleArgValueConflict, a: a, f: f, r: r, ra: ra}
 			} else {
 				version = ra.Value
 			}
 		} else if ra.Type != ArgTypeField {
-			return a.anError(&anError{Code: errRuleFuncArgType, ra: ra}, f, r)
+			return &anError{Code: errRuleFuncArgType, a: a, f: f, r: r, ra: ra}
 		}
 	}
 	return nil
@@ -357,10 +358,10 @@ func isValidRuleISO(a *analysis, r *Rule, t Type, f *StructField) error {
 			if !rxISO.MatchString(ra.Value) {
 				// TODO(mkopriva): once the above TODO item is
 				// taken care of, this needs a test cases added.
-				return a.anError(&anError{Code: errRuleArgValueISONum, ra: ra}, f, r)
+				return &anError{Code: errRuleArgValueISONum, a: a, f: f, r: r, ra: ra}
 			}
 		} else if ra.Type != ArgTypeField {
-			return a.anError(&anError{Code: errRuleFuncArgType, ra: ra}, f, r)
+			return &anError{Code: errRuleFuncArgType, a: a, f: f, r: r, ra: ra}
 		}
 	}
 	return nil
@@ -377,10 +378,10 @@ func isValidRuleRFC(a *analysis, r *Rule, t Type, f *StructField) error {
 			if !rxRFC.MatchString(ra.Value) {
 				// TODO(mkopriva): once the above TODO item is
 				// taken care of, this needs a test cases added.
-				return a.anError(&anError{Code: errRuleArgValueRFCNum, ra: ra}, f, r)
+				return &anError{Code: errRuleArgValueRFCNum, a: a, f: f, r: r, ra: ra}
 			}
 		} else if ra.Type != ArgTypeField {
-			return a.anError(&anError{Code: errRuleFuncArgType, ra: ra}, f, r)
+			return &anError{Code: errRuleFuncArgType, a: a, f: f, r: r, ra: ra}
 		}
 	}
 	return nil
@@ -395,10 +396,10 @@ func isValidCountryCode(a *analysis, r *Rule, t Type, f *StructField) error {
 		if ra.Type == ArgTypeString {
 			if !(len(ra.Value) == 2 && rxCountryCode2.MatchString(ra.Value)) &&
 				!(len(ra.Value) == 3 && rxCountryCode3.MatchString(ra.Value)) {
-				return a.anError(&anError{Code: errRuleArgValueCountryCode, ra: ra}, f, r)
+				return &anError{Code: errRuleArgValueCountryCode, a: a, f: f, r: r, ra: ra}
 			}
 		} else if ra.Type != ArgTypeField {
-			return a.anError(&anError{Code: errRuleFuncArgType, ra: ra}, f, r)
+			return &anError{Code: errRuleFuncArgType, a: a, f: f, r: r, ra: ra}
 		}
 	}
 	return nil
@@ -410,7 +411,7 @@ func typeIsNumeric(a *analysis, r *Rule, t Type, f *StructField) error {
 	if !hasTypeKind(t, TypeKindInt, TypeKindInt8, TypeKindInt16, TypeKindInt32, TypeKindInt64,
 		TypeKindUint, TypeKindUint8, TypeKindUint16, TypeKindUint32, TypeKindUint64,
 		TypeKindFloat32, TypeKindFloat64) {
-		return a.anError(errRuleFieldNonNumeric, f, r)
+		return &anError{Code: errRuleFieldNonNumeric, a: a, f: f, r: r}
 	}
 	return nil
 }

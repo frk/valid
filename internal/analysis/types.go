@@ -187,13 +187,16 @@ type (
 		IsVariadic bool
 		// NOTE(mkopriva): Although currently not enforced, this field is
 		// intended to be used only with binary functions, i.e. functions
-		// that take exactly two arguments.
+		// that take exactly two arguments, no more, no less.
 		//
 		// If set, the generator will produce one call expression for
 		// each of the associated Rule's arguments and then join those
 		// call expressions into a boolean expression using the *inverse*
 		// of the field's logical operator value.
 		LOp LogicalOperator
+		// Indicates that the generated code should use raw strings
+		// for any string arguments passed to the function.
+		UseRawString bool
 		// Indicates that this is a custom user provided RuleTypeFunc.
 		IsCustom bool
 		// check is a plugin used by the checkRule method.
@@ -207,52 +210,48 @@ type (
 	}
 )
 
-// accepts no args
+// Accepts no args.
 func (RuleTypeNop) argCount() ruleArgCount {
 	return ruleArgCount{}
 }
 
 func (rt RuleTypeNop) checkRule(a *analysis, r *Rule, t Type, f *StructField) error {
 	if ok := rt.argCount().check(len(r.Args)); !ok {
-		return a.anError(&anError{Code: errRuleArgCount}, f, r)
+		return &anError{Code: errRuleArgCount, a: a, f: f, r: r}
 	}
 	return nil
 }
 
-////////////////////////////////////////////////////////////////////////////////
-
-// accepts no args
+// Accepts no args.
 func (RuleTypeIsValid) argCount() ruleArgCount {
 	return ruleArgCount{}
 }
 
 func (rt RuleTypeIsValid) checkRule(a *analysis, r *Rule, t Type, f *StructField) error {
 	if ok := rt.argCount().check(len(r.Args)); !ok {
-		return a.anError(&anError{Code: errRuleArgCount}, f, r)
+		return &anError{Code: errRuleArgCount, a: a, f: f, r: r}
 	}
 	return nil
 }
 
-////////////////////////////////////////////////////////////////////////////////
-
-// accepts no args
+// Accepts no args.
 func (RuleTypeEnum) argCount() ruleArgCount {
 	return ruleArgCount{}
 }
 
 // checkRule checks whether the given Type is compatible with a RuleTypeEnum,
-// the *Rule and *StructField arguments are used for error reporting
+// the *Rule and *StructField arguments are used for error reporting.
 func (rt RuleTypeEnum) checkRule(a *analysis, r *Rule, t Type, f *StructField) error {
 	if ok := rt.argCount().check(len(r.Args)); !ok {
-		return a.anError(&anError{Code: errRuleArgCount}, f, r)
+		return &anError{Code: errRuleArgCount, a: a, f: f, r: r}
 	}
 
 	typ := t.PtrBase()
 	if len(typ.Name) == 0 {
-		return a.anError(errRuleEnumTypeUnnamed, f, r)
+		return &anError{Code: errRuleEnumTypeUnnamed, a: a, f: f, r: r}
 	}
 	if !typ.Kind.IsBasic() {
-		return a.anError(errRuleEnumType, f, r)
+		return &anError{Code: errRuleEnumType, a: a, f: f, r: r}
 	}
 
 	ident := typ.PkgPath + "." + typ.Name
@@ -276,24 +275,22 @@ func (rt RuleTypeEnum) checkRule(a *analysis, r *Rule, t Type, f *StructField) e
 		enums = append(enums, Const{Name: name, PkgPath: pkgpath})
 	}
 	if len(enums) == 0 {
-		return a.anError(errRuleEnumTypeNoConst, f, r)
+		return &anError{Code: errRuleEnumTypeNoConst, a: a, f: f, r: r}
 	}
 
 	a.info.EnumMap[ident] = enums
 	return nil
 }
 
-////////////////////////////////////////////////////////////////////////////////
-
-// returns a count based on RuleTypeBasic's amin & amax values
+// Returns a count based on RuleTypeBasic's amin & amax values.
 func (rt RuleTypeBasic) argCount() ruleArgCount {
 	return ruleArgCount{min: rt.amin, max: rt.amax}
 }
 
-// checkRule invokes the function of RuleTypeBasic's check field, if set
+// checkRule invokes the function of RuleTypeBasic's check field, if set.
 func (rt RuleTypeBasic) checkRule(a *analysis, r *Rule, t Type, f *StructField) error {
 	if ok := rt.argCount().check(len(r.Args)); !ok {
-		return a.anError(&anError{Code: errRuleArgCount}, f, r)
+		return &anError{Code: errRuleArgCount, a: a, f: f, r: r}
 	}
 	if rt.check != nil {
 		return rt.check(a, r, t, f)
@@ -301,9 +298,7 @@ func (rt RuleTypeBasic) checkRule(a *analysis, r *Rule, t Type, f *StructField) 
 	return nil
 }
 
-////////////////////////////////////////////////////////////////////////////////
-
-// returns a count based on RuleTypeFunc's properties
+// Returns a count based on RuleTypeFunc's properties.
 func (rt RuleTypeFunc) argCount() ruleArgCount {
 	if rt.acount != nil {
 		return *rt.acount
@@ -319,9 +314,11 @@ func (rt RuleTypeFunc) argCount() ruleArgCount {
 	return ruleArgCount{expected, expected}
 }
 
+// checkRule checks whether or not the Rule and its associated field Type can be
+// used together with the RuleTypeFunc to produce code that compiles without errors.
 func (rt RuleTypeFunc) checkRule(a *analysis, r *Rule, t Type, f *StructField) error {
 	if ok := rt.argCount().check(len(r.Args)); !ok {
-		return a.anError(&anError{Code: errRuleArgCount}, f, r)
+		return &anError{Code: errRuleArgCount, a: a, f: f, r: r}
 	}
 
 	// field type cannot be converted to func 0th arg type, fail
@@ -330,7 +327,7 @@ func (rt RuleTypeFunc) checkRule(a *analysis, r *Rule, t Type, f *StructField) e
 		argType = *argType.Elem
 	}
 	if !canConvert(argType, fldType) {
-		return a.anError(&anError{Code: errRuleFuncFieldType}, f, r)
+		return &anError{Code: errRuleFuncFieldType, a: a, f: f, r: r}
 	}
 
 	// optional check returns error, fail
@@ -348,7 +345,7 @@ func (rt RuleTypeFunc) checkRule(a *analysis, r *Rule, t Type, f *StructField) e
 	for i, fatyp := range fatypes {
 		ra := r.Args[i]
 		if !canConvertRuleArg(a, fatyp, ra) {
-			return a.anError(&anError{Code: errRuleFuncArgType, ra: ra}, f, r)
+			return &anError{Code: errRuleFuncArgType, a: a, f: f, r: r, ra: ra}
 		}
 	}
 	if rt.IsVariadic {
@@ -356,20 +353,21 @@ func (rt RuleTypeFunc) checkRule(a *analysis, r *Rule, t Type, f *StructField) e
 		fatyp = *fatyp.Elem
 		for _, ra := range r.Args[len(fatypes):] {
 			if !canConvertRuleArg(a, fatyp, ra) {
-				return a.anError(&anError{Code: errRuleFuncArgType, ra: ra}, f, r)
+				return &anError{Code: errRuleFuncArgType, a: a, f: f, r: r, ra: ra}
 			}
 		}
 	} else if rt.LOp > 0 {
 		fatyp := rt.ArgTypes[1]
 		for _, ra := range r.Args {
 			if !canConvertRuleArg(a, fatyp, ra) {
-				return a.anError(&anError{Code: errRuleFuncArgType, ra: ra}, f, r)
+				return &anError{Code: errRuleFuncArgType, a: a, f: f, r: r, ra: ra}
 			}
 		}
 	}
 	return nil
 }
 
+// PkgName returns the name of the package to which the function belongs.
 func (rt *RuleTypeFunc) PkgName() string {
 	if len(rt.PkgPath) > 0 {
 		if i := strings.LastIndexByte(rt.PkgPath, '/'); i > -1 {
@@ -406,8 +404,6 @@ func (rt *RuleTypeFunc) TypesForArgs(args []*RuleArg) (types []Type) {
 	}
 	return types
 }
-
-////////////////////////////////////////////////////////////////////////////////
 
 // ruleArgCount is a helper type that represents the number of arguments
 // a rule can take. It is used for type checking and error reporting.
@@ -461,12 +457,6 @@ func (t Type) PtrBase() Type {
 		t = *t.Elem
 	}
 	return t
-}
-
-// Reports whether or not t represents a type that can be indexed (array/slice/map).
-func (t Type) CanIndex() bool {
-	return t.Kind == TypeKindArray || t.Kind == TypeKindSlice || t.Kind == TypeKindMap ||
-		(t.Kind == TypeKindPtr && t.Elem.Kind == TypeKindArray)
 }
 
 // String retruns a string representation of the t Type.
@@ -552,18 +542,12 @@ func (t Type) NeedsConversion(u Type) bool {
 	return true
 }
 
-func (f *StructField) SubFields() []*StructField {
-	typ := f.Type.PtrBase()
-	if typ.Kind == TypeKindStruct {
-		return typ.Fields
-	}
-	return nil
-}
-
+// Last returns the last element of s, if s has 0 elements Last will panic.
 func (s StructFieldSelector) Last() *StructField {
 	return s[len(s)-1]
 }
 
+// IsUInt reports whether or not RuleArg value is a valid uint candidate.
 func (a *RuleArg) IsUInt() bool {
 	return a.Type == ArgTypeInt && a.Value[0] != '-'
 }
@@ -599,9 +583,10 @@ func (t ArgType) String() string {
 // LogicalOperator represents the logical operator that, when used between
 // multiple calls of a RuleType function would produce the boolean value true.
 //
-// NOTE(mkopriva): Because the generated code will be looking for invalid values, as
-// opposed to valid ones, the actual expressions generated based on these operators
-// will be the inverse of what they represent, see the comments next to the operators.
+// NOTE(mkopriva): Because the generated code will be looking for invalid values,
+// as opposed to valid ones, the actual expressions generated based on these operators
+// will be the inverse of what they represent, see the comments next to the operators
+// for an example.
 type LogicalOperator uint
 
 const (
@@ -660,6 +645,7 @@ const (
 	TypeKindRune = TypeKindInt32
 )
 
+// Reports whether or not k is of a basic kind.
 func (k TypeKind) IsBasic() bool { return _basic_kind_start < k && k < _basic_kind_end }
 
 // Reports whether or not k is of the numeric kind, note that this

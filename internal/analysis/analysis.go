@@ -170,27 +170,6 @@ type fieldVar struct {
 // the project from testdata files' filepaths.
 var filenamehook = func(name string) string { return name }
 
-// anError wraps the given errorCode/*anError value with a number of
-// detials that are intended to help with error reporting.
-func (a *analysis) anError(e interface{}, f *StructField, r *Rule) error {
-	var err *anError
-
-	switch v := e.(type) {
-	case errorCode:
-		err = &anError{Code: v}
-	case *anError:
-		err = v
-	default:
-		panic("shouldn't reach")
-	}
-
-	err.a = a
-	err.f = f
-	err.r = r
-
-	return err
-}
-
 // analyzeValidatorStruct is the entry point of the analysis of a ValidatorStruct type.
 func analyzeValidatorStruct(a *analysis, structType *types.Struct) (*ValidatorStruct, error) {
 	a.validator = new(ValidatorStruct)
@@ -212,7 +191,7 @@ func analyzeValidatorStruct(a *analysis, structType *types.Struct) (*ValidatorSt
 	if err != nil {
 		return nil, err
 	} else if len(fields) == 0 {
-		return nil, a.anError(errValidatorNoField, nil, nil)
+		return nil, &anError{Code: errValidatorNoField, a: a}
 	}
 
 	// 2. type-check all of the fields' rules
@@ -222,7 +201,8 @@ func analyzeValidatorStruct(a *analysis, structType *types.Struct) (*ValidatorSt
 
 	// 3. ensure that if a rule with context exists, that also a ContextOptionField exists
 	if a.needsContext != nil && a.validator.ContextOption == nil {
-		return nil, a.anError(errContextOptionFieldRequired, a.needsContext.field, a.needsContext.rule)
+		return nil, &anError{Code: errContextOptionFieldRequired, a: a,
+			f: a.needsContext.field, r: a.needsContext.rule}
 	}
 
 	a.validator.Fields = fields
@@ -319,7 +299,7 @@ func analyzeStructFields(a *analysis, structType *types.Struct, selector []*Stru
 // ErrorAggregator interface.
 func analyzeErrorHandlerField(a *analysis, f *StructField, isAggregator bool) error {
 	if a.validator.ErrorHandler != nil {
-		return a.anError(errErrorHandlerFieldConflict, f, nil)
+		return &anError{Code: errErrorHandlerFieldConflict, a: a, f: f}
 	}
 
 	a.validator.ErrorHandler = new(ErrorHandlerField)
@@ -332,10 +312,10 @@ func analyzeErrorHandlerField(a *analysis, f *StructField, isAggregator bool) er
 // The field's name is known to be "context" (case insensitive).
 func analyzeContextOptionField(a *analysis, f *StructField) error {
 	if a.validator.ContextOption != nil {
-		return a.anError(errContextOptionFieldConflict, f, nil)
+		return &anError{Code: errContextOptionFieldConflict, a: a, f: f}
 	}
 	if f.Type.Kind != TypeKindString {
-		return a.anError(errContextOptionFieldType, f, nil)
+		return &anError{Code: errContextOptionFieldType, a: a, f: f}
 	}
 
 	a.validator.ContextOption = new(ContextOptionField)
@@ -528,10 +508,11 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 			// Ensure that the Value of a RuleArg of type ArgTypeField
 			// references a valid field key which will be indicated by
 			// a presence of a selector in the SelectorMap.
-			for _, arg := range r.Args {
-				if arg.Type == ArgTypeField {
-					if _, ok := a.info.SelectorMap[arg.Value]; !ok {
-						return a.anError(&anError{Code: errRuleArgFieldUnknown, ra: arg}, f, r)
+			for _, ra := range r.Args {
+				if ra.Type == ArgTypeField {
+					if _, ok := a.info.SelectorMap[ra.Value]; !ok {
+						return &anError{Code: errRuleArgFieldUnknown,
+							a: a, f: f, r: r, ra: ra}
 					}
 				}
 			}
@@ -540,12 +521,12 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 				a.needsContext = &needsContext{f, r}
 			}
 
-			// Ensure a spec for the specified rule exists.
+			// Ensure a RuleType for the specified rule exists.
 			rt, ok := a.conf.customTypeMap[r.Name]
 			if !ok {
 				rt, ok = defaultRuleTypeMap[r.Name]
 				if !ok {
-					return a.anError(errRuleUnknown, f, r)
+					return &anError{Code: errRuleUnknown, a: a, f: f, r: r}
 				}
 			}
 
@@ -558,7 +539,7 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 		if tag.Key != nil {
 			typ = typ.PtrBase()
 			if typ.Kind != TypeKindMap {
-				return a.anError(errRuleKey, f, nil)
+				return &anError{Code: errRuleKey, a: a, f: f}
 			}
 			if err := tagcheck(a, tag.Key, *typ.Key, f); err != nil {
 				return err
@@ -567,7 +548,7 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 		if tag.Elem != nil {
 			typ = typ.PtrBase()
 			if typ.Kind != TypeKindArray && typ.Kind != TypeKindSlice && typ.Kind != TypeKindMap {
-				return a.anError(errRuleElem, f, nil)
+				return &anError{Code: errRuleElem, a: a, f: f}
 			}
 			if err := tagcheck(a, tag.Elem, *typ.Elem, f); err != nil {
 				return err
@@ -586,45 +567,6 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 			return err
 		}
 	}
-	return nil
-}
-
-// typeCheckRuleEnum checks whether the given Type can be used together
-// with a RuleTypeEnum. (r & f are used for error reporting)
-func typeCheckRuleEnum(a *analysis, t Type, r *Rule, f *StructField) error {
-	typ := t.PtrBase()
-	if len(typ.Name) == 0 {
-		return a.anError(errRuleEnumTypeUnnamed, f, r)
-	}
-	if !typ.Kind.IsBasic() {
-		return a.anError(errRuleEnumType, f, r)
-	}
-
-	ident := typ.PkgPath + "." + typ.Name
-	if _, ok := a.info.EnumMap[ident]; ok { // already done?
-		return nil
-	}
-
-	enums := []Const{}
-	consts := search.FindConstantsByType(typ.PkgPath, typ.Name, a.ast)
-	for _, c := range consts {
-		name := c.Name()
-		pkgpath := c.Pkg().Path()
-		// blank, skip
-		if name == "_" {
-			continue
-		}
-		// imported but not exported, skip
-		if a.pkgPath != pkgpath && !c.Exported() {
-			continue
-		}
-		enums = append(enums, Const{Name: name, PkgPath: pkgpath})
-	}
-	if len(enums) == 0 {
-		return a.anError(errRuleEnumTypeNoConst, f, r)
-	}
-
-	a.info.EnumMap[ident] = enums
 	return nil
 }
 
