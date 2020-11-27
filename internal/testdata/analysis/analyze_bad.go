@@ -149,12 +149,12 @@ type AnalysisTestBAD_TypeKindStringHexcolorValidator struct {
 	F uint64 `is:"hexcolor"`
 }
 
-type AnalysisTestBAD_RuleArgNumAlphanumValidator struct {
-	F string `is:"alphanum:foo"`
+type AnalysisTestBAD_RuleArgNumAlnumValidator struct {
+	F string `is:"alnum:foo"`
 }
 
-type AnalysisTestBAD_TypeKindStringAlphanumValidator struct {
-	F uint64 `is:"alphanum"`
+type AnalysisTestBAD_TypeKindStringAlnumValidator struct {
+	F uint64 `is:"alnum"`
 }
 
 type AnalysisTestBAD_RuleArgNumCIDRValidator struct {

@@ -29,6 +29,7 @@ func TestGenerator(t *testing.T) {
 
 		"required",
 		"notnil",
+		"alnum",
 		"email",
 		"url",
 		"uri",
@@ -39,7 +40,6 @@ func TestGenerator(t *testing.T) {
 		"numeric",
 		"hex",
 		"hexcolor",
-		"alphanum",
 		"cidr",
 		"phone",
 		"zip",

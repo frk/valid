@@ -3,6 +3,8 @@ package analysis
 import (
 	"reflect"
 	"regexp"
+
+	"github.com/frk/isvalid"
 )
 
 // TagNode is a binary tree representation of a parsed "rule" tag.
@@ -54,8 +56,6 @@ func (tn *TagNode) ContainsRules() bool {
 	return false
 }
 
-var rxInt = regexp.MustCompile(`^(?:0|-?[1-9][0-9]*)$`)
-var rxFloat = regexp.MustCompile(`^(?:(?:-?0|[1-9][0-9]*)?\.[0-9]+)$`)
 var rxBool = regexp.MustCompile(`^(?:false|true)$`)
 
 // parseRuleTag parses the given tag and returns a node that represents the
@@ -242,9 +242,9 @@ func parseRuleTag(tag string) (*TagNode, error) {
 					default:
 						ra.Value = arg
 						switch {
-						case rxInt.MatchString(arg):
+						case isvalid.Int(arg):
 							ra.Type = ArgTypeInt
-						case rxFloat.MatchString(arg):
+						case isvalid.Float(arg):
 							ra.Type = ArgTypeFloat
 						case rxBool.MatchString(arg):
 							ra.Type = ArgTypeBool

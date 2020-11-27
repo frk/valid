@@ -29,7 +29,7 @@ type UserInput struct {
 	F12 string `is:"numeric"`
 	F13 string `is:"hex"`
 	F14 string `is:"hexcolor"`
-	F15 string `is:"alphanum"`
+	F15 string `is:"alnum"`
 	F16 string `is:"cidr"`
 
 	F17 string `is:"phone"`

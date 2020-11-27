@@ -52,9 +52,16 @@ var defaultRuleTypeMap = map[string]RuleType{
 	"numeric":  RuleTypeFunc{FuncName: "Numeric", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
 	"hex":      RuleTypeFunc{FuncName: "Hex", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
 	"hexcolor": RuleTypeFunc{FuncName: "HexColor", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
-	"alphanum": RuleTypeFunc{FuncName: "Alphanum", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
 	"cidr":     RuleTypeFunc{FuncName: "CIDR", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
 
+	"alpha": RuleTypeFunc{
+		FuncName: "Alpha", PkgPath: pkgisvalid, IsVariadic: true,
+		ArgTypes: []Type{typeString, typeStringSlice},
+		check:    isValidLanguageTag},
+	"alnum": RuleTypeFunc{
+		FuncName: "Alnum", PkgPath: pkgisvalid, IsVariadic: true,
+		ArgTypes: []Type{typeString, typeStringSlice},
+		check:    isValidLanguageTag},
 	"phone": RuleTypeFunc{
 		FuncName: "Phone", PkgPath: pkgisvalid, IsVariadic: true,
 		ArgTypes: []Type{typeString, typeStringSlice},
@@ -397,6 +404,24 @@ func isValidCountryCode(a *analysis, r *Rule, t Type, f *StructField) error {
 			if !(len(ra.Value) == 2 && rxCountryCode2.MatchString(ra.Value)) &&
 				!(len(ra.Value) == 3 && rxCountryCode3.MatchString(ra.Value)) {
 				return &anError{Code: errRuleArgValueCountryCode, a: a, f: f, r: r, ra: ra}
+			}
+		} else if ra.Type != ArgTypeField {
+			return &anError{Code: errRuleFuncArgType, a: a, f: f, r: r, ra: ra}
+		}
+	}
+	return nil
+}
+
+// supported language tags
+// TODO(mkopriva): expand!
+var rxLanguageTag = regexp.MustCompile(`^(?i:be|bg|cnr|cs|en|mk|pl|ru|sh|sk|sl|sr|uk|wen)$`)
+
+// check that the rule's arg value is one of the supported language tags.
+func isValidLanguageTag(a *analysis, r *Rule, t Type, f *StructField) error {
+	for _, ra := range r.Args {
+		if ra.Type == ArgTypeString {
+			if !rxLanguageTag.MatchString(ra.Value) {
+				return &anError{Code: errRuleArgValueLanguageTag, a: a, f: f, r: r, ra: ra}
 			}
 		} else if ra.Type != ArgTypeField {
 			return &anError{Code: errRuleFuncArgType, a: a, f: f, r: r, ra: ra}

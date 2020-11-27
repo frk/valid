@@ -283,6 +283,7 @@ const (
 	errRuleArgValueIPVer
 	errRuleArgValueMACVer
 	errRuleArgValueCountryCode
+	errRuleArgValueLanguageTag
 	errRuleArgValueISONum
 	errRuleArgValueRFCNum
 	errRuleArgValueConflict
@@ -369,6 +370,12 @@ var error_template_string = `
 {{R "ERROR:"}} {{.FileAndLine}}: 
   Cannot use value {{R .RuleArgValue}} as argument for rule "{{R .RuleName}}".
   > The argument to rule "{{R .RuleName}}" must be a valid Alpha-2 or Alpha-3 country code.
+{{ end }}
+
+{{ define "` + errRuleArgValueLanguageTag.name() + `" -}}
+{{R "ERROR:"}} {{.FileAndLine}}: 
+  Cannot use value {{R .RuleArgValue}} as argument for rule "{{R .RuleName}}".
+  > The argument to rule "{{R .RuleName}}" must be one of the supported language tags.
 {{ end }}
 
 {{ define "` + errRuleArgValueISONum.name() + `" -}}

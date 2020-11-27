@@ -279,12 +279,13 @@ func TestAnalysisRun(t *testing.T) {
 		name: "AnalysisTestBAD_TypeKindStringHexcolorValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumAlphanumValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "foo", Type: ArgTypeString}}},
+		name: "AnalysisTestBAD_RuleArgNumAlnumValidator",
+		err: &anError{Code: errRuleArgValueLanguageTag, a: &analysis{}, f: &StructField{},
+			r:  &Rule{Args: []*RuleArg{{Value: "foo", Type: ArgTypeString}}},
+			ra: &RuleArg{Value: "foo", Type: ArgTypeString},
 		},
 	}, {
-		name: "AnalysisTestBAD_TypeKindStringAlphanumValidator",
+		name: "AnalysisTestBAD_TypeKindStringAlnumValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumCIDRValidator",
@@ -1163,9 +1164,9 @@ func TestAnalysisRun(t *testing.T) {
 							RuleTag: &TagNode{Rules: []*Rule{{Name: "hexcolor"}}},
 						}, {
 							Name: "F15", Key: "F15", IsExported: true,
-							Tag:     tagutil.Tag{"is": []string{"alphanum"}},
+							Tag:     tagutil.Tag{"is": []string{"alnum"}},
 							Type:    Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "alphanum"}}},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "alnum"}}},
 						}, {
 							Name: "F16", Key: "F16", IsExported: true,
 							Tag:     tagutil.Tag{"is": []string{"cidr"}},
