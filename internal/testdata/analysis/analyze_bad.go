@@ -743,7 +743,6 @@ type AnalysisTestBAD_RuleArgTypeReferenceKindLenValidator struct {
 	y string
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////
 type AnalysisTestBAD_RuleArgNumRuneCountValidator struct {
 	F string `is:"runecount"`
 }
@@ -789,8 +788,6 @@ type AnalysisTestBAD_RuleArgTypeFieldKindRuneCountValidator struct {
 	x int32
 	y string
 }
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////
 
 type AnalysisTestBAD_RuleFuncRuleArgCountValidator struct {
 	F string `is:"rulefunc1"`

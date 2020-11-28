@@ -346,9 +346,17 @@ func (rt RuleTypeFunc) checkRule(a *analysis, r *Rule, t Type, f *StructField) e
 		fatypes = fatypes[:len(fatypes)-1]
 	}
 	for i, fatyp := range fatypes {
-		ra := r.Args[i]
-		if !canConvertRuleArg(a, fatyp, ra) {
-			return &anError{Code: errRuleFuncArgType, a: a, f: f, r: r, ra: ra}
+		if len(r.Args) > i {
+			ra := r.Args[i]
+			if !canConvertRuleArg(a, fatyp, ra) {
+				return &anError{Code: errRuleFuncArgType, a: a, f: f, r: r, ra: ra}
+			}
+		} else {
+			// TODO
+			// this currently occurs only when a rule supports a default
+			// value which allows the user not to specify an argument
+			// in the rule's tag... this should be reworked somehow,
+			// make it more robust, or remove it altogether...
 		}
 	}
 	if rt.IsVariadic {

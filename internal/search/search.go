@@ -276,16 +276,11 @@ var pkgCache = struct {
 	err: make(map[string]error),
 }
 
-// FindFunc scans the package identified by pkgpath looking for a function
-// with the given name and, if successful, returns the go/types.Func
-// representation of that function.
-//
-// FindFunc is exepcted to be invoked *after* Search and the AST argument is expected
-// to be the same as the one given to Search for caching the packages it loads.
-//
-// The pkgpath parameter should be the import path of a single package,
-// if it's a pattern or something else then the result is undefined.
-func FindFunc(pkgpath, name string, a AST) (*types.Func, error) {
+// findpkg searches for a *packages.Package by the given pkgpath and returns
+// it if a match is found. The fname argument is optional, it would be the name
+// of the function for which the package is being looked up, i.e. the "reason"
+// for which findpkg was invoked, it is used for error info only.
+func findpkg(pkgpath, fname string, a AST) (*packages.Package, error) {
 	pkgCache.Lock()
 	defer pkgCache.Unlock()
 
@@ -300,14 +295,15 @@ func FindFunc(pkgpath, name string, a AST) (*types.Func, error) {
 		// in the AST instance supplied to the Search function, therefore
 		// look there next and only if it's not there attempt to load it.
 		if pkg, ok = a.pkgs[pkgpath]; !ok {
-			cfg := &packages.Config{Mode: packages.NeedSyntax | packages.NeedTypes | packages.NeedTypesInfo}
+			cfg := &packages.Config{Mode: packages.NeedFiles | packages.NeedSyntax |
+				packages.NeedTypes | packages.NeedTypesInfo}
 			pkgs, err := packages.Load(cfg, pkgpath)
 			if err != nil || len(pkgs) == 0 {
-				pe := pkgLoadError{pkgpath, name, err}
+				pe := pkgLoadError{pkgpath, fname, err}
 				pkgCache.err[pkgpath] = pe
 				return nil, pe
 			} else if len(pkgs[0].Errors) > 0 {
-				pe := pkgLoadError{pkgpath, name, pkgs[0].Errors[0]}
+				pe := pkgLoadError{pkgpath, fname, pkgs[0].Errors[0]}
 				pkgCache.err[pkgpath] = pe
 				return nil, pe
 			}
@@ -316,6 +312,23 @@ func FindFunc(pkgpath, name string, a AST) (*types.Func, error) {
 		}
 
 		pkgCache.m[pkgpath] = pkg
+	}
+	return pkg, nil
+}
+
+// FindFunc scans the package identified by pkgpath looking for a function
+// with the given name and, if successful, returns the go/types.Func
+// representation of that function.
+//
+// FindFunc is exepcted to be invoked *after* Search and the AST argument is expected
+// to be the same as the one given to Search for caching the packages it loads.
+//
+// The pkgpath parameter should be the import path of a single package,
+// if it's a pattern or something else then the result is undefined.
+func FindFunc(pkgpath, name string, a AST) (*types.Func, error) {
+	pkg, err := findpkg(pkgpath, name, a)
+	if err != nil {
+		return nil, err
 	}
 
 	for _, syn := range pkg.Syntax {
@@ -339,6 +352,78 @@ func FindFunc(pkgpath, name string, a AST) (*types.Func, error) {
 	}
 
 	return nil, findFuncError{pkgpath, name}
+}
+
+// LoadBuiltinFuncs
+//
+// TODO(mkopriva): make this not blow up if package can't be found
+//                 on the system, because of the following:
+//
+// 	It is possible that the user of the cmd/isvalid tool does not
+// 	have github.com/frk/isvalid source on the user's machine, which
+// 	is ok because the source would be downloaded automatically as
+// 	soon as the user attempts to run the generated code, or maybe
+// 	the user does not intend to use the builtin rules, or perhaps
+// 	the user has supplied a set of custom rules that override
+// 	the builtin ones anyway.
+//
+// 	In case the error is genuine the code should keep working without
+// 	issues, it's just that the reporting of user errors will be poorer.
+func LoadBuiltinFuncs(a AST, callback func(string, *types.Func) error) error {
+	pkg, err := findpkg("github.com/frk/isvalid", "", a)
+	if err != nil {
+		return err
+	}
+
+	for i, syn := range pkg.Syntax {
+		// all the builtin funcs are in the isvalid.go file,
+		// if this is not it; next
+		if !strings.HasSuffix(pkg.GoFiles[i], "isvalid.go") {
+			continue
+		}
+
+		for _, dec := range syn.Decls {
+			fd, ok := dec.(*ast.FuncDecl)
+			if !ok || fd.Recv != nil || !fd.Name.IsExported() {
+				continue
+			}
+
+			obj, ok := pkg.TypesInfo.Defs[fd.Name]
+			if !ok {
+				continue
+			}
+
+			if f, ok := obj.(*types.Func); ok {
+				ruleinfo := getruleinfo(fd.Doc)
+				if len(ruleinfo) == 0 {
+					continue
+				}
+
+				if err := callback(ruleinfo, f); err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// getruleinfo returns a string containing info as parsed from the "isvalid:rule"
+// directive in the given documentation, if no "isvalid:rule" directive is found
+// getruleinfo will return an empty string.
+func getruleinfo(doc *ast.CommentGroup) string {
+	const directive = "isvalid:rule"
+
+	if doc == nil {
+		return ""
+	}
+
+	for _, com := range doc.List {
+		if i := strings.Index(com.Text, directive); i > -1 {
+			return com.Text[i+len(directive):]
+		}
+	}
+	return ""
 }
 
 type pkgLoadError struct {
