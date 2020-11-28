@@ -1,6 +1,7 @@
 package isvalid
 
 import (
+	"net/mail"
 	"regexp"
 )
 
@@ -70,12 +71,12 @@ func HexColor(v string) bool {
 	return rxHexColor.MatchString(v)
 }
 
-var rxEmail = regexp.MustCompile(`^[^@]+@[^@]+$`)
-
 // Email reports whether or not v is a valid email address.
+//
+// NOTE: Email uses net/mail.ParseAddress to determine the validity of v.
 func Email(v string) bool {
-	// TODO
-	return rxEmail.MatchString(v)
+	_, err := mail.ParseAddress(v)
+	return err == nil
 }
 
 func URL(v string) bool {
@@ -196,6 +197,7 @@ func UUID(v string, ver ...int) bool {
 	return false
 }
 
+// IP reports whether or not v is a valid IP address.
 func IP(v string, ver ...int) bool {
 	return false
 }
@@ -203,53 +205,46 @@ func IP(v string, ver ...int) bool {
 var rxMAC6 = regexp.MustCompile(`^[0-9a-fA-F]{12}$`)
 var rxMAC6Colon = regexp.MustCompile(`^(?:[0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$`)
 var rxMAC6Hyphen = regexp.MustCompile(`^(?:[0-9a-fA-F]{2}-){5}[0-9a-fA-F]{2}$`)
-var rxMAC6Dot = regexp.MustCompile(`^(?:[0-9a-fA-F]{2}\.){5}[0-9a-fA-F]{2}$`)
-var rxMAC6Colon2 = regexp.MustCompile(`^(?:[0-9a-fA-F]{4}:){2}[0-9a-fA-F]{4}$`)
-var rxMAC6Hyphen2 = regexp.MustCompile(`^(?:[0-9a-fA-F]{4}-){2}[0-9a-fA-F]{4}$`)
-var rxMAC6Dot2 = regexp.MustCompile(`^(?:[0-9a-fA-F]{4}\.){2}[0-9a-fA-F]{4}$`)
 
 var rxMAC8 = regexp.MustCompile(`^[0-9a-fA-F]{16}$`)
 var rxMAC8Colon = regexp.MustCompile(`^(?:[0-9a-fA-F]{2}:){7}[0-9a-fA-F]{2}$`)
 var rxMAC8Hyphen = regexp.MustCompile(`^(?:[0-9a-fA-F]{2}-){7}[0-9a-fA-F]{2}$`)
-var rxMAC8Dot = regexp.MustCompile(`^(?:[0-9a-fA-F]{2}\.){7}[0-9a-fA-F]{2}$`)
-var rxMAC8Colon2 = regexp.MustCompile(`^(?:[0-9a-fA-F]{4}:){3}[0-9a-fA-F]{4}$`)
-var rxMAC8Hyphen2 = regexp.MustCompile(`^(?:[0-9a-fA-F]{4}-){3}[0-9a-fA-F]{4}$`)
-var rxMAC8Dot2 = regexp.MustCompile(`^(?:[0-9a-fA-F]{4}\.){3}[0-9a-fA-F]{4}$`)
 
-// MAC reports whether or not v is a valid MAC address.
-func MAC(v string, versions ...int) bool {
-	if len(versions) > 2 {
-		return false
-	}
-
-	ismac6 := func(v string) bool {
-		return rxMAC6.MatchString(v) || rxMAC6Colon.MatchString(v) ||
-			rxMAC6Hyphen.MatchString(v) || rxMAC6Dot.MatchString(v) ||
-			rxMAC6Colon2.MatchString(v) || rxMAC6Hyphen2.MatchString(v) ||
-			rxMAC6Dot2.MatchString(v)
-	}
-	ismac8 := func(v string) bool {
-		return rxMAC8.MatchString(v) || rxMAC8Colon.MatchString(v) ||
-			rxMAC8Hyphen.MatchString(v) || rxMAC8Dot.MatchString(v) ||
-			rxMAC8Colon2.MatchString(v) || rxMAC8Hyphen2.MatchString(v) ||
-			rxMAC8Dot2.MatchString(v)
-	}
-
-	if len(versions) == 0 {
-		return ismac6(v) || ismac8(v)
-	}
-
-	for _, ver := range versions {
-		if ver != 6 && ver != 8 {
-			return false // unknown version
-		}
-
-		if ver == 6 && ismac6(v) {
-			return true
-		}
-		if ver == 8 && ismac8(v) {
-			return true
-		}
+// MAC reports whether or not v is a valid MAC address. The space argument specifies
+// the identifier's expected address space (in bytes). The space argument can be one
+// of the following three values:
+//
+//	0 // accepts both EUI-48 and EUI-64
+//	6 // accepts EUI-48 format only
+//	8 // accepts EUI-64 format only
+//
+// The allowed formatting of the identifiers is as follows:
+//
+//	// MAC - EUI-48 format
+//	08:00:2b:01:02:03
+//	08-00-2b-01-02-03
+//	08002b010203
+//
+//	// MAC - EUI-64 format
+//	08:00:2b:01:02:03:04:05
+//	08-00-2b-01-02-03-04-05
+//	08002b0102030405
+func MAC(v string, space int) bool {
+	if space == 0 {
+		return rxMAC6.MatchString(v) ||
+			rxMAC6Colon.MatchString(v) ||
+			rxMAC6Hyphen.MatchString(v) ||
+			rxMAC8.MatchString(v) ||
+			rxMAC8Colon.MatchString(v) ||
+			rxMAC8Hyphen.MatchString(v)
+	} else if space == 6 {
+		return rxMAC6.MatchString(v) ||
+			rxMAC6Colon.MatchString(v) ||
+			rxMAC6Hyphen.MatchString(v)
+	} else if space == 8 {
+		return rxMAC8.MatchString(v) ||
+			rxMAC8Colon.MatchString(v) ||
+			rxMAC8Hyphen.MatchString(v)
 	}
 	return false
 }
@@ -262,6 +257,9 @@ func ISO(v string, num int) bool {
 	return false
 }
 
-func Match(v string, expr string) bool {
-	return regexpCache.m[expr].MatchString(v)
+// Match reports whether or not the v contains any match of the regular expression re.
+//
+// NOTE: Match will panic if re has not been registered upfront with RegisterRegexp.
+func Match(v string, re string) bool {
+	return regexpCache.m[re].MatchString(v)
 }

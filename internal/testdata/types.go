@@ -52,7 +52,7 @@ type UserInput struct {
 
 	F31 string `is:"mac"`
 	F32 string `is:"mac:6"`
-	F33 string `is:"mac:v8"`
+	F33 string `is:"mac:8"`
 	F34 string `is:"mac:&SomeVersion"`
 
 	F35 string `is:"iso:1234"`

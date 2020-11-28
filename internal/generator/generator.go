@@ -699,6 +699,11 @@ func newRuleTypeFuncIfStmt(g *generator, code *varcode, r *analysis.Rule, rt ana
 			g.file.init = append(g.file.init, GO.ExprStmt{regrx})
 		}
 	}
+
+	if len(r.Args) == 0 && len(rt.DefaultArgValue) > 0 {
+		args = append(args, GO.ValueLit(rt.DefaultArgValue))
+	}
+
 	call.Args.List = args
 	ifs.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: call}
 	ifs.Body.Add(retStmt)

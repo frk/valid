@@ -199,6 +199,9 @@ type (
 		UseRawString bool
 		// Indicates that this is a custom user provided RuleTypeFunc.
 		IsCustom bool
+		// If set, and the related Rule has no arguments, the DefaultArgValue
+		// will be used by the generator as a default argument to the function.
+		DefaultArgValue string
 		// check is a plugin used by the checkRule method.
 		check func(a *analysis, r *Rule, t Type, f *StructField) error
 		// If set, it will be returned by the argCount method. If left

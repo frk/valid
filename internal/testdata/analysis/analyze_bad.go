@@ -317,7 +317,7 @@ type AnalysisTestBAD_RuleArgType3MACValidator struct {
 }
 
 type AnalysisTestBAD_RuleArgValueMACVerMACValidator struct {
-	F string `is:"mac:v10"`
+	F string `is:"mac:v8"`
 }
 
 type AnalysisTestBAD_RuleArgValueMACVer2MACValidator struct {

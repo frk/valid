@@ -80,8 +80,8 @@ var defaultRuleTypeMap = map[string]RuleType{
 		check:    isValidRuleIP, acount: &ruleArgCount{min: 0, max: 2}},
 	"mac": RuleTypeFunc{
 		FuncName: "MAC", PkgPath: pkgisvalid, IsVariadic: true,
-		ArgTypes: []Type{typeString, typeIntSlice},
-		check:    isValidRuleMAC, acount: &ruleArgCount{min: 0, max: 2}},
+		ArgTypes: []Type{typeString, typeIntSlice}, DefaultArgValue: "0",
+		check: isValidRuleMAC, acount: &ruleArgCount{min: 0, max: 1}},
 	"iso": RuleTypeFunc{
 		FuncName: "ISO", PkgPath: pkgisvalid,
 		ArgTypes: []Type{typeString, typeInt},
@@ -327,25 +327,12 @@ func isValidRuleIP(a *analysis, r *Rule, t Type, f *StructField) error {
 	return nil
 }
 
-var rxMACVer = regexp.MustCompile(`^(?:v?(?:6|8))$`)
-
 // checks that the rule's args values are valid MAC versions.
 func isValidRuleMAC(a *analysis, r *Rule, t Type, f *StructField) error {
-	var version string // the first version
 	for _, ra := range r.Args {
-		if ra.Type == ArgTypeString || ra.IsUInt() {
-			if !rxMACVer.MatchString(ra.Value) {
+		if ra.IsUInt() {
+			if ra.Value != "0" && ra.Value != "6" && ra.Value != "8" {
 				return &anError{Code: errRuleArgValueMACVer, a: a, f: f, r: r, ra: ra}
-			}
-
-			if len(ra.Value) > 1 && (ra.Value[0] == 'v' || ra.Value[0] == 'V') {
-				ra.Value = ra.Value[1:]
-				ra.Type = ArgTypeInt
-			}
-			if len(version) > 0 && version == ra.Value {
-				return &anError{Code: errRuleArgValueConflict, a: a, f: f, r: r, ra: ra}
-			} else {
-				version = ra.Value
 			}
 		} else if ra.Type != ArgTypeField {
 			return &anError{Code: errRuleFuncArgType, a: a, f: f, r: r, ra: ra}

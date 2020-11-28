@@ -478,24 +478,20 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgValueMACVerMACValidator",
-		err: &anError{Code: errRuleArgValueMACVer, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "v10", Type: ArgTypeString},
+		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			ra: &RuleArg{Value: "v8", Type: ArgTypeString},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgValueMACVer2MACValidator",
-		err: &anError{Code: errRuleArgValueMACVer, a: &analysis{}, f: &StructField{}, r: &Rule{},
+		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
 			ra: &RuleArg{Value: "vv8", Type: ArgTypeString},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeReferenceKindMACValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "x", Type: ArgTypeField},
-		},
+		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
 		name: "AnalysisTestBAD_RuleArgValueConflictMACValidator",
-		err: &anError{Code: errRuleArgValueConflict, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "6", Type: ArgTypeInt},
-		},
+		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumMACValidator",
 		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
@@ -1278,7 +1274,7 @@ func TestAnalysisRun(t *testing.T) {
 							}}}},
 						}, {
 							Name: "F33", Key: "F33", IsExported: true,
-							Tag:  tagutil.Tag{"is": []string{"mac:v8"}},
+							Tag:  tagutil.Tag{"is": []string{"mac:8"}},
 							Type: Type{Kind: TypeKindString},
 							RuleTag: &TagNode{Rules: []*Rule{{Name: "mac", Args: []*RuleArg{
 								{Value: "8", Type: ArgTypeInt},

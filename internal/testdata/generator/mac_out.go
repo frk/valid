@@ -9,7 +9,7 @@ import (
 )
 
 func (v MACValidator) Validate() error {
-	if !isvalid.MAC(v.F1) {
+	if !isvalid.MAC(v.F1, 0) {
 		return errors.New("F1 must be a valid MAC")
 	}
 	if v.F2 != nil && *v.F2 != nil && !isvalid.MAC(**v.F2, 6) {
@@ -17,7 +17,7 @@ func (v MACValidator) Validate() error {
 	}
 	if v.F3 == nil || *v.F3 == nil || len(**v.F3) == 0 {
 		return errors.New("F3 is required")
-	} else if !isvalid.MAC(**v.F3, 6, 8) {
+	} else if !isvalid.MAC(**v.F3, 8) {
 		return errors.New("F3 must be a valid MAC")
 	}
 	return nil
