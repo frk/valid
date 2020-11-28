@@ -201,6 +201,28 @@ func Test(t *testing.T) {
 			"#ff12FG",
 		},
 	}, {
+		Name: "Base32", Func: Base32,
+		pass: []string{
+			"ZG======",
+			"JBSQ====",
+			"JBSWY===",
+			"JBSWY3A=",
+			"JBSWY3DP",
+			"JBSWY3DPEA======",
+			"K5SWYY3PNVSSA5DPEBXG6ZA=",
+			"K5SWYY3PNVSSA5DPEBXG6===",
+		},
+		fail: []string{
+			"12345",
+			"",
+			"JBSWY3DPtesting123",
+			"ZG=====",
+			"Z======",
+			"Zm=8JBSWY3DP",
+			"=m9vYg==",
+			"Zm9vYm/y====",
+		},
+	}, {
 		Name: "Email", Func: Email,
 		pass: []string{
 			"foo@bar.com",

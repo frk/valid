@@ -290,6 +290,7 @@ const (
 	errRuleArgValueBounds
 	errRuleFieldNonNilable
 	errRuleFieldLengthless
+	errRuleFieldRuneless
 	errRuleFieldNonNumeric
 	errRuleFuncFieldType
 	errRuleFuncArgType
@@ -413,6 +414,12 @@ var error_template_string = `
 {{R "ERROR:"}} {{.FileAndLine}}: 
   Cannot use rule "{{R .RuleName}}" with field {{R .FieldNameAndType}}.
   > The rule "{{R .RuleName}}" must be used with a field that has length.
+{{ end }}
+
+{{ define "` + errRuleFieldRuneless.name() + `" -}}
+{{R "ERROR:"}} {{.FileAndLine}}: 
+  Cannot use rule "{{R .RuleName}}" with field {{R .FieldNameAndType}}.
+  > The rule "{{R .RuleName}}" must be used with a []byte field or a string kind field.
 {{ end }}
 
 {{ define "` + errRuleFieldNonNumeric.name() + `" -}}

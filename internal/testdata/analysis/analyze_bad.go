@@ -743,6 +743,55 @@ type AnalysisTestBAD_RuleArgTypeReferenceKindLenValidator struct {
 	y string
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+type AnalysisTestBAD_RuleArgNumRuneCountValidator struct {
+	F string `is:"runecount"`
+}
+
+type AnalysisTestBAD_RuleArgNum2RuneCountValidator struct {
+	F []byte `is:"runecount:1:2:3"`
+}
+
+type AnalysisTestBAD_TypeRunelessRuneCountValidator struct {
+	F map[string]rune `is:"runecount:1:23"`
+}
+
+type AnalysisTestBAD_TypeRuneless2RuneCountValidator struct {
+	F []rune `is:"runecount:1:23"` // should use len
+}
+
+type AnalysisTestBAD_TypeRuneless3RuneCountValidator struct {
+	F [12]byte `is:"runecount:1:23"`
+}
+
+type AnalysisTestBAD_RuleArgTypeRuneCountValidator struct {
+	F string `is:"runecount:foo:bar"`
+}
+
+type AnalysisTestBAD_RuleArgType2RuneCountValidator struct {
+	F []byte `is:"runecount:-123:0"`
+}
+
+type AnalysisTestBAD_RuleArgType3RuneCountValidator struct {
+	F string `is:"runecount::1.23"`
+}
+
+type AnalysisTestBAD_RuleArgValueBoundsRuneCountValidator struct {
+	F []byte `is:"runecount:20:10"`
+}
+
+type AnalysisTestBAD_RuleArgValueBounds2RuneCountValidator struct {
+	F string `is:"runecount::"`
+}
+
+type AnalysisTestBAD_RuleArgTypeFieldKindRuneCountValidator struct {
+	F []byte `is:"runecount:&x:&y"`
+	x int32
+	y string
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
 type AnalysisTestBAD_RuleFuncRuleArgCountValidator struct {
 	F string `is:"rulefunc1"`
 }

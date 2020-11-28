@@ -27,10 +27,11 @@ var defaultRuleTypeMap = map[string]RuleType{
 	"enum":     RuleTypeEnum{},
 
 	// basic rules
-	"required": RuleTypeBasic{},
-	"notnil":   RuleTypeBasic{check: isValidRuleNotnil},
-	"rng":      RuleTypeBasic{check: isValidRuleRng, amin: 2, amax: 2},
-	"len":      RuleTypeBasic{check: isValidRuleLen, amin: 1, amax: 2},
+	"required":  RuleTypeBasic{},
+	"notnil":    RuleTypeBasic{check: isValidRuleNotnil},
+	"rng":       RuleTypeBasic{check: isValidRuleRng, amin: 2, amax: 2},
+	"len":       RuleTypeBasic{check: isValidRuleLen, amin: 1, amax: 2},
+	"runecount": RuleTypeBasic{check: isValidRuleRuneCount, amin: 1, amax: 2},
 
 	"eq":  RuleTypeBasic{check: isValidRuleValueComparison, amin: 1, amax: -1},
 	"ne":  RuleTypeBasic{check: isValidRuleValueComparison, amin: 1, amax: -1},
@@ -225,6 +226,53 @@ func isValidRuleLen(a *analysis, r *Rule, t Type, f *StructField) error {
 	for _, ra := range r.Args {
 		if !canConvertRuleArg(a, typ, ra) {
 			return &anError{Code: errRuleBasicArgTypeUint, a: a, f: f, r: r, ra: ra}
+		}
+	}
+	return nil
+}
+
+// check that the StructField and the RuleArgs represent a valid "runecount" rule.
+func isValidRuleRuneCount(a *analysis, r *Rule, t Type, f *StructField) error {
+	// associated field's type must string kind or byte slice
+	t = t.PtrBase()
+	if t.Kind != TypeKindString && (t.Kind != TypeKindSlice || !t.Elem.IsByte) {
+		return &anError{Code: errRuleFieldRuneless,
+			a: a, f: f, r: r}
+	}
+
+	// if 2, then make sure the values represent valid upper to lower bounds
+	if len(r.Args) == 2 && r.Args[0].Type != ArgTypeField && r.Args[1].Type != ArgTypeField {
+		var lower, upper *uint64
+		if ra := r.Args[0]; len(ra.Value) > 0 {
+			u64, err := strconv.ParseUint(ra.Value, 10, 64)
+			if err != nil {
+				return &anError{Code: errRuleBasicArgTypeUint,
+					a: a, f: f, r: r, ra: ra, err: err}
+			}
+			lower = &u64
+		}
+		if ra := r.Args[1]; len(ra.Value) > 0 {
+			u64, err := strconv.ParseUint(ra.Value, 10, 64)
+			if err != nil {
+				return &anError{Code: errRuleBasicArgTypeUint,
+					a: a, f: f, r: r, ra: ra, err: err}
+			}
+			upper = &u64
+		}
+
+		// make sure at least one bound was specified and if both then
+		// ensure that the lower bound is less than the upper bound
+		if (lower == nil && upper == nil) || (lower != nil && upper != nil && *lower >= *upper) {
+			return &anError{Code: errRuleArgValueBounds, a: a, f: f, r: r}
+		}
+	}
+
+	// rule args must be comparable to a positive integer (the return value of the utf8.RuneCount function)
+	typ := Type{Kind: TypeKindUint}
+	for _, ra := range r.Args {
+		if !canConvertRuleArg(a, typ, ra) {
+			return &anError{Code: errRuleBasicArgTypeUint,
+				a: a, f: f, r: r, ra: ra}
 		}
 	}
 	return nil

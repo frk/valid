@@ -930,6 +930,44 @@ func TestAnalysisRun(t *testing.T) {
 			ra: &RuleArg{Value: "y", Type: ArgTypeField},
 		},
 	}, {
+		name: "AnalysisTestBAD_RuleArgNumRuneCountValidator",
+		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+	}, {
+		name: "AnalysisTestBAD_RuleArgNum2RuneCountValidator",
+		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+	}, {
+		name: "AnalysisTestBAD_TypeRunelessRuneCountValidator",
+		err:  &anError{Code: errRuleFieldRuneless, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+	}, {
+		name: "AnalysisTestBAD_TypeRuneless2RuneCountValidator",
+		err:  &anError{Code: errRuleFieldRuneless, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+	}, {
+		name: "AnalysisTestBAD_TypeRuneless3RuneCountValidator",
+		err:  &anError{Code: errRuleFieldRuneless, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+	}, {
+		name: "AnalysisTestBAD_RuleArgTypeRuneCountValidator",
+		err: &anError{Code: errRuleBasicArgTypeUint, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			ra: &RuleArg{Value: "foo", Type: ArgTypeString}},
+	}, {
+		name: "AnalysisTestBAD_RuleArgType2RuneCountValidator",
+		err: &anError{Code: errRuleBasicArgTypeUint, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			ra: &RuleArg{Value: "-123", Type: ArgTypeInt}},
+	}, {
+		name: "AnalysisTestBAD_RuleArgType3RuneCountValidator",
+		err: &anError{Code: errRuleBasicArgTypeUint, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			ra: &RuleArg{Value: "1.23", Type: ArgTypeFloat}},
+	}, {
+		name: "AnalysisTestBAD_RuleArgValueBoundsRuneCountValidator",
+		err:  &anError{Code: errRuleArgValueBounds, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+	}, {
+		name: "AnalysisTestBAD_RuleArgValueBounds2RuneCountValidator",
+		err: &anError{Code: errRuleArgValueBounds, a: &analysis{}, f: &StructField{},
+			r: &Rule{Args: []*RuleArg{{Value: "", Type: ArgTypeUnknown}, {Value: "", Type: ArgTypeUnknown}}}},
+	}, {
+		name: "AnalysisTestBAD_RuleArgTypeFieldKindRuneCountValidator",
+		err: &anError{Code: errRuleBasicArgTypeUint, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			ra: &RuleArg{Value: "y", Type: ArgTypeField}},
+	}, {
 		name: "AnalysisTestBAD_RuleFuncRuleArgCountValidator",
 		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
@@ -1915,6 +1953,46 @@ func TestAnalysisRun(t *testing.T) {
 									},
 								},
 							},
+						}, {
+							Name: "F93", Key: "F93", IsExported: true,
+							Type: Type{Kind: TypeKindString},
+							Tag:  tagutil.Tag{"is": []string{`runecount:28`}},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "runecount", Args: []*RuleArg{
+								{Value: "28", Type: ArgTypeInt},
+							}}}},
+						}, {
+							Name: "F94", Key: "F94", IsExported: true,
+							Type: Type{Kind: TypeKindString},
+							Tag:  tagutil.Tag{"is": []string{`runecount:4:28`}},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "runecount", Args: []*RuleArg{
+								{Value: "4", Type: ArgTypeInt},
+								{Value: "28", Type: ArgTypeInt},
+							}}}},
+						}, {
+							Name: "F95", Key: "F95", IsExported: true,
+							Type: Type{Kind: TypeKindSlice, Elem: &Type{
+								Kind: TypeKindUint8, IsByte: true,
+							}},
+							Tag: tagutil.Tag{"is": []string{`runecount::28`}},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "runecount", Args: []*RuleArg{
+								{Value: "", Type: ArgTypeUnknown},
+								{Value: "28", Type: ArgTypeInt},
+							}}}},
+						}, {
+							Name: "F96", Key: "F96", IsExported: true,
+							Type: Type{
+								Kind:       TypeKindString,
+								Name:       "someKind",
+								PkgPath:    "github.com/frk/isvalid/internal/testdata",
+								PkgName:    "testdata",
+								PkgLocal:   "testdata",
+								IsImported: true,
+							},
+							Tag: tagutil.Tag{"is": []string{`runecount:4:`}},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "runecount", Args: []*RuleArg{
+								{Value: "4", Type: ArgTypeInt},
+								{Value: "", Type: ArgTypeUnknown},
+							}}}},
 						}},
 					},
 				},

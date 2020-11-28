@@ -62,6 +62,7 @@ func TestGenerator(t *testing.T) {
 		"max",
 		"rng",
 		"len",
+		"runecount",
 
 		"error_constructor",
 		"error_aggregator",

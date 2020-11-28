@@ -563,6 +563,8 @@ func newRuleIfStmt(g *generator, code *varcode, r *analysis.Rule) (ifs GO.IfStmt
 	case analysis.RuleTypeBasic:
 		if r.Name == "len" {
 			return newRuleTypeBasicLenIfStmt(g, code, r)
+		} else if r.Name == "runecount" {
+			return newRuleTypeBasicRuneCountIfStmt(g, code, r)
 		} else if r.Name == "rng" {
 			return newRuleTypeBasicRngIfStmt(g, code, r)
 		}
@@ -658,6 +660,43 @@ func newRuleTypeBasicLenIfStmt(g *generator, code *varcode, r *analysis.Rule) (i
 			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLOr,
 				X: GO.BinaryExpr{Op: GO.BinaryLss, X: GO.CallLenExpr{code.vexpr}, Y: newArgValueExpr(g, r, a1, typ)},
 				Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{code.vexpr}, Y: newArgValueExpr(g, r, a2, typ)}}
+			ifs.Cond = GO.ParenExpr{ifs.Cond}
+			ifs.Body.Add(newErrorReturnStmt(g, code, r))
+		}
+	}
+	return ifs
+}
+
+// newRuleTypeBasicRuneCountIfStmt produces an if-statement that checks the varcode variable's length.
+func newRuleTypeBasicRuneCountIfStmt(g *generator, code *varcode, r *analysis.Rule) (ifs GO.IfStmt) {
+	imp := addimport(g.file, "unicode/utf8")
+	typ := analysis.Type{Kind: analysis.TypeKindInt} // len(T) returns an int
+
+	call := GO.CallExpr{Args: GO.ArgsList{List: code.vexpr}}
+	if code.vtype.Kind == analysis.TypeKindString {
+		call.Fun = GO.QualifiedIdent{imp.name, "RuneCountInString"}
+	} else if code.vtype.Kind == analysis.TypeKindSlice && code.vtype.Elem.IsByte {
+		call.Fun = GO.QualifiedIdent{imp.name, "RuneCount"}
+	} else {
+		panic("shouldn't reach")
+	}
+
+	if len(r.Args) == 1 {
+		a := r.Args[0]
+		ifs.Cond = GO.BinaryExpr{Op: GO.BinaryNeq, X: call, Y: newArgValueExpr(g, r, a, typ)}
+		ifs.Body.Add(newErrorReturnStmt(g, code, r))
+	} else { // len(r.Args) == 2 is assumed
+		a1, a2 := r.Args[0], r.Args[1]
+		if len(a1.Value) > 0 && len(a2.Value) == 0 {
+			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLss, X: call, Y: newArgValueExpr(g, r, a1, typ)}
+			ifs.Body.Add(newErrorReturnStmt(g, code, r))
+		} else if len(a1.Value) == 0 && len(a2.Value) > 0 {
+			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryGtr, X: call, Y: newArgValueExpr(g, r, a2, typ)}
+			ifs.Body.Add(newErrorReturnStmt(g, code, r))
+		} else {
+			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLOr,
+				X: GO.BinaryExpr{Op: GO.BinaryLss, X: call, Y: newArgValueExpr(g, r, a1, typ)},
+				Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: call, Y: newArgValueExpr(g, r, a2, typ)}}
 			ifs.Cond = GO.ParenExpr{ifs.Cond}
 			ifs.Body.Add(newErrorReturnStmt(g, code, r))
 		}
@@ -911,9 +950,10 @@ func newErrorExpr(g *generator, code *varcode, r *analysis.Rule) (errExpr GO.Exp
 		}
 	}
 
-	// Resolve the alternative form of the error message, currently only "len" needs this.
+	// Resolve the alternative form of the error message, currently only
+	// "len" and "runecount" need this.
 	var altform int
-	if r.Name == "len" && len(r.Args) == 2 {
+	if (r.Name == "len" || r.Name == "runecount") && len(r.Args) == 2 {
 		if len(r.Args[0].Value) > 0 && len(r.Args[1].Value) == 0 {
 			altform = 1
 		} else if len(r.Args[0].Value) == 0 && len(r.Args[1].Value) > 0 {
@@ -1133,5 +1173,11 @@ var errorConfigMap = map[string]map[int]errorConfig{
 		1: {text: "must be of length at least"},
 		2: {text: "must be of length at most"},
 		3: {text: "must be of length between", argSep: " and ", suffix: "(inclusive)"},
+	},
+	"runecount": {
+		0: {text: "must have rune count"},
+		1: {text: "must have rune count at least"},
+		2: {text: "must have rune count at most"},
+		3: {text: "must have rune count between", argSep: " and ", suffix: "(inclusive)"},
 	},
 }

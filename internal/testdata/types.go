@@ -148,6 +148,11 @@ type UserInput struct {
 
 	// more nested elements & keys
 	F92 []map[*map[string]string][]int `is:"[][[email]phone:us:ca]len::10,[]rng:-54:256"`
+
+	F93 string   `is:"runecount:28"`
+	F94 string   `is:"runecount:4:28"`
+	F95 []byte   `is:"runecount::28"`
+	F96 someKind `is:"runecount:4:"` // string kind is ok (must be converted though)
 }
 
 // local enum

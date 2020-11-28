@@ -71,6 +71,13 @@ func HexColor(v string) bool {
 	return rxHexColor.MatchString(v)
 }
 
+var rxBase32 = regexp.MustCompile(`^[A-Z2-7]+=*$`)
+
+// Base32 reports whether or not v is a valid base32 string.
+func Base32(v string) bool {
+	return (len(v)%8 == 0) && rxBase32.MatchString(v)
+}
+
 // Email reports whether or not v is a valid email address.
 //
 // NOTE: Email uses net/mail.ParseAddress to determine the validity of v.
