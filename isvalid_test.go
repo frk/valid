@@ -93,6 +93,23 @@ func Test(t *testing.T) {
 			"2020-01-06T14:31:00.135Z",
 		},
 	}, {
+		Name: "Bool", Func: Bool,
+		pass: []string{
+			"true",
+			"false",
+			"TRUE",
+			"FALSE",
+		},
+		fail: []string{
+			"",
+			"True",
+			"False",
+			"0",
+			"1",
+			"t",
+			"f",
+		},
+	}, {
 		Name: "Binary", Func: Binary,
 		pass: []string{
 			"0",
@@ -327,6 +344,10 @@ func Test(t *testing.T) {
 			`wrong()[]",:;<>@@gmail.com`,
 			`"wrong()[]",:;<>@@gmail.com`,
 		},
+	}, {
+		Name: "EIN", Func: EIN,
+		pass: []string{},
+		fail: []string{},
 	}, {
 		Name: "MAC-0", Func: func(v string) bool {
 			return MAC(v, 0)

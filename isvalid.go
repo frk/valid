@@ -40,6 +40,21 @@ func Float(v string) bool {
 	return rxFloat.MatchString(v)
 }
 
+// Bool reports whether or not v represents a valid boolean. The following
+// are considered valid boolean values: "true", "false", "TRUE", and "FALSE".
+//
+// isvalid:rule
+//	{ "name": "bool", "err": {"text": "string content must match a boolean value"} }
+func Bool(v string) bool {
+	if len(v) == 4 && (v == "true" || v == "TRUE") {
+		return true
+	}
+	if len(v) == 5 && (v == "false" || v == "FALSE") {
+		return true
+	}
+	return false
+}
+
 var rxBinary = regexp.MustCompile(`^(?:0[bB])?[0-1]+$`)
 
 // Binary reports whether or not v represents a valid binary integer.
@@ -214,12 +229,14 @@ func SSN(v string) bool {
 	return false
 }
 
+var rxEIN = regexp.MustCompile(`^\d{2}[- ]{0,1}\d{7}$`)
+
 // EIN reports whether or not v is a valid Employer Identification Number.
 //
 // isvalid:rule
 //	{ "name": "ein", "err": {"text": "must be a valid EIN"} }
 func EIN(v string) bool {
-	return false
+	return rxEIN.MatchString(v)
 }
 
 var (
