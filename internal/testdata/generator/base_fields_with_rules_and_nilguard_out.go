@@ -11,10 +11,10 @@ import (
 
 func (v BaseFieldsWithRulesAndNilGuardValidator) Validate() error {
 	if v.F7a != nil && !isvalid.Email(*v.F7a) {
-		return errors.New("F7a must be a valid email")
+		return errors.New("F7a must be a valid email address")
 	}
 	if v.F7b != nil && *v.F7b != nil && !isvalid.Email(**v.F7b) {
-		return errors.New("F7b must be a valid email")
+		return errors.New("F7b must be a valid email address")
 	}
 	if v.F8a != nil {
 		f := *v.F8a

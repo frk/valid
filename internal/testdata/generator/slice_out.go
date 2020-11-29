@@ -11,13 +11,13 @@ import (
 func (v SliceValidator) Validate() error {
 	for _, e := range v.F1 {
 		if !isvalid.Email(e) {
-			return errors.New("F1 must be a valid email")
+			return errors.New("F1 must be a valid email address")
 		}
 	}
 	if v.F2 != nil && *v.F2 != nil && **v.F2 != nil {
 		for _, e := range ***v.F2 {
 			if !isvalid.Email(e) {
-				return errors.New("F2 must be a valid email")
+				return errors.New("F2 must be a valid email address")
 			}
 		}
 	}
@@ -26,13 +26,13 @@ func (v SliceValidator) Validate() error {
 			if e == nil || len(*e) == 0 {
 				return errors.New("F3 is required")
 			} else if !isvalid.Email(*e) {
-				return errors.New("F3 must be a valid email")
+				return errors.New("F3 must be a valid email address")
 			}
 		}
 	}
 	for k, e := range v.F4 {
 		if !isvalid.Email(k) {
-			return errors.New("F4 must be a valid email")
+			return errors.New("F4 must be a valid email address")
 		}
 		if e < 18 || e > 64 {
 			return errors.New("F4 must be between: 18 and 64")
@@ -43,7 +43,7 @@ func (v SliceValidator) Validate() error {
 			if k != nil {
 				for k, e := range *k {
 					if !isvalid.Email(k) {
-						return errors.New("F5 must be a valid email")
+						return errors.New("F5 must be a valid email address")
 					}
 					if !isvalid.Phone(e, "us", "ca") {
 						return errors.New("F5 must be a valid phone number")

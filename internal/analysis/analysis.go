@@ -38,22 +38,10 @@ func (c *Config) AddRuleFunc(ruleName string, typ *types.Func) error {
 		return &anError{Code: errRuleNameReserved, r: &Rule{Name: ruleName}}
 	}
 
-	sig := typ.Type().(*types.Signature)
-	p, r := sig.Params(), sig.Results()
-	if p.Len() < 1 || r.Len() != 1 {
-		return &anError{Code: errRuleFuncSignature, fn: typ}
-	}
-	if !isBool(r.At(0).Type()) {
-		return &anError{Code: errRuleFuncSignature, fn: typ}
-	}
-
-	rt := RuleTypeFunc{IsCustom: true}
-	rt.FuncName = typ.Name()
-	rt.PkgPath = typ.Pkg().Path()
-	rt.IsVariadic = sig.Variadic()
-	rt.typ = typ
-	for i := 0; i < p.Len(); i++ {
-		rt.ArgTypes = append(rt.ArgTypes, analyzeType0(p.At(i).Type()))
+	conf := RuleConfig{Name: ruleName}
+	rt, err := conf.RuleTypeFunc(typ, true)
+	if err != nil {
+		return err
 	}
 
 	if c.customTypeMap == nil {

@@ -22,7 +22,7 @@ func (v BaseFieldsWithRulesAndRequiredValidator) Validate() error {
 	if v.F16a == nil || *v.F16a == nil || len(**v.F16a) == 0 {
 		return errors.New("F16a is required")
 	} else if !isvalid.Email(**v.F16a) {
-		return errors.New("F16a must be a valid email")
+		return errors.New("F16a must be a valid email address")
 	}
 	if v.F17a == nil || len(*v.F17a) == 0 {
 		return errors.New("F17a is required")

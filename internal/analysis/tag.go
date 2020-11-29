@@ -227,37 +227,14 @@ func parseRuleTag(tag string) (*TagNode, error) {
 				}
 
 				arg := tag[:i]
-				tag = tag[i:]
-				ra := &RuleArg{}
-
-				// resolve the type of the rule's argument
-				if len(arg) > 0 {
-					switch arg[0] {
-					case '@':
-						ra = nil // don't append non-arg
-						r.Context = arg[1:]
-					case '&':
-						ra.Value = arg[1:]
-						ra.Type = ArgTypeField
-					default:
-						ra.Value = arg
-						switch {
-						case isvalid.Int(arg):
-							ra.Type = ArgTypeInt
-						case isvalid.Float(arg):
-							ra.Type = ArgTypeFloat
-						case rxBool.MatchString(arg):
-							ra.Type = ArgTypeBool
-						default:
-							ra.Type = ArgTypeString
-						}
-					}
-				}
-
-				if ra != nil {
+				if len(arg) > 0 && arg[0] == '@' {
+					r.Context = arg[1:]
+				} else {
+					ra := parseRuleTagArg(arg)
 					r.Args = append(r.Args, ra)
 				}
 
+				tag = tag[i:]
 				if tag == "" {
 					break
 				} else if tag[0] == ',' {
@@ -270,4 +247,28 @@ func parseRuleTag(tag string) (*TagNode, error) {
 	}
 
 	return parser(val)
+}
+
+// parseRuleTagArg parses the given as a RuleArg and returns the result.
+func parseRuleTagArg(val string) (ra *RuleArg) {
+	ra = &RuleArg{}
+	if len(val) > 0 {
+		if val[0] == '&' {
+			ra.Value = val[1:]
+			ra.Type = ArgTypeField
+		} else {
+			ra.Value = val
+			switch {
+			case isvalid.Int(val):
+				ra.Type = ArgTypeInt
+			case isvalid.Float(val):
+				ra.Type = ArgTypeFloat
+			case rxBool.MatchString(val):
+				ra.Type = ArgTypeBool
+			default:
+				ra.Type = ArgTypeString
+			}
+		}
+	}
+	return ra
 }

@@ -223,6 +223,79 @@ func Test(t *testing.T) {
 			"Zm9vYm/y====",
 		},
 	}, {
+		Name: "Base58", Func: Base58,
+		pass: []string{
+			"BukQL",
+			"3KMUV89zab",
+			"91GHkLMNtyo98",
+			"YyjKm3H",
+			"Mkhss145TRFg",
+			"7678765677",
+			"abcodpq",
+			"AAVHJKLPY",
+		},
+		fail: []string{
+			"0OPLJH",
+			"IMKLP23",
+			"KLMOmk986",
+			"LL1l1985hG",
+			"*MP9K",
+			"Zm=8JBSWY3DP",
+			")()(=9292929MKL",
+		},
+	}, {
+		Name: "Base64-normal", Func: func(v string) bool {
+			return Base64(v, false)
+		},
+		pass: []string{
+			"",
+			"Zg==",
+			"Zm8=",
+			"Zm9v",
+			"Zm9vYg==",
+			"Zm9vYmE=",
+			"Zm9vYmFy",
+			"TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQsIGNvbnNlY3RldHVyIGFkaXBpc2NpbmcgZWxpdC4=",
+			"Vml2YW11cyBmZXJtZW50dW0gc2VtcGVyIHBvcnRhLg==",
+			"U3VzcGVuZGlzc2UgbGVjdHVzIGxlbw==",
+			"MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuMPNS1Ufof9EW/M98FNw" +
+				"UAKrwflsqVxaxQjBQnHQmiI7Vac40t8x7pIb8gLGV6wL7sBTJiPovJ0V7y7oc0Ye" +
+				"rhKh0Rm4skP2z/jHwwZICgGzBvA0rH8xlhUiTvcwDCJ0kc+fh35hNt8srZQM4619" +
+				"FTgB66Xmp4EtVyhpQV+t02g6NzK72oZI0vnAvqhpkxLeLiMCyrI416wHm5Tkukhx" +
+				"QmcL2a6hNOyu0ixX/x2kSFXApEnVrJ+/IxGyfyw8kf4N2IZpW5nEP847lpfj0SZZ" +
+				"Fwrd1mnfnDbYohX2zRptLy2ZUn06Qo9pkG5ntvFEPo9bfZeULtjYzIl6K8gJ2uGZ" +
+				"HQIDAQAB",
+		},
+		fail: []string{
+			"12345",
+			"Vml2YW11cyBmZXJtZtesting123",
+			"Zg=",
+			"Z===",
+			"Zm=8",
+			"=m9vYg==",
+			"Zm9vYmFy====",
+		},
+	}, {
+		Name: "Base64-urlsafe", Func: func(v string) bool {
+			return Base64(v, true)
+		},
+		pass: []string{
+			"",
+			"bGFkaWVzIGFuZCBnZW50bGVtZW4sIHdlIGFyZSBmbG9hdGluZyBpbiBzcGFjZQ",
+			"1234",
+			"bXVtLW5ldmVyLXByb3Vk",
+			"PDw_Pz8-Pg",
+			"VGhpcyBpcyBhbiBlbmNvZGVkIHN0cmluZw",
+		},
+		fail: []string{
+			" AA",
+			"\tAA",
+			"\rAA",
+			"\nAA",
+			"This+isa/bad+base64Url==",
+			"0K3RgtC+INC30LDQutC+0LTQuNGA0L7QstCw0L3QvdCw0Y8g0YHRgtGA0L7QutCw",
+		},
+	}, {
 		Name: "Email", Func: Email,
 		pass: []string{
 			"foo@bar.com",

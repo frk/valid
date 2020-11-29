@@ -10,15 +10,15 @@ import (
 
 func (v HexColorValidator) Validate() error {
 	if !isvalid.HexColor(v.F1) {
-		return errors.New("F1 must be a valid hex color code")
+		return errors.New("F1 must represent a valid hexadecimal color code")
 	}
 	if v.F2 != nil && *v.F2 != nil && !isvalid.HexColor(**v.F2) {
-		return errors.New("F2 must be a valid hex color code")
+		return errors.New("F2 must represent a valid hexadecimal color code")
 	}
 	if v.F3 == nil || *v.F3 == nil || len(**v.F3) == 0 {
 		return errors.New("F3 is required")
 	} else if !isvalid.HexColor(**v.F3) {
-		return errors.New("F3 must be a valid hex color code")
+		return errors.New("F3 must represent a valid hexadecimal color code")
 	}
 	return nil
 }

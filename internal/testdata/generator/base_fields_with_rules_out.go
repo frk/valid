@@ -11,7 +11,7 @@ import (
 
 func (v BaseFieldsWithRulesValidator) Validate() error {
 	if !isvalid.Email(v.F1) {
-		return errors.New("F1 must be a valid email")
+		return errors.New("F1 must be a valid email address")
 	}
 	if !isvalid.Hex(v.F2) {
 		return errors.New("F2 must be a valid hexadecimal string")

@@ -72,7 +72,6 @@ func TestAddRuleFunc(t *testing.T) {
 				FuncName: "MyRule",
 				PkgPath:  "github.com/frk/isvalid/internal/testdata/mypkg",
 				ArgTypes: []Type{{Kind: TypeKindString}},
-				IsCustom: true,
 				typ:      &types.Func{},
 			},
 		}},
@@ -85,7 +84,6 @@ func TestAddRuleFunc(t *testing.T) {
 				PkgPath:    "github.com/frk/isvalid/internal/testdata/mypkg",
 				ArgTypes:   []Type{{Kind: TypeKindSlice, Elem: &Type{Kind: TypeKindString}}},
 				IsVariadic: true,
-				IsCustom:   true,
 				typ:        &types.Func{},
 			},
 		}},
@@ -103,8 +101,7 @@ func TestAddRuleFunc(t *testing.T) {
 					{Kind: TypeKindString},
 					{Kind: TypeKindBool},
 				},
-				IsCustom: true,
-				typ:      &types.Func{},
+				typ: &types.Func{},
 			},
 		}},
 	}}
@@ -1300,9 +1297,11 @@ func TestAnalysisRun(t *testing.T) {
 							}}}},
 						}, {
 							Name: "F31", Key: "F31", IsExported: true,
-							Tag:     tagutil.Tag{"is": []string{"mac"}},
-							Type:    Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "mac"}}},
+							Tag:  tagutil.Tag{"is": []string{"mac"}},
+							Type: Type{Kind: TypeKindString},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "mac", Args: []*RuleArg{
+								{Value: "0", Type: ArgTypeInt},
+							}}}},
 						}, {
 							Name: "F32", Key: "F32", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{"mac:6"}},
@@ -2010,33 +2009,28 @@ func TestAnalysisRun(t *testing.T) {
 			FuncName: "ValidString",
 			PkgPath:  "unicode/utf8",
 			ArgTypes: []Type{{Kind: TypeKindString}},
-			IsCustom: true,
 		},
 
 		// for testing success
 		"timecheck": RuleTypeFunc{
 			FuncName: "TimeCheck", PkgPath: "path/to/rule",
 			ArgTypes: []Type{{Kind: TypeKindStruct, Name: "Time", PkgPath: "time", PkgName: "time"}},
-			IsCustom: true,
 		},
 		"ifacecheck": RuleTypeFunc{
 			FuncName: "IfaceCheck", PkgPath: "path/to/rule",
 			ArgTypes: []Type{{Kind: TypeKindInterface, IsEmptyInterface: true}},
-			IsCustom: true,
 		},
 
 		// for testing errors
 		"rulefunc1": RuleTypeFunc{
 			FuncName: "RuleFunc1", PkgPath: "path/to/rule",
 			ArgTypes: []Type{{Kind: TypeKindString}, {Kind: TypeKindInt}},
-			IsCustom: true,
 		},
 		"rulefunc2": RuleTypeFunc{
 			FuncName: "RuleFunc2", PkgPath: "path/to/rule",
 			ArgTypes: []Type{{Kind: TypeKindString}, {Kind: TypeKindInt},
 				{Kind: TypeKindSlice, Elem: &Type{Kind: TypeKindBool}}},
 			IsVariadic: true,
-			IsCustom:   true,
 		},
 	}
 

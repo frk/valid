@@ -35,6 +35,8 @@ func TestGenerator(t *testing.T) {
 		"uri",
 		"pan",
 		"cvv",
+		"upper",
+		"base64",
 		"ssn",
 		"ein",
 		"numeric",

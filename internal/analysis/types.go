@@ -146,6 +146,7 @@ type (
 	// NOTE(mkopriva): RuleType, instead of being a direct member of
 	// the Rule struct, is mapped to each Rule by the Rule's Name.
 	RuleType interface {
+		ErrConf() ErrMesgConfig
 		// Should return the expected argument count.
 		argCount() ruleArgCount
 		// Should check the given Rule for correctness.
@@ -166,6 +167,7 @@ type (
 	// RuleTypeBasic is mapped to Rules that should produce code that
 	// validates a value using basic expressions with comparison operators.
 	RuleTypeBasic struct {
+		Err ErrMesgConfig
 		// check is a plugin used by the checkRule method.
 		check func(a *analysis, r *Rule, t Type, f *StructField) error
 		// arg count requirements, used by the argCount method.
@@ -183,6 +185,7 @@ type (
 		// length at least 1 where the 0th argument represents the field
 		// to be validated.
 		ArgTypes []Type
+		ArgMap   map[interface{}]*RuleArg
 		// Indicates whether or not the function's signature is variadic.
 		IsVariadic bool
 		// NOTE(mkopriva): Although currently not enforced, this field is
@@ -197,11 +200,8 @@ type (
 		// Indicates that the generated code should use raw strings
 		// for any string arguments passed to the function.
 		UseRawString bool
-		// Indicates that this is a custom user provided RuleTypeFunc.
-		IsCustom bool
-		// If set, and the related Rule has no arguments, the DefaultArgValue
-		// will be used by the generator as a default argument to the function.
-		DefaultArgValue string
+		// If set, will be used by the generator for producing error messages.
+		Err ErrMesgConfig
 		// check is a plugin used by the checkRule method.
 		check func(a *analysis, r *Rule, t Type, f *StructField) error
 		// If set, it will be returned by the argCount method. If left
@@ -218,6 +218,10 @@ func (RuleTypeNop) argCount() ruleArgCount {
 	return ruleArgCount{}
 }
 
+func (RuleTypeNop) ErrConf() ErrMesgConfig {
+	return ErrMesgConfig{}
+}
+
 func (rt RuleTypeNop) checkRule(a *analysis, r *Rule, t Type, f *StructField) error {
 	if ok := rt.argCount().check(len(r.Args)); !ok {
 		return &anError{Code: errRuleArgCount, a: a, f: f, r: r}
@@ -230,6 +234,8 @@ func (RuleTypeIsValid) argCount() ruleArgCount {
 	return ruleArgCount{}
 }
 
+func (RuleTypeIsValid) ErrConf() ErrMesgConfig { return ErrMesgConfig{Text: "is not valid"} }
+
 func (rt RuleTypeIsValid) checkRule(a *analysis, r *Rule, t Type, f *StructField) error {
 	if ok := rt.argCount().check(len(r.Args)); !ok {
 		return &anError{Code: errRuleArgCount, a: a, f: f, r: r}
@@ -241,6 +247,8 @@ func (rt RuleTypeIsValid) checkRule(a *analysis, r *Rule, t Type, f *StructField
 func (RuleTypeEnum) argCount() ruleArgCount {
 	return ruleArgCount{}
 }
+
+func (RuleTypeEnum) ErrConf() ErrMesgConfig { return ErrMesgConfig{Text: "is not valid"} }
 
 // checkRule checks whether the given Type is compatible with a RuleTypeEnum,
 // the *Rule and *StructField arguments are used for error reporting.
@@ -290,6 +298,8 @@ func (rt RuleTypeBasic) argCount() ruleArgCount {
 	return ruleArgCount{min: rt.amin, max: rt.amax}
 }
 
+func (rt RuleTypeBasic) ErrConf() ErrMesgConfig { return rt.Err }
+
 // checkRule invokes the function of RuleTypeBasic's check field, if set.
 func (rt RuleTypeBasic) checkRule(a *analysis, r *Rule, t Type, f *StructField) error {
 	if ok := rt.argCount().check(len(r.Args)); !ok {
@@ -317,9 +327,12 @@ func (rt RuleTypeFunc) argCount() ruleArgCount {
 	return ruleArgCount{expected, expected}
 }
 
+func (rt RuleTypeFunc) ErrConf() ErrMesgConfig { return rt.Err }
+
 // checkRule checks whether or not the Rule and its associated field Type can be
 // used together with the RuleTypeFunc to produce code that compiles without errors.
 func (rt RuleTypeFunc) checkRule(a *analysis, r *Rule, t Type, f *StructField) error {
+	rt.adjustRule(r)
 	if ok := rt.argCount().check(len(r.Args)); !ok {
 		return &anError{Code: errRuleArgCount, a: a, f: f, r: r}
 	}
@@ -346,17 +359,9 @@ func (rt RuleTypeFunc) checkRule(a *analysis, r *Rule, t Type, f *StructField) e
 		fatypes = fatypes[:len(fatypes)-1]
 	}
 	for i, fatyp := range fatypes {
-		if len(r.Args) > i {
-			ra := r.Args[i]
-			if !canConvertRuleArg(a, fatyp, ra) {
-				return &anError{Code: errRuleFuncArgType, a: a, f: f, r: r, ra: ra}
-			}
-		} else {
-			// TODO
-			// this currently occurs only when a rule supports a default
-			// value which allows the user not to specify an argument
-			// in the rule's tag... this should be reworked somehow,
-			// make it more robust, or remove it altogether...
+		ra := r.Args[i]
+		if !canConvertRuleArg(a, fatyp, ra) {
+			return &anError{Code: errRuleFuncArgType, a: a, f: f, r: r, ra: ra}
 		}
 	}
 	if rt.IsVariadic {
@@ -376,6 +381,21 @@ func (rt RuleTypeFunc) checkRule(a *analysis, r *Rule, t Type, f *StructField) e
 		}
 	}
 	return nil
+}
+
+// Adjusts the Rule according to the ArgMap.
+func (rt RuleTypeFunc) adjustRule(r *Rule) {
+	// If a RuleArg's Value matches an entry in the arg_map, then update the RuleArg.
+	for _, ra := range r.Args {
+		if val, ok := rt.ArgMap[ra.Value]; ok {
+			*ra = *val
+		}
+	}
+	// If a default was specified in the arg_map (key=nil), and no args
+	// were supplied for the *Rule in the tag, then use the default.
+	if ra, ok := rt.ArgMap[nil]; ok && len(r.Args) == 0 {
+		r.Args = append(r.Args, ra)
+	}
 }
 
 // PkgName returns the name of the package to which the function belongs.

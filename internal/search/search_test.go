@@ -19,6 +19,14 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+func TestLoadBuiltinFuncs(t *testing.T) {
+	// TODO could use a test
+	// LoadBuiltinFuncs(testast, func(data []byte, fn *types.Func) error {
+	// 	log.Println(fn.FullName(), string(data))
+	// 	return nil
+	// })
+}
+
 func TestFindFunc(t *testing.T) {
 	tests := []struct {
 		pkgpath string

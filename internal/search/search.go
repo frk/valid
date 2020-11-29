@@ -369,7 +369,7 @@ func FindFunc(pkgpath, name string, a AST) (*types.Func, error) {
 //
 // 	In case the error is genuine the code should keep working without
 // 	issues, it's just that the reporting of user errors will be poorer.
-func LoadBuiltinFuncs(a AST, callback func(string, *types.Func) error) error {
+func LoadBuiltinFuncs(a AST, callback func([]byte, *types.Func) error) error {
 	pkg, err := findpkg("github.com/frk/isvalid", "", a)
 	if err != nil {
 		return err
@@ -394,12 +394,12 @@ func LoadBuiltinFuncs(a AST, callback func(string, *types.Func) error) error {
 			}
 
 			if f, ok := obj.(*types.Func); ok {
-				ruleinfo := getruleinfo(fd.Doc)
-				if len(ruleinfo) == 0 {
+				confjson := getrulejson(fd.Doc)
+				if len(confjson) == 0 {
 					continue
 				}
 
-				if err := callback(ruleinfo, f); err != nil {
+				if err := callback(confjson, f); err != nil {
 					return err
 				}
 			}
@@ -408,22 +408,36 @@ func LoadBuiltinFuncs(a AST, callback func(string, *types.Func) error) error {
 	return nil
 }
 
-// getruleinfo returns a string containing info as parsed from the "isvalid:rule"
-// directive in the given documentation, if no "isvalid:rule" directive is found
-// getruleinfo will return an empty string.
-func getruleinfo(doc *ast.CommentGroup) string {
+// getrulejson returns the json bytes as parsed from the "isvalid:rule"
+// directive in the given documentation, if no "isvalid:rule" directive is
+// found, nil will be returned instead.
+func getrulejson(doc *ast.CommentGroup) (out []byte) {
 	const directive = "isvalid:rule"
 
 	if doc == nil {
-		return ""
+		return nil
 	}
 
+	hasdirective := false
 	for _, com := range doc.List {
-		if i := strings.Index(com.Text, directive); i > -1 {
-			return com.Text[i+len(directive):]
+		text := com.Text
+
+		// look for directive if not yet found
+		if !hasdirective {
+			if i := strings.Index(text, directive); i > -1 {
+				hasdirective = true
+				text = text[i+len(directive):]
+			}
+		}
+
+		// the rest of the doc text after a directive is expected to be json
+		if hasdirective {
+			text = strings.TrimLeft(text, "/") // remove leading //
+			text = strings.TrimSpace(text)
+			out = append(out, text...)
 		}
 	}
-	return ""
+	return out
 }
 
 type pkgLoadError struct {

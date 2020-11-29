@@ -22,7 +22,7 @@ func (v BaseFieldsWithRulesAndNotnilValidator) Validate() error {
 	if v.F12a == nil || *v.F12a == nil {
 		return errors.New("F12a cannot be nil")
 	} else if !isvalid.Email(**v.F12a) {
-		return errors.New("F12a must be a valid email")
+		return errors.New("F12a must be a valid email address")
 	}
 	if v.F13a == nil {
 		return errors.New("F13a cannot be nil")

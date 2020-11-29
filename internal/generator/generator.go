@@ -555,7 +555,6 @@ func newNotnilExpr(g *generator, code *varcode) GO.ExprNode {
 func newRuleIfStmt(g *generator, code *varcode, r *analysis.Rule) (ifs GO.IfStmt) {
 	rt := g.info.RuleTypeMap[r.Name]
 	switch rx := rt.(type) {
-	// TODO deal with RuleTypeNop?
 	case analysis.RuleTypeIsValid:
 		return newRuleTypeIsValidIfStmt(g, code, r)
 	case analysis.RuleTypeEnum:
@@ -739,9 +738,9 @@ func newRuleTypeFuncIfStmt(g *generator, code *varcode, r *analysis.Rule, rt ana
 		}
 	}
 
-	if len(r.Args) == 0 && len(rt.DefaultArgValue) > 0 {
-		args = append(args, GO.ValueLit(rt.DefaultArgValue))
-	}
+	//if len(r.Args) == 0 && len(rt.DefaultArgValue) > 0 {
+	//	args = append(args, GO.ValueLit(rt.DefaultArgValue))
+	//}
 
 	call.Args.List = args
 	ifs.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: call}
@@ -933,43 +932,50 @@ func newErrorReturnStmt(g *generator, code *varcode, r *analysis.Rule) GO.StmtNo
 
 }
 
+// A map of error messages used for "len" & "runecount".
+var errTextMap = map[string][]string{
+	"len": {
+		0: "must be of length",
+		1: "must be of length at least",
+		2: "must be of length at most",
+		3: "must be of length between",
+	},
+	"runecount": {
+		0: "must have rune count",
+		1: "must have rune count at least",
+		2: "must have rune count at most",
+		3: "must have rune count between",
+	},
+}
+
 // newErrorExpr produces an error value expression.
 func newErrorExpr(g *generator, code *varcode, r *analysis.Rule) (errExpr GO.ExprNode) {
-	rt := g.info.RuleTypeMap[r.Name]
-	switch rt.(type) {
-	case analysis.RuleTypeIsValid, analysis.RuleTypeEnum, analysis.RuleTypeFunc:
-		if f, ok := rt.(analysis.RuleTypeFunc); !ok || f.IsCustom {
-			text := code.field.Key + " is not valid" // default error text for custom specs
+	errConf := g.info.RuleTypeMap[r.Name].ErrConf()
 
-			errText := GO.ValueLit(strconv.Quote(text))
-			g.file.importErrors = true
-			errExpr = GO.CallExpr{Fun: GO.QualifiedIdent{"errors", "New"},
-				Args: GO.ArgsList{List: errText}}
-
-			return errExpr
-		}
-	}
-
-	// Resolve the alternative form of the error message, currently only
-	// "len" and "runecount" need this.
-	var altform int
-	if (r.Name == "len" || r.Name == "runecount") && len(r.Args) == 2 {
-		if len(r.Args[0].Value) > 0 && len(r.Args[1].Value) == 0 {
-			altform = 1
+	var textSuffix string
+	if r.Name == "len" || r.Name == "runecount" {
+		if len(r.Args) == 1 {
+			errConf.Text = errTextMap[r.Name][0]
+		} else if len(r.Args[0].Value) > 0 && len(r.Args[1].Value) == 0 {
+			errConf.Text = errTextMap[r.Name][1]
 		} else if len(r.Args[0].Value) == 0 && len(r.Args[1].Value) > 0 {
-			altform = 2
+			errConf.Text = errTextMap[r.Name][2]
 		} else {
-			altform = 3
+			errConf.Text = errTextMap[r.Name][3]
+			errConf.ArgSep = " and "
+			textSuffix = "(inclusive)"
 		}
+		errConf.WithArgs = true
+	}
+	if len(errConf.Text) == 0 {
+		errConf.Text = "is not valid"
 	}
 
-	// Get the error config.
-	conf := errorConfigMap[r.Name][altform]
-	text := code.field.Key + " " + conf.text // primary error text
 	typ := code.field.Type.PtrBase()
+	errText := code.field.Key + " " + errConf.Text
 
 	var refs GO.ExprList
-	if !conf.omitArgs {
+	if errConf.WithArgs {
 		var args []string
 		for _, a := range r.Args {
 			// if the field's type is numeric an unknown arg can be overwritten as 0.
@@ -997,24 +1003,24 @@ func newErrorExpr(g *generator, code *varcode, r *analysis.Rule) (errExpr GO.Exp
 		}
 
 		if len(args) > 0 {
-			text += ": " + strings.Join(args, conf.argSep)
+			errText += ": " + strings.Join(args, errConf.ArgSep)
 		}
 	}
-
-	if len(conf.suffix) > 0 {
-		text += " " + conf.suffix
+	if len(textSuffix) > 0 {
+		errText += " " + textSuffix
 	}
 
-	errText := GO.ValueLit(strconv.Quote(text))
+	errTextExpr := GO.ValueLit(strconv.Quote(errText))
 	if len(refs) > 0 {
 		g.file.importFmt = true
 		errExpr = GO.CallExpr{Fun: GO.QualifiedIdent{"fmt", "Errorf"},
-			Args: GO.ArgsList{List: append(GO.ExprList{errText}, refs...)}}
+			Args: GO.ArgsList{List: append(GO.ExprList{errTextExpr}, refs...)}}
 	} else {
 		g.file.importErrors = true
 		errExpr = GO.CallExpr{Fun: GO.QualifiedIdent{"errors", "New"},
-			Args: GO.ArgsList{List: errText}}
+			Args: GO.ArgsList{List: errTextExpr}}
 	}
+
 	return errExpr
 }
 
@@ -1112,72 +1118,4 @@ var basicRuleToBinaryOp = map[string]GO.BinaryOp{
 var basicRuleToLogicalOp = map[string]GO.BinaryOp{
 	"eq": GO.BinaryLAnd,
 	"ne": GO.BinaryLOr,
-}
-
-// error message configuation
-type errorConfig struct {
-	// primary text of the error message
-	text string
-	// if set, append the suffix to the error message
-	suffix string
-	// if the validation rule takes multiple arguments, separate them with
-	// argSep in the errro message
-	argSep string
-	// even if the validation rule takes an argument, do not display it
-	// in the error message
-	omitArgs bool
-}
-
-// A map of errorConfigs used for generating error messages. The first key is
-// the rule's name and the second key maps the alternative forms of the error.
-//
-// MAYBE-TODO(mkopriva): this doesn't feel right, a nicer solution would be welcome...
-var errorConfigMap = map[string]map[int]errorConfig{
-	"required": {0: {text: "is required"}},
-	"notnil":   {0: {text: "cannot be nil"}},
-	"email":    {0: {text: "must be a valid email"}},
-	"url":      {0: {text: "must be a valid URL"}},
-	"uri":      {0: {text: "must be a valid URI"}},
-	"pan":      {0: {text: "must be a valid PAN"}},
-	"cvv":      {0: {text: "must be a valid CVV"}},
-	"ssn":      {0: {text: "must be a valid SSN"}},
-	"ein":      {0: {text: "must be a valid EIN"}},
-	"numeric":  {0: {text: "must contain only digits [0-9]"}},
-	"hex":      {0: {text: "must be a valid hexadecimal string"}},
-	"hexcolor": {0: {text: "must be a valid hex color code"}},
-	"alnum":    {0: {text: "must be an alphanumeric string", omitArgs: true}},
-	"alpha":    {0: {text: "must be an alphabetic string", omitArgs: true}},
-	"cidr":     {0: {text: "must be a valid CIDR"}},
-	"phone":    {0: {text: "must be a valid phone number", omitArgs: true}},
-	"zip":      {0: {text: "must be a valid zip code", omitArgs: true}},
-	"uuid":     {0: {text: "must be a valid UUID", omitArgs: true}},
-	"ip":       {0: {text: "must be a valid IP", omitArgs: true}},
-	"mac":      {0: {text: "must be a valid MAC", omitArgs: true}},
-	"iso":      {0: {text: "must be a valid ISO"}},
-	"rfc":      {0: {text: "must be a valid RFC"}},
-	"re":       {0: {text: "must match the regular expression"}},
-	"prefix":   {0: {text: "must be prefixed with", argSep: " or "}},
-	"suffix":   {0: {text: "must be suffixed with", argSep: " or "}},
-	"contains": {0: {text: "must contain substring", argSep: " or "}},
-	"eq":       {0: {text: "must be equal to", argSep: " or "}},
-	"ne":       {0: {text: "must not be equal to", argSep: " or "}},
-	"gt":       {0: {text: "must be greater than"}},
-	"lt":       {0: {text: "must be less than"}},
-	"gte":      {0: {text: "must be greater than or equal to"}},
-	"lte":      {0: {text: "must be less than or equal to"}},
-	"min":      {0: {text: "must be greater than or equal to"}},
-	"max":      {0: {text: "must be less than or equal to"}},
-	"rng":      {0: {text: "must be between", argSep: " and "}},
-	"len": {
-		0: {text: "must be of length"},
-		1: {text: "must be of length at least"},
-		2: {text: "must be of length at most"},
-		3: {text: "must be of length between", argSep: " and ", suffix: "(inclusive)"},
-	},
-	"runecount": {
-		0: {text: "must have rune count"},
-		1: {text: "must have rune count at least"},
-		2: {text: "must have rune count at most"},
-		3: {text: "must have rune count between", argSep: " and ", suffix: "(inclusive)"},
-	},
 }

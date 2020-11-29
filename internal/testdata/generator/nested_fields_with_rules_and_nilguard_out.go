@@ -11,10 +11,10 @@ import (
 
 func (v NestedFieldsWithRulesAndNilGuardValidator) Validate() error {
 	if v.G2.F1 != nil && !isvalid.Email(*v.G2.F1) {
-		return errors.New("G2.F1 must be a valid email")
+		return errors.New("G2.F1 must be a valid email address")
 	}
 	if v.G2.F2 != nil && *v.G2.F2 != nil && !isvalid.Email(**v.G2.F2) {
-		return errors.New("G2.F2 must be a valid email")
+		return errors.New("G2.F2 must be a valid email address")
 	}
 	if v.G2.G3 != nil {
 		f := *v.G2.G3

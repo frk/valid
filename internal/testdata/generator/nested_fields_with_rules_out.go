@@ -11,10 +11,10 @@ import (
 
 func (v NestedFieldsWithRulesValidator) Validate() error {
 	if !isvalid.Email(v.G1.F4) {
-		return errors.New("G1.F4 must be a valid email")
+		return errors.New("G1.F4 must be a valid email address")
 	}
 	if !isvalid.Email(v.G1.GA.F4) {
-		return errors.New("G1.GA.F4 must be a valid email")
+		return errors.New("G1.GA.F4 must be a valid email address")
 	}
 	if !isvalid.Hex(v.G1.GA.F5) {
 		return errors.New("G1.GA.F5 must be a valid hexadecimal string")
@@ -22,7 +22,7 @@ func (v NestedFieldsWithRulesValidator) Validate() error {
 		return errors.New("G1.GA.F5 must be of length between: 8 and 128 (inclusive)")
 	}
 	if !isvalid.Email(v.G1.GA.GB.F4a) {
-		return errors.New("G1.GA.GB.F4a must be a valid email")
+		return errors.New("G1.GA.GB.F4a must be a valid email address")
 	}
 	if !strings.HasPrefix(v.G1.GA.GB.GC.F6, "foo") {
 		return errors.New("G1.GA.GB.GC.F6 must be prefixed with: \"foo\"")
@@ -34,7 +34,7 @@ func (v NestedFieldsWithRulesValidator) Validate() error {
 		return errors.New("G1.GA.GB.GC.F6 must be of length between: 8 and 64 (inclusive)")
 	}
 	if !isvalid.Email(v.G1.GA.GB.F4b) {
-		return errors.New("G1.GA.GB.F4b must be a valid email")
+		return errors.New("G1.GA.GB.F4b must be a valid email address")
 	}
 	if !isvalid.Hex(v.G1.GA.GB.F5) {
 		return errors.New("G1.GA.GB.F5 must be a valid hexadecimal string")

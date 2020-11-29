@@ -3,9 +3,9 @@ package analysis
 import (
 	"go/types"
 	//"log"
+	"encoding/json"
 	"regexp"
 	"strconv"
-	"strings"
 
 	"github.com/frk/isvalid/internal/search"
 )
@@ -24,123 +24,157 @@ var (
 )
 
 var defaultRuleTypeMap = map[string]RuleType{
+	// basic comparison rules
+	"eq": RuleTypeBasic{
+		Err:   ErrMesgConfig{Text: "must be equal to", ArgSep: " or ", WithArgs: true},
+		check: isValidRuleValueComparison, amin: 1, amax: -1,
+	},
+	"ne": RuleTypeBasic{
+		Err:   ErrMesgConfig{Text: "must not be equal to", ArgSep: " or ", WithArgs: true},
+		check: isValidRuleValueComparison, amin: 1, amax: -1,
+	},
+	"gt": RuleTypeBasic{
+		Err:   ErrMesgConfig{Text: "must be greater than", WithArgs: true},
+		check: isValidRuleNumberComparison, amin: 1, amax: 1,
+	},
+	"lt": RuleTypeBasic{
+		Err:   ErrMesgConfig{Text: "must be less than", WithArgs: true},
+		check: isValidRuleNumberComparison, amin: 1, amax: 1,
+	},
+	"gte": RuleTypeBasic{
+		Err:   ErrMesgConfig{Text: "must be greater than or equal to", WithArgs: true},
+		check: isValidRuleNumberComparison, amin: 1, amax: 1,
+	},
+	"lte": RuleTypeBasic{
+		Err:   ErrMesgConfig{Text: "must be less than or equal to", WithArgs: true},
+		check: isValidRuleNumberComparison, amin: 1, amax: 1,
+	},
+	"min": RuleTypeBasic{
+		Err:   ErrMesgConfig{Text: "must be greater than or equal to", WithArgs: true},
+		check: isValidRuleNumberComparison, amin: 1, amax: 1,
+	},
+	"max": RuleTypeBasic{
+		Err:   ErrMesgConfig{Text: "must be less than or equal to", WithArgs: true},
+		check: isValidRuleNumberComparison, amin: 1, amax: 1,
+	},
+
+	// basic but speciél rules
+	"required": RuleTypeBasic{
+		Err: ErrMesgConfig{Text: "is required"},
+	},
+	"notnil": RuleTypeBasic{
+		Err:   ErrMesgConfig{Text: "cannot be nil"},
+		check: isValidRuleNotnil,
+	},
+	"rng": RuleTypeBasic{
+		Err:   ErrMesgConfig{Text: "must be between", ArgSep: " and ", WithArgs: true},
+		check: isValidRuleRng, amin: 2, amax: 2,
+	},
+	"len":       RuleTypeBasic{check: isValidRuleLen, amin: 1, amax: 2},
+	"runecount": RuleTypeBasic{check: isValidRuleRuneCount, amin: 1, amax: 2},
+
 	// speciél
 	"-isvalid": RuleTypeNop{},
 	"isvalid":  RuleTypeIsValid{},
 	"enum":     RuleTypeEnum{},
 
-	// basic but speciél rules
-	"required":  RuleTypeBasic{},
-	"notnil":    RuleTypeBasic{check: isValidRuleNotnil},
-	"rng":       RuleTypeBasic{check: isValidRuleRng, amin: 2, amax: 2},
-	"len":       RuleTypeBasic{check: isValidRuleLen, amin: 1, amax: 2},
-	"runecount": RuleTypeBasic{check: isValidRuleRuneCount, amin: 1, amax: 2},
-
-	// basic comparison rules
-	"eq":  RuleTypeBasic{check: isValidRuleValueComparison, amin: 1, amax: -1},
-	"ne":  RuleTypeBasic{check: isValidRuleValueComparison, amin: 1, amax: -1},
-	"gt":  RuleTypeBasic{check: isValidRuleNumberComparison, amin: 1, amax: 1},
-	"lt":  RuleTypeBasic{check: isValidRuleNumberComparison, amin: 1, amax: 1},
-	"gte": RuleTypeBasic{check: isValidRuleNumberComparison, amin: 1, amax: 1},
-	"lte": RuleTypeBasic{check: isValidRuleNumberComparison, amin: 1, amax: 1},
-	"min": RuleTypeBasic{check: isValidRuleNumberComparison, amin: 1, amax: 1},
-	"max": RuleTypeBasic{check: isValidRuleNumberComparison, amin: 1, amax: 1},
-
-	// predefined functions
-	// ---- "email":    RuleTypeFunc{FuncName: "Email", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
-	// ---- "url":      RuleTypeFunc{FuncName: "URL", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
-	// ---- "uri":      RuleTypeFunc{FuncName: "URI", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
-	// ---- "pan":      RuleTypeFunc{FuncName: "PAN", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
-	// ---- "cvv":      RuleTypeFunc{FuncName: "CVV", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
-	// ---- "ssn":      RuleTypeFunc{FuncName: "SSN", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
-	// ---- "ein":      RuleTypeFunc{FuncName: "EIN", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
-	// ---- "numeric":  RuleTypeFunc{FuncName: "Numeric", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
-	// ---- "hex":      RuleTypeFunc{FuncName: "Hex", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
-	// ---- "hexcolor": RuleTypeFunc{FuncName: "HexColor", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
-	// ---- "cidr":     RuleTypeFunc{FuncName: "CIDR", PkgPath: pkgisvalid, ArgTypes: []Type{typeString}},
-
-	// ---- "alpha": RuleTypeFunc{
-	// ---- 	FuncName: "Alpha", PkgPath: pkgisvalid, IsVariadic: true,
-	// ---- 	ArgTypes: []Type{typeString, typeStringSlice},
-	// ---- 	check:    isValidLanguageTag},
-	// ---- "alnum": RuleTypeFunc{
-	// ---- 	FuncName: "Alnum", PkgPath: pkgisvalid, IsVariadic: true,
-	// ---- 	ArgTypes: []Type{typeString, typeStringSlice},
-	// ---- 	check:    isValidLanguageTag},
-	// ---- "phone": RuleTypeFunc{
-	// ---- 	FuncName: "Phone", PkgPath: pkgisvalid, IsVariadic: true,
-	// ---- 	ArgTypes: []Type{typeString, typeStringSlice},
-	// ---- 	check:    isValidCountryCode},
-	// ---- "zip": RuleTypeFunc{
-	// ---- 	FuncName: "Zip", PkgPath: pkgisvalid, IsVariadic: true,
-	// ---- 	ArgTypes: []Type{typeString, typeStringSlice},
-	// ---- 	check:    isValidCountryCode},
-	// ---- "uuid": RuleTypeFunc{
-	// ---- 	FuncName: "UUID", PkgPath: pkgisvalid, IsVariadic: true,
-	// ---- 	ArgTypes: []Type{typeString, typeIntSlice},
-	// ---- 	check:    isValidRuleUUID, acount: &ruleArgCount{min: 0, max: 5}},
-	// ---- "ip": RuleTypeFunc{
-	// ---- 	FuncName: "IP", PkgPath: pkgisvalid, IsVariadic: true,
-	// ---- 	ArgTypes: []Type{typeString, typeIntSlice},
-	// ---- 	check:    isValidRuleIP, acount: &ruleArgCount{min: 0, max: 2}},
-	// ---- "mac": RuleTypeFunc{
-	// ---- 	FuncName: "MAC", PkgPath: pkgisvalid, IsVariadic: true,
-	// ---- 	ArgTypes: []Type{typeString, typeIntSlice}, DefaultArgValue: "0",
-	// ---- 	check: isValidRuleMAC, acount: &ruleArgCount{min: 0, max: 1}},
-	// ---- "iso": RuleTypeFunc{
-	// ---- 	FuncName: "ISO", PkgPath: pkgisvalid,
-	// ---- 	ArgTypes: []Type{typeString, typeInt},
-	// ---- 	check:    isValidRuleISO},
-	// ---- "rfc": RuleTypeFunc{
-	// ---- 	FuncName: "RFC", PkgPath: pkgisvalid,
-	// ---- 	ArgTypes: []Type{typeString, typeInt},
-	// ---- 	check:    isValidRuleRFC},
-	// ---- "re": RuleTypeFunc{
-	// ---- 	FuncName: "Match", PkgPath: pkgisvalid,
-	// ---- 	ArgTypes:     []Type{typeString, typeString},
-	// ---- 	UseRawString: true, check: isValidRuleRegexp},
-	//"prefix": RuleTypeFunc{
-	//	FuncName: "HasPrefix", PkgPath: "strings",
-	//	ArgTypes: []Type{typeString, typeString},
-	//	LOp:      LogicalOr},
-	//"suffix": RuleTypeFunc{
-	//	FuncName: "HasSuffix", PkgPath: "strings",
-	//	ArgTypes: []Type{typeString, typeString},
-	//	LOp:      LogicalOr},
-	//"contains": RuleTypeFunc{
-	//	FuncName: "Contains", PkgPath: "strings",
-	//	ArgTypes: []Type{typeString, typeString},
-	//	LOp:      LogicalOr},
+	// validators "borrowed" from stdlib
+	"prefix": RuleTypeFunc{
+		FuncName: "HasPrefix", PkgPath: "strings",
+		ArgTypes: []Type{typeString, typeString},
+		Err: ErrMesgConfig{
+			Text:     "must be prefixed with",
+			ArgSep:   " or ",
+			WithArgs: true,
+		},
+		LOp: LogicalOr,
+	},
+	"suffix": RuleTypeFunc{
+		FuncName: "HasSuffix", PkgPath: "strings",
+		ArgTypes: []Type{typeString, typeString},
+		Err: ErrMesgConfig{
+			Text:     "must be suffixed with",
+			ArgSep:   " or ",
+			WithArgs: true,
+		},
+		LOp: LogicalOr,
+	},
+	"contains": RuleTypeFunc{
+		FuncName: "Contains", PkgPath: "strings",
+		ArgTypes: []Type{typeString, typeString},
+		Err: ErrMesgConfig{
+			Text:     "must contain substring",
+			ArgSep:   " or ",
+			WithArgs: true,
+		},
+		LOp: LogicalOr,
+	},
 }
 
-// LoadRuleTypeFunc loads info for pre-defined function rule types. LoadRuleTypeFunc
-// should be invoked only once and before starting the first analysis.
-func LoadRuleTypeFunc(ast search.AST) {
+type RuleConfig struct {
+	Name   string `json:"name"`
+	ArgMin *int   `json:"arg_min"`
+	ArgMax *int   `json:"arg_max"`
+	ArgMap []struct {
+		Key   *string `json:"key"`
+		Value string  `json:"value"`
+	} `json:"arg_map"`
+	Err ErrMesgConfig   `json:"err"`
+	LOp LogicalOperator `json:"log_op"`
+}
 
-	// load functions from the github.com/frk/isvalid package
-	search.LoadBuiltinFuncs(ast, func(ruleinfo string, fn *types.Func) error {
-		ruleName := parseruleinfo(ruleinfo)
+type ErrMesgConfig struct {
+	Text     string `json:"text"`
+	ArgSep   string `json:"arg_sep"`
+	WithArgs bool   `json:"with_args"`
+}
 
-		sig := fn.Type().(*types.Signature)
-		p, r := sig.Params(), sig.Results()
-		if p.Len() < 1 || r.Len() != 1 {
-			panic(fn.FullName() + ": bad number of parameter/result arguments")
+func (conf RuleConfig) RuleTypeFunc(fn *types.Func, isCustom bool) (RuleTypeFunc, error) {
+	sig := fn.Type().(*types.Signature)
+	p, r := sig.Params(), sig.Results()
+	if p.Len() < 1 || r.Len() != 1 {
+		return RuleTypeFunc{}, &anError{Code: errRuleFuncSignature, fn: fn}
+	}
+	if !isBool(r.At(0).Type()) {
+		return RuleTypeFunc{}, &anError{Code: errRuleFuncSignature, fn: fn}
+	}
+
+	rt := RuleTypeFunc{}
+	rt.FuncName = fn.Name()
+	rt.PkgPath = fn.Pkg().Path()
+	rt.IsVariadic = sig.Variadic()
+	rt.Err = conf.Err
+	rt.LOp = conf.LOp
+	rt.typ = fn
+	for i := 0; i < p.Len(); i++ {
+		rt.ArgTypes = append(rt.ArgTypes, analyzeType0(p.At(i).Type()))
+	}
+
+	if conf.ArgMin != nil || conf.ArgMax != nil {
+		rt.acount = new(ruleArgCount)
+		if conf.ArgMin != nil {
+			rt.acount.min = *conf.ArgMin
 		}
-		if !isBool(r.At(0).Type()) {
-			panic(fn.FullName() + ": bad return argument type")
+		if conf.ArgMax != nil {
+			rt.acount.max = *conf.ArgMax
 		}
+	}
 
-		rt := RuleTypeFunc{}
-		rt.FuncName = fn.Name()
-		rt.PkgPath = fn.Pkg().Path()
-		rt.IsVariadic = sig.Variadic()
-		rt.typ = fn
-		for i := 0; i < p.Len(); i++ {
-			rt.ArgTypes = append(rt.ArgTypes, analyzeType0(p.At(i).Type()))
+	if len(conf.ArgMap) > 0 {
+		rt.ArgMap = make(map[interface{}]*RuleArg)
+		for _, kv := range conf.ArgMap {
+			ra := parseRuleTagArg(kv.Value)
+			if kv.Key != nil {
+				rt.ArgMap[*kv.Key] = ra
+			} else {
+				rt.ArgMap[nil] = ra
+			}
 		}
+	}
 
-		// some function need additional help for type checking
-		switch ruleName {
+	if !isCustom {
+		// some builtin function need additional help for type checking
+		switch conf.Name {
 		case "alpha":
 			rt.check = isValidLanguageTag
 		case "alnum":
@@ -151,14 +185,10 @@ func LoadRuleTypeFunc(ast search.AST) {
 			rt.check = isValidCountryCode
 		case "uuid":
 			rt.check = isValidRuleUUID
-			rt.acount = &ruleArgCount{min: 0, max: 5}
 		case "ip":
 			rt.check = isValidRuleIP
-			rt.acount = &ruleArgCount{min: 0, max: 2}
 		case "mac":
-			rt.DefaultArgValue = "0"
 			rt.check = isValidRuleMAC
-			rt.acount = &ruleArgCount{min: 0, max: 1}
 		case "iso":
 			rt.check = isValidRuleISO
 		case "rfc":
@@ -167,70 +197,28 @@ func LoadRuleTypeFunc(ast search.AST) {
 			rt.UseRawString = true
 			rt.check = isValidRuleRegexp
 		}
-
-		defaultRuleTypeMap[ruleName] = rt
-		return nil
-	})
-
-	// load type info for validators "borrowed" from stdlib
-	stdlib := []struct {
-		name     string
-		pkgpath  string
-		funcname string
-	}{
-		{"prefix", "strings", "HasPrefix"},
-		{"suffix", "strings", "HasSuffix"},
-		{"contains", "strings", "Contains"},
 	}
 
-	for _, v := range stdlib {
-		fn, err := search.FindFunc(v.pkgpath, v.funcname, ast)
-		if err != nil {
-			panic("unable to load functions from standard library: \"strings\"")
-		}
-
-		sig := fn.Type().(*types.Signature)
-		p, r := sig.Params(), sig.Results()
-		if p.Len() < 1 || r.Len() != 1 {
-			panic(fn.FullName() + ": bad number of parameter/result arguments")
-		}
-		if !isBool(r.At(0).Type()) {
-			panic(fn.FullName() + ": bad return argument type")
-		}
-
-		rt := RuleTypeFunc{}
-		rt.FuncName = fn.Name()
-		rt.PkgPath = fn.Pkg().Path()
-		rt.IsVariadic = sig.Variadic()
-		rt.LOp = LogicalOr
-		rt.typ = fn
-		for i := 0; i < p.Len(); i++ {
-			rt.ArgTypes = append(rt.ArgTypes, analyzeType0(p.At(i).Type()))
-		}
-		defaultRuleTypeMap[v.name] = rt
-	}
+	return rt, nil
 }
 
-// parseruleinfo parses information about a given rule from the given string.
-// At the moment only the rule's name is expected to be contained in the input.
-func parseruleinfo(ruleinfo string) (name string) {
-	ruleinfo = strings.TrimSpace(ruleinfo)
-
-	// the info is space separated
-	elems := strings.Split(ruleinfo, " ")
-	for _, elem := range elems {
-
-		// each elem is expected to be a key=value pair
-		kv := strings.Split(elem, "=")
-		key, value := kv[0], kv[1]
-
-		switch key {
-		case "name":
-			name = value
+// LoadRuleTypeFunc loads info for pre-defined function rule types. LoadRuleTypeFunc
+// should be invoked only once and before starting the first analysis.
+func LoadRuleTypeFunc(ast search.AST) {
+	// load functions from the "github.com/frk/isvalid" package
+	search.LoadBuiltinFuncs(ast, func(confjson []byte, fn *types.Func) error {
+		conf := RuleConfig{}
+		if err := json.Unmarshal(confjson, &conf); err != nil {
+			panic("bad json for RuleConfig:" + err.Error() + "\n" + string(confjson))
 		}
-	}
 
-	return name
+		rt, err := conf.RuleTypeFunc(fn, false)
+		if err != nil {
+			panic(err.Error())
+		}
+		defaultRuleTypeMap[conf.Name] = rt
+		return nil
+	})
 }
 
 func isValidRuleNotnil(a *analysis, r *Rule, t Type, f *StructField) error {

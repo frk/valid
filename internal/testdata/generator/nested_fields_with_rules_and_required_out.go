@@ -13,12 +13,12 @@ func (v NestedFieldsWithRulesAndRequiredValidator) Validate() error {
 	if v.G2.F1 == nil || len(*v.G2.F1) == 0 {
 		return errors.New("G2.F1 is required")
 	} else if !isvalid.Email(*v.G2.F1) {
-		return errors.New("G2.F1 must be a valid email")
+		return errors.New("G2.F1 must be a valid email address")
 	}
 	if v.G2.F2 == nil || *v.G2.F2 == nil || len(**v.G2.F2) == 0 {
 		return errors.New("G2.F2 is required")
 	} else if !isvalid.Email(**v.G2.F2) {
-		return errors.New("G2.F2 must be a valid email")
+		return errors.New("G2.F2 must be a valid email address")
 	}
 	if v.G2.G3 == nil {
 		return errors.New("G2.G3 is required")
