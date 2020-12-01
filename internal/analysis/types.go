@@ -189,7 +189,7 @@ type (
 		// to be validated.
 		OptionArgTypes []Type
 
-		OptionValues map[interface{}]*RuleOption
+		OptionValues []map[interface{}]*RuleOption
 		// Indicates whether or not the function's signature is variadic.
 		IsVariadic bool
 		// NOTE(mkopriva): Although currently not enforced, this field is
@@ -396,16 +396,35 @@ func (rt RuleTypeFunc) checkRule(a *analysis, r *Rule, t Type, f *StructField) e
 
 // Adjusts the Rule according to the OptMap.
 func (rt RuleTypeFunc) adjustRule(r *Rule) {
-	// If a RuleOption's Value matches an entry in the opt_map, then update the RuleOption.
-	for _, opt := range r.Options {
-		if val, ok := rt.OptionValues[opt.Value]; ok {
+	for i, optmap := range rt.OptionValues {
+		if len(r.Options) <= i {
+			// If no option was provided for the ith argument
+			// then initialize it to an "unknown" and see if
+			// the map contains a default (key=nil) entry.
+			opt := &RuleOption{Type: OptionTypeUnknown}
+			if val, ok := optmap[nil]; ok {
+				*opt = *val
+			}
+			r.Options = append(r.Options, opt)
+			continue
+		}
+
+		opt := r.Options[i]
+
+		// If the map contains a default (key=nil) entry and the *Rule's
+		// option is "unknown", then update it with the default.
+		if opt.Value == "" && opt.Type == OptionTypeUnknown {
+			if val, ok := optmap[nil]; ok {
+				*opt = *val
+			}
+			continue
+		}
+
+		// If a RuleOption's Value matches an entry in the
+		// options map, then update the RuleOption.
+		if val, ok := optmap[opt.Value]; ok {
 			*opt = *val
 		}
-	}
-	// If a default was specified in the opt_map (key=nil), and no options
-	// were supplied for the *Rule in the tag, then use the default.
-	if opt, ok := rt.OptionValues[nil]; ok && len(r.Options) == 0 {
-		r.Options = append(r.Options, opt)
 	}
 }
 

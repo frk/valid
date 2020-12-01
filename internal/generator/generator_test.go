@@ -31,6 +31,7 @@ func TestGenerator(t *testing.T) {
 		"notnil",
 		"alnum",
 		"email",
+		"fqdn",
 		"url",
 		"uri",
 		"pan",

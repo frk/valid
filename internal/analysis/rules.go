@@ -118,10 +118,10 @@ type RuleConfig struct {
 	Name   string `json:"name"`
 	OptMin *int   `json:"opt_min"`
 	OptMax *int   `json:"opt_max"`
-	OptMap []struct {
+	Opts   [][]struct {
 		Key   *string `json:"key"`
 		Value string  `json:"value"`
-	} `json:"opt_map"`
+	} `json:"opts"`
 	Err ErrMesgConfig   `json:"err"`
 	LOp LogicalOperator `json:"log_op"`
 }
@@ -164,15 +164,25 @@ func (conf RuleConfig) RuleTypeFunc(fn *types.Func, isCustom bool) (RuleTypeFunc
 		}
 	}
 
-	if len(conf.OptMap) > 0 {
-		rt.OptionValues = make(map[interface{}]*RuleOption)
-		for _, kv := range conf.OptMap {
-			opt := parseRuleTagOption(kv.Value)
-			if kv.Key != nil {
-				rt.OptionValues[*kv.Key] = opt
-			} else {
-				rt.OptionValues[nil] = opt
+	if len(conf.Opts) > 0 {
+		// If opts were provided, they must match the number
+		// of opts that can be passed to the function.
+		got, want := len(conf.Opts), len(rt.OptionArgTypes)
+		if got != want && (rt.IsVariadic && got != want-1) {
+			return RuleTypeFunc{}, &anError{Code: errRuleFuncOptMap, fn: fn}
+		}
+
+		for _, optvals := range conf.Opts {
+			optmap := make(map[interface{}]*RuleOption)
+			for _, kv := range optvals {
+				if kv.Key != nil {
+					optmap[*kv.Key] = parseRuleTagOption(kv.Value)
+				} else {
+					optmap[nil] = parseRuleTagOption(kv.Value)
+				}
 			}
+
+			rt.OptionValues = append(rt.OptionValues, optmap)
 		}
 	}
 

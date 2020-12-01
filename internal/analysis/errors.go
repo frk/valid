@@ -276,6 +276,7 @@ const (
 	_ errorCode = iota
 	errRuleNameReserved
 	errRuleFuncSignature
+	errRuleFuncOptMap
 	errRuleConfOpts // TODO
 	errValidatorNoField
 	errRuleUnknown
@@ -321,8 +322,10 @@ var error_template_string = `
 	` result value which must be of type {{R "bool"}}.
 {{ end }}
 
-{{ define "` + errRuleConfOpts.name() + `" -}}
-{{R "ERROR:"}} bad things happend!?
+{{ define "` + errRuleFuncOptMap.name() + `" -}}
+{{R "ERROR:"}} Cannot use "{{R "opts"}}" from function {{R .FuncNameQualified}} of type {{R .FuncType}}.
+  > The "{{R "opts"}}" array must either be {{R "empty"}} or it must contain the same number of elements ` +
+	`as the function's {{R "number of arguments minus one"}} (the one spot is occupied by the rule's field itself).
 {{ end }}
 
 {{ define "` + errValidatorNoField.name() + `" -}}

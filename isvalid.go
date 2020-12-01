@@ -23,9 +23,9 @@ func ASCII(v string) bool {
 //
 // isvalid:rule
 //	{
-//		"name":    "alpha",
-//		"opt_map": [ { "key": null, "value": "en" } ],
-//		"err":     { "text": "must be an alphabetic string" }
+//		"name": "alpha",
+//		"opts": [[ { "key": null, "value": "en" } ]],
+//		"err": { "text": "must be an alphabetic string" }
 //	}
 func Alpha(v string, loc ...string) bool {
 	// TODO
@@ -37,7 +37,7 @@ func Alpha(v string, loc ...string) bool {
 // isvalid:rule
 //	{
 //		"name": "alnum",
-//		"opt_map": [ { "key": null, "value": "en" } ],
+//		"opts": [[ { "key": null, "value": "en" } ]],
 //		"err": { "text": "must be an alphanumeric string" }
 //	}
 func Alnum(v string, loc ...string) bool {
@@ -91,15 +91,12 @@ func Base58(v string) bool {
 //
 // isvalid:rule
 //	{
-// 	     "name": "base64",
-// 	     "opt_map": [{
-//		"key":   null,
-//		"value": "false"
-//	     }, {
-//		"key":   "url",
-//		"value": "true"
-//	     }],
-//	     "err": { "text": "must be a valid base64 string" }
+//		"name": "base64",
+//		"opts": [[
+//			{ "key": null, "value": "false"	},
+//			{ "key": "url", "value": "true" }
+//		]],
+//		"err": { "text": "must be a valid base64 string" }
 // 	}
 func Base64(v string, urlsafe bool) bool {
 	if urlsafe {
@@ -310,7 +307,10 @@ var rxFQDNPartIllegal = regexp.MustCompile(`[\x{ff01}-\x{ff5e}]`)
 // are forbidden.
 //
 // isvalid:rule
-//	{ "name": "fqdn", "err": { "text": "must be a valid FQDN" } }
+//	{
+//		"name": "fqdn",
+//		"err": { "text": "must be a valid FQDN" }
+//	}
 func FQDN(v string) bool {
 	parts := strings.Split(v, ".")
 	for _, part := range parts {
@@ -319,8 +319,7 @@ func FQDN(v string) bool {
 		}
 	}
 
-	// tld must be present, must match pattern, must not contain illegal chars,
-	// must not be all digit
+	// tld must be present, must match pattern, must not contain illegal chars, must not be all digits
 	if len(parts) < 2 {
 		return false
 	}
@@ -353,13 +352,15 @@ func Float(v string) bool {
 	return rxFloat.MatchString(v)
 }
 
+var rxHSLComma = regexp.MustCompile(`^(?i)(?:hsl)a?\(\s*(?:(?:\+|\-)?(?:[0-9]+(?:\.[0-9]+)?(?:e(?:\+|\-)?[0-9]+)?|\.[0-9]+(?:e(?:\+|\-)?[0-9]+)?))(?:deg|grad|rad|turn|\s*)(?:\s*,\s*(?:\+|\-)?(?:[0-9]+(?:\.[0-9]+)?(?:e(?:\+|\-)?[0-9]+)?|\.[0-9]+(?:e(?:\+|\-)?[0-9]+)?)%){2}\s*(?:,\s*(?:(?:\+|\-)?(?:[0-9]+(?:\.[0-9]+)?(?:e(?:\+|\-)?[0-9]+)?|\.[0-9]+(?:e(?:\+|\-)?[0-9]+)?)%?)\s*)?\)$`)
+var rxHSLSpace = regexp.MustCompile(`^(?i)(?:hsl)a?\(\s*(?:(?:\+|\-)?(?:[0-9]+(?:\.[0-9]+)?(?:e(?:\+|\-)?[0-9]+)?|\.[0-9]+(?:e(?:\+|\-)?[0-9]+)?))(?:deg|grad|rad|turn|\s)(?:\s*(?:\+|\-)?(?:[0-9]+(?:\.[0-9]+)?(?:e(?:\+|\-)?[0-9]+)?|\.[0-9]+(?:e(?:\+|\-)?[0-9]+)?)%){2}\s*(?:\/\s*(?:(?:\+|\-)?(?:[0-9]+(?:\.[0-9]+)?(?:e(?:\+|\-)?[0-9]+)?|\.[0-9]+(?:e(?:\+|\-)?[0-9]+)?)%?)\s*)?\)$`)
+
 // HSL reports whether or not v represents an HSL color value.
 //
 // isvalid:rule
 //	{ "name": "hsl", "err": {"text": "must be a valid HSL color"} }
 func HSL(v string) bool {
-	// TODO
-	return false
+	return rxHSLComma.MatchString(v) || rxHSLSpace.MatchString(v)
 }
 
 // Hash reports whether or not v is a hash of the specified algorithm.
@@ -428,13 +429,13 @@ func IMEI(v string) bool {
 //
 // isvalid:rule
 //	{
-//		"name":    "ip",
-//		"opt_map": [
+//		"name": "ip",
+//		"opts": [[
 //			{ "key": null, "value": "0" },
 //			{ "key": "v4", "value": "4" },
 //			{ "key": "v6", "value": "6" }
-//		],
-//		"err":     { "text": "must be a valid IP" }
+//		]],
+//		"err": { "text": "must be a valid IP" }
 //	}
 func IP(v string, ver int) bool {
 	// TODO
@@ -460,9 +461,9 @@ func IPRange(v string) bool {
 //
 // isvalid:rule
 //	{
-//		"name":    "isbn",
-//		"opt_map": [ { "key": null, "value": "0" } ],
-//		"err":     { "text": "must be a valid ISBN" }
+//		"name": "isbn",
+//		"opts": [[ { "key": null, "value": "0" } ]],
+//		"err": { "text": "must be a valid ISBN" }
 //	}
 func ISBN(v string, ver int) bool {
 	// TODO
@@ -498,9 +499,9 @@ func ISO(v string, num int) bool {
 //
 // isvalid:rule
 //	{
-//		"name":    "iso31661a",
-//		"opt_map": [ { "key": null, "value": "0" } ],
-//		"err":     { "text": "must be a valid ISO 3166-1 Alpha value" }
+//		"name": "iso31661a",
+//		"opts": [[ { "key": null, "value": "0" } ]],
+//		"err": { "text": "must be a valid ISO 3166-1 Alpha value" }
 //	}
 func ISO31661A(v string, num int) bool {
 	// TODO
@@ -618,9 +619,9 @@ var rxMAC8Hyphen = regexp.MustCompile(`^(?:[0-9a-fA-F]{2}-){7}[0-9a-fA-F]{2}$`)
 //
 // isvalid:rule
 //	{
-//		"name":    "mac",
-//		"opt_map": [ { "key": null, "value": "0" } ],
-//		"err":     { "text": "must be a valid MAC" }
+//		"name": "mac",
+//		"opts": [[ { "key": null, "value": "0" } ]],
+//		"err": { "text": "must be a valid MAC" }
 //	}
 func MAC(v string, space int) bool {
 	if space == 0 {
