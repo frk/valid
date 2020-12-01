@@ -9,7 +9,7 @@ import (
 )
 
 func (v AlnumValidator) Validate() error {
-	if !isvalid.Alnum(v.F1) {
+	if !isvalid.Alnum(v.F1, "en") {
 		return errors.New("F1 must be an alphanumeric string")
 	}
 	if v.F2 != nil && *v.F2 != nil && !isvalid.Alnum(**v.F2, "en") {
@@ -20,7 +20,7 @@ func (v AlnumValidator) Validate() error {
 	} else if !isvalid.Alnum(**v.F3, "sk", "cs") {
 		return errors.New("F3 must be an alphanumeric string")
 	}
-	if !isvalid.Alpha(v.F4) {
+	if !isvalid.Alpha(v.F4, "en") {
 		return errors.New("F4 must be an alphabetic string")
 	}
 	if v.F5 != nil && *v.F5 != nil && !isvalid.Alpha(**v.F5, "en") {

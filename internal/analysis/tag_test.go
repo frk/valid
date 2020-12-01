@@ -28,69 +28,69 @@ func TestParseRuleTag(t *testing.T) {
 		tag:  `is:"rule"`,
 		want: &TagNode{Rules: []*Rule{{Name: "rule"}}},
 	}, {
-		// single rule with arg
-		tag: `is:"rule:arg"`,
-		want: &TagNode{Rules: []*Rule{{Name: "rule", Args: []*RuleArg{
-			{Value: "arg", Type: ArgTypeString},
+		// single rule with option
+		tag: `is:"rule:opt"`,
+		want: &TagNode{Rules: []*Rule{{Name: "rule", Options: []*RuleOption{
+			{Value: "opt", Type: OptionTypeString},
 		}}}},
 	}, {
-		// single rule with args
-		tag: `is:"rule:arg:123:true:0.0064"`,
-		want: &TagNode{Rules: []*Rule{{Name: "rule", Args: []*RuleArg{
-			{Value: "arg", Type: ArgTypeString},
-			{Value: "123", Type: ArgTypeInt},
-			{Value: "true", Type: ArgTypeBool},
-			{Value: "0.0064", Type: ArgTypeFloat},
+		// single rule with options
+		tag: `is:"rule:opt:123:true:0.0064"`,
+		want: &TagNode{Rules: []*Rule{{Name: "rule", Options: []*RuleOption{
+			{Value: "opt", Type: OptionTypeString},
+			{Value: "123", Type: OptionTypeInt},
+			{Value: "true", Type: OptionTypeBool},
+			{Value: "0.0064", Type: OptionTypeFloat},
 		}}}},
 	}, {
-		// single rule with empty arg
+		// single rule with empty option
 		tag: `is:"rule:"`,
-		want: &TagNode{Rules: []*Rule{{Name: "rule", Args: []*RuleArg{
-			{Value: "", Type: ArgTypeUnknown},
+		want: &TagNode{Rules: []*Rule{{Name: "rule", Options: []*RuleOption{
+			{Value: "", Type: OptionTypeUnknown},
 		}}}},
 	}, {
-		// single rule with empty args
+		// single rule with empty options
 		tag: `is:"rule::::"`,
-		want: &TagNode{Rules: []*Rule{{Name: "rule", Args: []*RuleArg{
-			{Value: "", Type: ArgTypeUnknown},
-			{Value: "", Type: ArgTypeUnknown},
-			{Value: "", Type: ArgTypeUnknown},
-			{Value: "", Type: ArgTypeUnknown},
+		want: &TagNode{Rules: []*Rule{{Name: "rule", Options: []*RuleOption{
+			{Value: "", Type: OptionTypeUnknown},
+			{Value: "", Type: OptionTypeUnknown},
+			{Value: "", Type: OptionTypeUnknown},
+			{Value: "", Type: OptionTypeUnknown},
 		}}}},
 	}, {
-		// single rule with empty & non-empty args
-		tag: `is:"rule:arg::true:::0.0064:"`,
-		want: &TagNode{Rules: []*Rule{{Name: "rule", Args: []*RuleArg{
-			{Value: "arg", Type: ArgTypeString},
-			{Value: "", Type: ArgTypeUnknown},
-			{Value: "true", Type: ArgTypeBool},
-			{Value: "", Type: ArgTypeUnknown},
-			{Value: "", Type: ArgTypeUnknown},
-			{Value: "0.0064", Type: ArgTypeFloat},
-			{Value: "", Type: ArgTypeUnknown},
+		// single rule with empty & non-empty options
+		tag: `is:"rule:opt::true:::0.0064:"`,
+		want: &TagNode{Rules: []*Rule{{Name: "rule", Options: []*RuleOption{
+			{Value: "opt", Type: OptionTypeString},
+			{Value: "", Type: OptionTypeUnknown},
+			{Value: "true", Type: OptionTypeBool},
+			{Value: "", Type: OptionTypeUnknown},
+			{Value: "", Type: OptionTypeUnknown},
+			{Value: "0.0064", Type: OptionTypeFloat},
+			{Value: "", Type: OptionTypeUnknown},
 		}}}},
 	}, {
-		// single rule with quoted arg
-		tag: `is:"rule:\"arg\""`,
-		want: &TagNode{Rules: []*Rule{{Name: "rule", Args: []*RuleArg{
-			{Value: "arg", Type: ArgTypeString},
+		// single rule with quoted option
+		tag: `is:"rule:\"opt\""`,
+		want: &TagNode{Rules: []*Rule{{Name: "rule", Options: []*RuleOption{
+			{Value: "opt", Type: OptionTypeString},
 		}}}},
 	}, {
-		// single rule with quoted arg
+		// single rule with quoted option
 		tag: `is:"rule:\"foo \\\"bar\\\" baz\""`,
-		want: &TagNode{Rules: []*Rule{{Name: "rule", Args: []*RuleArg{
-			{Value: "foo \\\"bar\\\" baz", Type: ArgTypeString},
+		want: &TagNode{Rules: []*Rule{{Name: "rule", Options: []*RuleOption{
+			{Value: "foo \\\"bar\\\" baz", Type: OptionTypeString},
 		}}}},
 	}, {
-		// single rule with quoted, empty, and non-empty args
+		// single rule with quoted, empty, and non-empty options
 		tag: `is:"rule:\"foo\":bar:\"\":123::\"b \\\"a\\\" z\""`,
-		want: &TagNode{Rules: []*Rule{{Name: "rule", Args: []*RuleArg{
-			{Value: "foo", Type: ArgTypeString},
-			{Value: "bar", Type: ArgTypeString},
-			{Value: "", Type: ArgTypeString},
-			{Value: "123", Type: ArgTypeInt},
-			{Value: "", Type: ArgTypeUnknown},
-			{Value: "b \\\"a\\\" z", Type: ArgTypeString},
+		want: &TagNode{Rules: []*Rule{{Name: "rule", Options: []*RuleOption{
+			{Value: "foo", Type: OptionTypeString},
+			{Value: "bar", Type: OptionTypeString},
+			{Value: "", Type: OptionTypeString},
+			{Value: "123", Type: OptionTypeInt},
+			{Value: "", Type: OptionTypeUnknown},
+			{Value: "b \\\"a\\\" z", Type: OptionTypeString},
 		}}}},
 	}, {
 		// multiple plain rules
@@ -105,24 +105,24 @@ func TestParseRuleTag(t *testing.T) {
 			{Name: "ra"}, {Name: "re"}, {Name: "ri"},
 		}},
 	}, {
-		// multiple rules with args
+		// multiple rules with options
 		tag: `is:"ra:a:b:c,re:foo::321:,ri:1:2:3"`,
 		want: &TagNode{Rules: []*Rule{
-			{Name: "ra", Args: []*RuleArg{
-				{"a", ArgTypeString},
-				{"b", ArgTypeString},
-				{"c", ArgTypeString},
+			{Name: "ra", Options: []*RuleOption{
+				{"a", OptionTypeString},
+				{"b", OptionTypeString},
+				{"c", OptionTypeString},
 			}},
-			{Name: "re", Args: []*RuleArg{
-				{"foo", ArgTypeString},
-				{"", ArgTypeUnknown},
-				{"321", ArgTypeInt},
-				{"", ArgTypeUnknown},
+			{Name: "re", Options: []*RuleOption{
+				{"foo", OptionTypeString},
+				{"", OptionTypeUnknown},
+				{"321", OptionTypeInt},
+				{"", OptionTypeUnknown},
 			}},
-			{Name: "ri", Args: []*RuleArg{
-				{"1", ArgTypeInt},
-				{"2", ArgTypeInt},
-				{"3", ArgTypeInt},
+			{Name: "ri", Options: []*RuleOption{
+				{"1", OptionTypeInt},
+				{"2", OptionTypeInt},
+				{"3", OptionTypeInt},
 			}},
 		}},
 	}, {
@@ -236,7 +236,7 @@ func TestParseRuleTag(t *testing.T) {
 			},
 		},
 	}, {
-		// ... with arguments and all ...
+		// ... with options and all ...
 		tag: `is:"[ra,re:1:2:3,[re::\"]]\\\"[]]\":foo,ri:@my_ctx,[ri:&MyField:::-321,ru:\"  \",[ru,ro:\"]\"]` +
 			`ro:\"[\",ru]ru:foo:123::&MyOtherField:]ri:@my_ctx,re::\"]]\\\"[]]\":foo]ra:xyz:,re:&mykey:@MyCtx,` +
 			`[la:\"]heee![\"]re,ri:,[le:a,li:b,lu:c]ri:\"foo \\\"]]]\":,ru::-abc,[c:lu,b:li,a:le]ru,ro:\"[foo]\":"`,
@@ -244,45 +244,45 @@ func TestParseRuleTag(t *testing.T) {
 			Key: &TagNode{
 				Rules: []*Rule{
 					{Name: "ra"},
-					{Name: "re", Args: []*RuleArg{
-						{Value: "1", Type: ArgTypeInt},
-						{Value: "2", Type: ArgTypeInt},
-						{Value: "3", Type: ArgTypeInt},
+					{Name: "re", Options: []*RuleOption{
+						{Value: "1", Type: OptionTypeInt},
+						{Value: "2", Type: OptionTypeInt},
+						{Value: "3", Type: OptionTypeInt},
 					}},
 				},
 				Key: &TagNode{
 					Rules: []*Rule{
-						{Name: "re", Args: []*RuleArg{
-							{Value: "", Type: ArgTypeUnknown},
-							{Value: "]]\\\"[]]", Type: ArgTypeString},
-							{Value: "foo", Type: ArgTypeString},
+						{Name: "re", Options: []*RuleOption{
+							{Value: "", Type: OptionTypeUnknown},
+							{Value: "]]\\\"[]]", Type: OptionTypeString},
+							{Value: "foo", Type: OptionTypeString},
 						}},
 						{Name: "ri", Context: "my_ctx"},
 					},
 					Key: &TagNode{
 						Rules: []*Rule{
-							{Name: "ri", Args: []*RuleArg{
-								{Value: "MyField", Type: ArgTypeField},
-								{Value: "", Type: ArgTypeUnknown},
-								{Value: "", Type: ArgTypeUnknown},
-								{Value: "-321", Type: ArgTypeInt},
+							{Name: "ri", Options: []*RuleOption{
+								{Value: "MyField", Type: OptionTypeField},
+								{Value: "", Type: OptionTypeUnknown},
+								{Value: "", Type: OptionTypeUnknown},
+								{Value: "-321", Type: OptionTypeInt},
 							}},
-							{Name: "ru", Args: []*RuleArg{
-								{Value: "  ", Type: ArgTypeString},
+							{Name: "ru", Options: []*RuleOption{
+								{Value: "  ", Type: OptionTypeString},
 							}},
 						},
 						Key: &TagNode{
 							Rules: []*Rule{
 								{Name: "ru"},
-								{Name: "ro", Args: []*RuleArg{
-									{Value: "]", Type: ArgTypeString},
+								{Name: "ro", Options: []*RuleOption{
+									{Value: "]", Type: OptionTypeString},
 								}},
 							},
 						},
 						Elem: &TagNode{
 							Rules: []*Rule{
-								{Name: "ro", Args: []*RuleArg{
-									{Value: "[", Type: ArgTypeString},
+								{Name: "ro", Options: []*RuleOption{
+									{Value: "[", Type: OptionTypeString},
 								}},
 								{Name: "ru"},
 							},
@@ -290,12 +290,12 @@ func TestParseRuleTag(t *testing.T) {
 					},
 					Elem: &TagNode{
 						Rules: []*Rule{
-							{Name: "ru", Args: []*RuleArg{
-								{Value: "foo", Type: ArgTypeString},
-								{Value: "123", Type: ArgTypeInt},
-								{Value: "", Type: ArgTypeUnknown},
-								{Value: "MyOtherField", Type: ArgTypeField},
-								{Value: "", Type: ArgTypeUnknown},
+							{Name: "ru", Options: []*RuleOption{
+								{Value: "foo", Type: OptionTypeString},
+								{Value: "123", Type: OptionTypeInt},
+								{Value: "", Type: OptionTypeUnknown},
+								{Value: "MyOtherField", Type: OptionTypeField},
+								{Value: "", Type: OptionTypeUnknown},
 							}},
 						},
 					},
@@ -303,67 +303,67 @@ func TestParseRuleTag(t *testing.T) {
 				Elem: &TagNode{
 					Rules: []*Rule{
 						{Name: "ri", Context: "my_ctx"},
-						{Name: "re", Args: []*RuleArg{
-							{Value: "", Type: ArgTypeUnknown},
-							{Value: "]]\\\"[]]", Type: ArgTypeString},
-							{Value: "foo", Type: ArgTypeString},
+						{Name: "re", Options: []*RuleOption{
+							{Value: "", Type: OptionTypeUnknown},
+							{Value: "]]\\\"[]]", Type: OptionTypeString},
+							{Value: "foo", Type: OptionTypeString},
 						}},
 					},
 				},
 			},
 			Elem: &TagNode{
 				Rules: []*Rule{
-					{Name: "ra", Args: []*RuleArg{
-						{Value: "xyz", Type: ArgTypeString},
-						{Value: "", Type: ArgTypeUnknown},
+					{Name: "ra", Options: []*RuleOption{
+						{Value: "xyz", Type: OptionTypeString},
+						{Value: "", Type: OptionTypeUnknown},
 					}},
-					{Name: "re", Context: "MyCtx", Args: []*RuleArg{
-						{Value: "mykey", Type: ArgTypeField},
+					{Name: "re", Context: "MyCtx", Options: []*RuleOption{
+						{Value: "mykey", Type: OptionTypeField},
 					}},
 				},
 				Key: &TagNode{
-					Rules: []*Rule{{Name: "la", Args: []*RuleArg{
-						{Value: "]heee![", Type: ArgTypeString},
+					Rules: []*Rule{{Name: "la", Options: []*RuleOption{
+						{Value: "]heee![", Type: OptionTypeString},
 					}}},
 				},
 				Elem: &TagNode{
 					Rules: []*Rule{
 						{Name: "re"},
-						{Name: "ri", Args: []*RuleArg{
-							{Value: "", Type: ArgTypeUnknown},
+						{Name: "ri", Options: []*RuleOption{
+							{Value: "", Type: OptionTypeUnknown},
 						}},
 					},
 					Key: &TagNode{
 						Rules: []*Rule{
-							{Name: "le", Args: []*RuleArg{{Value: "a", Type: ArgTypeString}}},
-							{Name: "li", Args: []*RuleArg{{Value: "b", Type: ArgTypeString}}},
-							{Name: "lu", Args: []*RuleArg{{Value: "c", Type: ArgTypeString}}},
+							{Name: "le", Options: []*RuleOption{{Value: "a", Type: OptionTypeString}}},
+							{Name: "li", Options: []*RuleOption{{Value: "b", Type: OptionTypeString}}},
+							{Name: "lu", Options: []*RuleOption{{Value: "c", Type: OptionTypeString}}},
 						},
 					},
 					Elem: &TagNode{
 						Rules: []*Rule{
-							{Name: "ri", Args: []*RuleArg{
-								{Value: "foo \\\"]]]", Type: ArgTypeString},
-								{Value: "", Type: ArgTypeUnknown},
+							{Name: "ri", Options: []*RuleOption{
+								{Value: "foo \\\"]]]", Type: OptionTypeString},
+								{Value: "", Type: OptionTypeUnknown},
 							}},
-							{Name: "ru", Args: []*RuleArg{
-								{Value: "", Type: ArgTypeUnknown},
-								{Value: "-abc", Type: ArgTypeString},
+							{Name: "ru", Options: []*RuleOption{
+								{Value: "", Type: OptionTypeUnknown},
+								{Value: "-abc", Type: OptionTypeString},
 							}},
 						},
 						Key: &TagNode{
 							Rules: []*Rule{
-								{Name: "c", Args: []*RuleArg{{Value: "lu", Type: ArgTypeString}}},
-								{Name: "b", Args: []*RuleArg{{Value: "li", Type: ArgTypeString}}},
-								{Name: "a", Args: []*RuleArg{{Value: "le", Type: ArgTypeString}}},
+								{Name: "c", Options: []*RuleOption{{Value: "lu", Type: OptionTypeString}}},
+								{Name: "b", Options: []*RuleOption{{Value: "li", Type: OptionTypeString}}},
+								{Name: "a", Options: []*RuleOption{{Value: "le", Type: OptionTypeString}}},
 							},
 						},
 						Elem: &TagNode{
 							Rules: []*Rule{
 								{Name: "ru"},
-								{Name: "ro", Args: []*RuleArg{
-									{Value: "[foo]", Type: ArgTypeString},
-									{Value: "", Type: ArgTypeUnknown},
+								{Name: "ro", Options: []*RuleOption{
+									{Value: "[foo]", Type: OptionTypeString},
+									{Value: "", Type: OptionTypeUnknown},
 								}},
 							},
 						},

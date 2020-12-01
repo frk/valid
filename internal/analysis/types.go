@@ -124,31 +124,31 @@ type (
 	Rule struct {
 		// The name of the rule.
 		Name string
-		// The arguments of the rule.
-		Args []*RuleArg
+		// The options of the rule.
+		Options []*RuleOption
 		// The context property of the rule.
 		Context string
 	}
 
-	// RuleArg represents a rule argument as parsed from a "rule" tag.
-	RuleArg struct {
-		// The argument value, or empty string.
+	// RuleOption represents a rule option as parsed from a "rule" tag.
+	RuleOption struct {
+		// The option value, or empty string.
 		Value string
-		// The type of the argument value.
-		Type ArgType
+		// The type of the option value.
+		Type OptionType
 	}
 
 	// RuleType implementations indicate to the generator what code it should
 	// produce for a Rule. In addition to that a RuleType implementation also
-	// describes how a Rule, its Args, and its related StructField should be
+	// describes how a Rule, its Options, and its related StructField should be
 	// checked for correctness before code generation.
 	//
 	// NOTE(mkopriva): RuleType, instead of being a direct member of
 	// the Rule struct, is mapped to each Rule by the Rule's Name.
 	RuleType interface {
 		ErrConf() ErrMesgConfig
-		// Should return the expected argument count.
-		argCount() ruleArgCount
+		// Should return the expected option count.
+		optCount() ruleOptCount
 		// Should check the given Rule for correctness.
 		checkRule(a *analysis, r *Rule, t Type, f *StructField) error
 	}
@@ -170,8 +170,8 @@ type (
 		Err ErrMesgConfig
 		// check is a plugin used by the checkRule method.
 		check func(a *analysis, r *Rule, t Type, f *StructField) error
-		// arg count requirements, used by the argCount method.
-		amin, amax int
+		// option count requirements, used by the optCount method.
+		optmin, optmax int
 	}
 
 	// RuleTypeFunc is mapped to Rules that should produce code that
@@ -181,11 +181,15 @@ type (
 		FuncName string
 		// The function's package import path.
 		PkgPath string
-		// The types of the arguments to the function. Will always be of
-		// length at least 1 where the 0th argument represents the field
+		// The types of the function's 1st argument which will always
+		// be the associate field value or a field's element value.
+		FieldArgType Type
+		// The types of the options to the function. Will always be of
+		// length at least 1 where the 0th option represents the field
 		// to be validated.
-		ArgTypes []Type
-		ArgMap   map[interface{}]*RuleArg
+		OptionArgTypes []Type
+
+		OptionValues map[interface{}]*RuleOption
 		// Indicates whether or not the function's signature is variadic.
 		IsVariadic bool
 		// NOTE(mkopriva): Although currently not enforced, this field is
@@ -193,29 +197,29 @@ type (
 		// that take exactly two arguments, no more, no less.
 		//
 		// If set, the generator will produce one call expression for
-		// each of the associated Rule's arguments and then join those
+		// each of the associated Rule's options and then join those
 		// call expressions into a boolean expression using the *inverse*
 		// of the field's logical operator value.
 		LOp LogicalOperator
 		// Indicates that the generated code should use raw strings
-		// for any string arguments passed to the function.
+		// for any string options passed to the function.
 		UseRawString bool
 		// If set, will be used by the generator for producing error messages.
 		Err ErrMesgConfig
 		// check is a plugin used by the checkRule method.
 		check func(a *analysis, r *Rule, t Type, f *StructField) error
-		// If set, it will be returned by the argCount method. If left
-		// unset, the argCount method will return a value inferred from
-		// the LOp and ArgTypes fields.
-		acount *ruleArgCount
+		// If set, it will be returned by the optCount method. If left
+		// unset, the optCount method will return a value inferred from
+		// the LOp and OptionArgTypes fields.
+		acount *ruleOptCount
 		// Used for error reporting.
 		typ *types.Func `cmp:"+"`
 	}
 )
 
-// Accepts no args.
-func (RuleTypeNop) argCount() ruleArgCount {
-	return ruleArgCount{}
+// Accepts no options.
+func (RuleTypeNop) optCount() ruleOptCount {
+	return ruleOptCount{}
 }
 
 func (RuleTypeNop) ErrConf() ErrMesgConfig {
@@ -223,29 +227,29 @@ func (RuleTypeNop) ErrConf() ErrMesgConfig {
 }
 
 func (rt RuleTypeNop) checkRule(a *analysis, r *Rule, t Type, f *StructField) error {
-	if ok := rt.argCount().check(len(r.Args)); !ok {
-		return &anError{Code: errRuleArgCount, a: a, f: f, r: r}
+	if ok := rt.optCount().check(len(r.Options)); !ok {
+		return &anError{Code: errRuleOptionCount, a: a, f: f, r: r}
 	}
 	return nil
 }
 
-// Accepts no args.
-func (RuleTypeIsValid) argCount() ruleArgCount {
-	return ruleArgCount{}
+// Accepts no options.
+func (RuleTypeIsValid) optCount() ruleOptCount {
+	return ruleOptCount{}
 }
 
 func (RuleTypeIsValid) ErrConf() ErrMesgConfig { return ErrMesgConfig{Text: "is not valid"} }
 
 func (rt RuleTypeIsValid) checkRule(a *analysis, r *Rule, t Type, f *StructField) error {
-	if ok := rt.argCount().check(len(r.Args)); !ok {
-		return &anError{Code: errRuleArgCount, a: a, f: f, r: r}
+	if ok := rt.optCount().check(len(r.Options)); !ok {
+		return &anError{Code: errRuleOptionCount, a: a, f: f, r: r}
 	}
 	return nil
 }
 
-// Accepts no args.
-func (RuleTypeEnum) argCount() ruleArgCount {
-	return ruleArgCount{}
+// Accepts no options.
+func (RuleTypeEnum) optCount() ruleOptCount {
+	return ruleOptCount{}
 }
 
 func (RuleTypeEnum) ErrConf() ErrMesgConfig { return ErrMesgConfig{Text: "is not valid"} }
@@ -253,8 +257,8 @@ func (RuleTypeEnum) ErrConf() ErrMesgConfig { return ErrMesgConfig{Text: "is not
 // checkRule checks whether the given Type is compatible with a RuleTypeEnum,
 // the *Rule and *StructField arguments are used for error reporting.
 func (rt RuleTypeEnum) checkRule(a *analysis, r *Rule, t Type, f *StructField) error {
-	if ok := rt.argCount().check(len(r.Args)); !ok {
-		return &anError{Code: errRuleArgCount, a: a, f: f, r: r}
+	if ok := rt.optCount().check(len(r.Options)); !ok {
+		return &anError{Code: errRuleOptionCount, a: a, f: f, r: r}
 	}
 
 	typ := t.PtrBase()
@@ -293,17 +297,17 @@ func (rt RuleTypeEnum) checkRule(a *analysis, r *Rule, t Type, f *StructField) e
 	return nil
 }
 
-// Returns a count based on RuleTypeBasic's amin & amax values.
-func (rt RuleTypeBasic) argCount() ruleArgCount {
-	return ruleArgCount{min: rt.amin, max: rt.amax}
+// Returns a count based on RuleTypeBasic's optmin & optmax values.
+func (rt RuleTypeBasic) optCount() ruleOptCount {
+	return ruleOptCount{min: rt.optmin, max: rt.optmax}
 }
 
 func (rt RuleTypeBasic) ErrConf() ErrMesgConfig { return rt.Err }
 
 // checkRule invokes the function of RuleTypeBasic's check field, if set.
 func (rt RuleTypeBasic) checkRule(a *analysis, r *Rule, t Type, f *StructField) error {
-	if ok := rt.argCount().check(len(r.Args)); !ok {
-		return &anError{Code: errRuleArgCount, a: a, f: f, r: r}
+	if ok := rt.optCount().check(len(r.Options)); !ok {
+		return &anError{Code: errRuleOptionCount, a: a, f: f, r: r}
 	}
 	if rt.check != nil {
 		return rt.check(a, r, t, f)
@@ -312,19 +316,18 @@ func (rt RuleTypeBasic) checkRule(a *analysis, r *Rule, t Type, f *StructField) 
 }
 
 // Returns a count based on RuleTypeFunc's properties.
-func (rt RuleTypeFunc) argCount() ruleArgCount {
+func (rt RuleTypeFunc) optCount() ruleOptCount {
 	if rt.acount != nil {
 		return *rt.acount
 	} else if rt.LOp > 0 {
-		return ruleArgCount{1, -1}
+		return ruleOptCount{1, -1}
 	}
 
-	// 1st is the field arg, which is implicit, no need to count it
-	expected := len(rt.ArgTypes[1:])
+	expected := len(rt.OptionArgTypes)
 	if rt.IsVariadic {
-		return ruleArgCount{expected - 1, -1}
+		return ruleOptCount{expected - 1, -1}
 	}
-	return ruleArgCount{expected, expected}
+	return ruleOptCount{expected, expected}
 }
 
 func (rt RuleTypeFunc) ErrConf() ErrMesgConfig { return rt.Err }
@@ -333,13 +336,13 @@ func (rt RuleTypeFunc) ErrConf() ErrMesgConfig { return rt.Err }
 // used together with the RuleTypeFunc to produce code that compiles without errors.
 func (rt RuleTypeFunc) checkRule(a *analysis, r *Rule, t Type, f *StructField) error {
 	rt.adjustRule(r)
-	if ok := rt.argCount().check(len(r.Args)); !ok {
-		return &anError{Code: errRuleArgCount, a: a, f: f, r: r}
+	if ok := rt.optCount().check(len(r.Options)); !ok {
+		return &anError{Code: errRuleOptionCount, a: a, f: f, r: r}
 	}
 
-	// field type cannot be converted to func 0th arg type, fail
-	fldType, argType := t.PtrBase(), rt.ArgTypes[0]
-	if rt.IsVariadic && len(rt.ArgTypes) == 1 {
+	// field type cannot be converted to func arg type, fail
+	fldType, argType := t.PtrBase(), rt.FieldArgType
+	if rt.IsVariadic && len(rt.OptionArgTypes) == 0 {
 		argType = *argType.Elem
 	}
 	if !canConvert(argType, fldType) {
@@ -353,48 +356,56 @@ func (rt RuleTypeFunc) checkRule(a *analysis, r *Rule, t Type, f *StructField) e
 		}
 	}
 
-	// rule arg cannot be converted to func arg, fail
-	fatypes := rt.ArgTypes[1:]
-	if rt.IsVariadic && len(fatypes) > 0 {
-		fatypes = fatypes[:len(fatypes)-1]
-	}
-	for i, fatyp := range fatypes {
-		ra := r.Args[i]
-		if !canConvertRuleArg(a, fatyp, ra) {
-			return &anError{Code: errRuleFuncArgType, a: a, f: f, r: r, ra: ra}
-		}
-	}
-	if rt.IsVariadic {
-		fatyp := rt.ArgTypes[len(rt.ArgTypes)-1]
-		fatyp = *fatyp.Elem
-		for _, ra := range r.Args[len(fatypes):] {
-			if !canConvertRuleArg(a, fatyp, ra) {
-				return &anError{Code: errRuleFuncArgType, a: a, f: f, r: r, ra: ra}
+	// rule option cannot be converted to func arg, fail
+	if len(rt.OptionArgTypes) > 0 {
+		optypes := rt.OptionArgTypes[:]
+		for i, optype := range optypes {
+			if rt.IsVariadic && i == (len(optypes)-1) {
+				// don't do the last one if it's variadic
+				// will be done outside the loop
+				break
+			}
+
+			opt := r.Options[i]
+			if !canConvertRuleOption(a, optype, opt) {
+				return &anError{Code: errRuleFuncOptionType,
+					a: a, f: f, r: r, opt: opt}
 			}
 		}
-	} else if rt.LOp > 0 {
-		fatyp := rt.ArgTypes[1]
-		for _, ra := range r.Args {
-			if !canConvertRuleArg(a, fatyp, ra) {
-				return &anError{Code: errRuleFuncArgType, a: a, f: f, r: r, ra: ra}
+
+		if rt.IsVariadic {
+			optype := *(optypes[len(optypes)-1]).Elem
+			for _, opt := range r.Options[len(optypes)-1:] {
+				if !canConvertRuleOption(a, optype, opt) {
+					return &anError{Code: errRuleFuncOptionType,
+						a: a, f: f, r: r, opt: opt}
+				}
+			}
+		} else if rt.LOp > 0 {
+			optype := rt.OptionArgTypes[0]
+			for _, opt := range r.Options {
+				if !canConvertRuleOption(a, optype, opt) {
+					return &anError{Code: errRuleFuncOptionType,
+						a: a, f: f, r: r, opt: opt}
+				}
 			}
 		}
 	}
 	return nil
 }
 
-// Adjusts the Rule according to the ArgMap.
+// Adjusts the Rule according to the OptMap.
 func (rt RuleTypeFunc) adjustRule(r *Rule) {
-	// If a RuleArg's Value matches an entry in the arg_map, then update the RuleArg.
-	for _, ra := range r.Args {
-		if val, ok := rt.ArgMap[ra.Value]; ok {
-			*ra = *val
+	// If a RuleOption's Value matches an entry in the opt_map, then update the RuleOption.
+	for _, opt := range r.Options {
+		if val, ok := rt.OptionValues[opt.Value]; ok {
+			*opt = *val
 		}
 	}
-	// If a default was specified in the arg_map (key=nil), and no args
+	// If a default was specified in the opt_map (key=nil), and no options
 	// were supplied for the *Rule in the tag, then use the default.
-	if ra, ok := rt.ArgMap[nil]; ok && len(r.Args) == 0 {
-		r.Args = append(r.Args, ra)
+	if opt, ok := rt.OptionValues[nil]; ok && len(r.Options) == 0 {
+		r.Options = append(r.Options, opt)
 	}
 }
 
@@ -409,40 +420,48 @@ func (rt *RuleTypeFunc) PkgName() string {
 	return ""
 }
 
-// TypesForArgs returns an adjusted version of the RuleTypeFunc's ArgTypes slice.
-// The returned Type slice will match in length the given slice of RuleArgs.
-func (rt *RuleTypeFunc) TypesForArgs(args []*RuleArg) (types []Type) {
-	types = append(types, rt.ArgTypes[1:]...)
+// TypesForOptions returns an adjusted version of the RuleTypeFunc's OptionArgTypes slice.
+// The returned Type slice will match in length the given slice of RuleOptions.
+func (rt *RuleTypeFunc) TypesForOptions(opts []*RuleOption) (types []Type) {
+	types = append(types, rt.OptionArgTypes...)
 	if rt.IsVariadic {
-		last := rt.ArgTypes[len(rt.ArgTypes)-1].Elem
+		last := rt.lastArgType().Elem
 		if len(types) > 0 {
 			types[len(types)-1] = *last
 		} else {
 			types = []Type{*last}
 		}
 
-		diff := len(args) - len(types)
+		diff := len(opts) - len(types)
 		for i := 0; i < diff; i++ {
 			types = append(types, *last)
 		}
 		return types
 	}
 
-	last := rt.ArgTypes[len(rt.ArgTypes)-1]
-	diff := len(args) - len(types)
+	last := rt.lastArgType()
+	diff := len(opts) - len(types)
 	for i := 0; i < diff; i++ {
 		types = append(types, last)
 	}
 	return types
 }
 
-// ruleArgCount is a helper type that represents the number of arguments
+// lastArgType returns the type of the function's last argument.
+func (rt *RuleTypeFunc) lastArgType() Type {
+	if len(rt.OptionArgTypes) > 0 {
+		return rt.OptionArgTypes[len(rt.OptionArgTypes)-1]
+	}
+	return rt.FieldArgType
+}
+
+// ruleOptCount is a helper type that represents the number of options
 // a rule can take. It is used for type checking and error reporting.
-type ruleArgCount struct {
+type ruleOptCount struct {
 	min, max int
 }
 
-func (c ruleArgCount) check(num int) bool {
+func (c ruleOptCount) check(num int) bool {
 	if num < c.min || (num > c.max && c.max != -1) {
 		return false
 	}
@@ -578,35 +597,35 @@ func (s StructFieldSelector) Last() *StructField {
 	return s[len(s)-1]
 }
 
-// IsUInt reports whether or not RuleArg value is a valid uint candidate.
-func (a *RuleArg) IsUInt() bool {
-	return a.Type == ArgTypeInt && a.Value[0] != '-'
+// IsUInt reports whether or not RuleOption value is a valid uint candidate.
+func (a *RuleOption) IsUInt() bool {
+	return a.Type == OptionTypeInt && a.Value[0] != '-'
 }
 
-// ArgType indicates the type of a rule arg value.
-type ArgType uint
+// OptionType indicates the type of a rule option value.
+type OptionType uint
 
 const (
-	ArgTypeUnknown ArgType = iota
-	ArgTypeBool
-	ArgTypeInt
-	ArgTypeFloat
-	ArgTypeString
-	ArgTypeField
+	OptionTypeUnknown OptionType = iota
+	OptionTypeBool
+	OptionTypeInt
+	OptionTypeFloat
+	OptionTypeString
+	OptionTypeField
 )
 
-var argTypes = [...]string{
-	ArgTypeUnknown: "<unknown>",
-	ArgTypeBool:    "bool",
-	ArgTypeInt:     "int",
-	ArgTypeFloat:   "float",
-	ArgTypeString:  "string",
-	ArgTypeField:   "<field>",
+var optTypes = [...]string{
+	OptionTypeUnknown: "<unknown>",
+	OptionTypeBool:    "bool",
+	OptionTypeInt:     "int",
+	OptionTypeFloat:   "float",
+	OptionTypeString:  "string",
+	OptionTypeField:   "<field>",
 }
 
-func (t ArgType) String() string {
-	if int(t) < len(argTypes) {
-		return argTypes[t]
+func (t OptionType) String() string {
+	if int(t) < len(optTypes) {
+		return optTypes[t]
 	}
 	return "<invalid>"
 }

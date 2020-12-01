@@ -9,7 +9,7 @@ import (
 )
 
 func (v IPValidator) Validate() error {
-	if !isvalid.IP(v.F1) {
+	if !isvalid.IP(v.F1, 0) {
 		return errors.New("F1 must be a valid IP")
 	}
 	if v.F2 != nil && *v.F2 != nil && !isvalid.IP(**v.F2, 4) {
@@ -17,7 +17,7 @@ func (v IPValidator) Validate() error {
 	}
 	if v.F3 == nil || *v.F3 == nil || len(**v.F3) == 0 {
 		return errors.New("F3 is required")
-	} else if !isvalid.IP(**v.F3, 6, 4) {
+	} else if !isvalid.IP(**v.F3, 6) {
 		return errors.New("F3 must be a valid IP")
 	}
 	return nil

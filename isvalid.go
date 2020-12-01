@@ -24,10 +24,10 @@ func ASCII(v string) bool {
 // isvalid:rule
 //	{
 //		"name":    "alpha",
-//		"arg_map": [ { "key": null, "value": "en" } ],
+//		"opt_map": [ { "key": null, "value": "en" } ],
 //		"err":     { "text": "must be an alphabetic string" }
 //	}
-func Alpha(v string, loc string) bool {
+func Alpha(v string, loc ...string) bool {
 	// TODO
 	return false
 }
@@ -37,10 +37,10 @@ func Alpha(v string, loc string) bool {
 // isvalid:rule
 //	{
 //		"name": "alnum",
-//		"arg_map": [ { "key": null, "value": "en" } ],
+//		"opt_map": [ { "key": null, "value": "en" } ],
 //		"err": { "text": "must be an alphanumeric string" }
 //	}
-func Alnum(v string, loc string) bool {
+func Alnum(v string, loc ...string) bool {
 	// TODO
 	return false
 }
@@ -92,7 +92,7 @@ func Base58(v string) bool {
 // isvalid:rule
 //	{
 // 	     "name": "base64",
-// 	     "arg_map": [{
+// 	     "opt_map": [{
 //		"key":   null,
 //		"value": "false"
 //	     }, {
@@ -429,7 +429,11 @@ func IMEI(v string) bool {
 // isvalid:rule
 //	{
 //		"name":    "ip",
-//		"arg_map": [ { "key": null, "value": "0" } ],
+//		"opt_map": [
+//			{ "key": null, "value": "0" },
+//			{ "key": "v4", "value": "4" },
+//			{ "key": "v6", "value": "6" }
+//		],
 //		"err":     { "text": "must be a valid IP" }
 //	}
 func IP(v string, ver int) bool {
@@ -457,7 +461,7 @@ func IPRange(v string) bool {
 // isvalid:rule
 //	{
 //		"name":    "isbn",
-//		"arg_map": [ { "key": null, "value": "0" } ],
+//		"opt_map": [ { "key": null, "value": "0" } ],
 //		"err":     { "text": "must be a valid ISBN" }
 //	}
 func ISBN(v string, ver int) bool {
@@ -477,7 +481,7 @@ func ISIN(v string) bool {
 // ISO reports whether or not v is a valid representation of the specified ISO standard.
 //
 // isvalid:rule
-//	{ "name": "iso", "err": { "text": "must be a valid ISO", "with_args": true } }
+//	{ "name": "iso", "err": { "text": "must be a valid ISO", "with_opts": true } }
 func ISO(v string, num int) bool {
 	// TODO
 	return false
@@ -495,7 +499,7 @@ func ISO(v string, num int) bool {
 // isvalid:rule
 //	{
 //		"name":    "iso31661a",
-//		"arg_map": [ { "key": null, "value": "0" } ],
+//		"opt_map": [ { "key": null, "value": "0" } ],
 //		"err":     { "text": "must be a valid ISO 3166-1 Alpha value" }
 //	}
 func ISO31661A(v string, num int) bool {
@@ -615,7 +619,7 @@ var rxMAC8Hyphen = regexp.MustCompile(`^(?:[0-9a-fA-F]{2}-){7}[0-9a-fA-F]{2}$`)
 // isvalid:rule
 //	{
 //		"name":    "mac",
-//		"arg_map": [ { "key": null, "value": "0" } ],
+//		"opt_map": [ { "key": null, "value": "0" } ],
 //		"err":     { "text": "must be a valid MAC" }
 //	}
 func MAC(v string, space int) bool {
@@ -660,7 +664,7 @@ func MagnetURI(v string) bool {
 // NOTE: Match will panic if re has not been registered upfront with RegisterRegexp.
 //
 // isvalid:rule
-//	{ "name": "re", "err": {"text": "must match the regular expression", "with_args": true} }
+//	{ "name": "re", "err": {"text": "must match the regular expression", "with_opts": true} }
 func Match(v string, re string) bool {
 	return regexpCache.m[re].MatchString(v)
 }
@@ -770,7 +774,7 @@ func Port(v string) bool {
 // RFC reports whether or not v is a valid representation of the specified RFC standard.
 //
 // isvalid:rule
-//	{ "name": "rfc", "err": { "text": "must be a valid RFC", "with_args": true } }
+//	{ "name": "rfc", "err": { "text": "must be a valid RFC", "with_opts": true } }
 func RFC(v string, num int) bool {
 	// TODO
 	return false
@@ -842,7 +846,7 @@ func URL(v string) bool {
 // UUID reports whether or not v is a valid Universally Unique IDentifier.
 //
 // isvalid:rule
-//	{ "name": "uuid", "arg_min": 0, "arg_max": 5, "err": {"text": "must be a valid UUID"} }
+//	{ "name": "uuid", "opt_min": 0, "opt_max": 5, "err": {"text": "must be a valid UUID"} }
 func UUID(v string, ver ...int) bool {
 	// TODO
 	return false

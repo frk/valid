@@ -217,7 +217,7 @@ func analyzeStructFields(a *analysis, structType *types.Struct, selector []*Stru
 
 		// Skip fields that were explicitly flagged; fields with
 		// no `is` tag may still be useful if they are referenced by
-		// a separate field's rule with a reference arg.
+		// a separate field's rule with a field option.
 		if istag == "-" {
 			continue
 		}
@@ -493,14 +493,14 @@ func typeCheckRules(a *analysis, fields []*StructField) error {
 
 		// handle the rest
 		for _, r := range tag.Rules {
-			// Ensure that the Value of a RuleArg of type ArgTypeField
+			// Ensure that the Value of a RuleOption of type OptionTypeField
 			// references a valid field key which will be indicated by
 			// a presence of a selector in the SelectorMap.
-			for _, ra := range r.Args {
-				if ra.Type == ArgTypeField {
-					if _, ok := a.info.SelectorMap[ra.Value]; !ok {
-						return &anError{Code: errRuleArgFieldUnknown,
-							a: a, f: f, r: r, ra: ra}
+			for _, opt := range r.Options {
+				if opt.Type == OptionTypeField {
+					if _, ok := a.info.SelectorMap[opt.Value]; !ok {
+						return &anError{Code: errRuleOptionFieldUnknown,
+							a: a, f: f, r: r, opt: opt}
 					}
 				}
 			}
@@ -606,10 +606,10 @@ func canConvert(dst, src Type) bool {
 	return false
 }
 
-// canConvertRuleArg reports whether or not the src RuleArg's literal value
-// can be converted to the type represented by dst.
-func canConvertRuleArg(a *analysis, dst Type, src *RuleArg) bool {
-	if src.Type == ArgTypeField {
+// canConvertRuleOption reports whether or not the src RuleOption's literal
+// value can be converted to the type represented by dst.
+func canConvertRuleOption(a *analysis, dst Type, src *RuleOption) bool {
+	if src.Type == OptionTypeField {
 		field := a.info.SelectorMap[src.Value].Last()
 		return canConvert(dst, field.Type)
 	}
@@ -620,32 +620,32 @@ func canConvertRuleArg(a *analysis, dst Type, src *RuleArg) bool {
 	}
 
 	// src is unknown, accept
-	if src.Type == ArgTypeUnknown {
+	if src.Type == OptionTypeUnknown {
 		return true
 	}
 
 	// both are booleans, accept
-	if dst.Kind == TypeKindBool && src.Type == ArgTypeBool {
+	if dst.Kind == TypeKindBool && src.Type == OptionTypeBool {
 		return true
 	}
 
-	// dst is float and arg is numeric, accept
-	if dst.Kind.IsFloat() && (src.Type == ArgTypeInt || src.Type == ArgTypeFloat) {
+	// dst is float and option is numeric, accept
+	if dst.Kind.IsFloat() && (src.Type == OptionTypeInt || src.Type == OptionTypeFloat) {
 		return true
 	}
 
 	// both are integers, accept
-	if dst.Kind.IsInteger() && src.Type == ArgTypeInt {
+	if dst.Kind.IsInteger() && src.Type == OptionTypeInt {
 		return true
 	}
 
-	// dst is unsigned and arg is not negative, accept
-	if dst.Kind.IsUnsigned() && src.Type == ArgTypeInt && src.Value[0] != '-' {
+	// dst is unsigned and option is not negative, accept
+	if dst.Kind.IsUnsigned() && src.Type == OptionTypeInt && src.Value[0] != '-' {
 		return true
 	}
 
 	// src is string & dst is convertable from string, accept
-	if src.Type == ArgTypeString && (dst.Kind == TypeKindString || (dst.Kind == TypeKindSlice &&
+	if src.Type == OptionTypeString && (dst.Kind == TypeKindString || (dst.Kind == TypeKindSlice &&
 		dst.Elem.Name == "" && (dst.Elem.Kind == TypeKindUint8 || dst.Elem.Kind == TypeKindInt32))) {
 		return true
 	}

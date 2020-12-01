@@ -626,8 +626,8 @@ func newRuleTypeBasicIfStmt(g *generator, code *varcode, r *analysis.Rule) (ifs 
 	binop := basicRuleToBinaryOp[r.Name]
 	logop := basicRuleToLogicalOp[r.Name]
 
-	for _, a := range r.Args {
-		cond := GO.BinaryExpr{Op: binop, X: code.vexpr, Y: newArgValueExpr(g, r, a, typ)}
+	for _, o := range r.Options {
+		cond := GO.BinaryExpr{Op: binop, X: code.vexpr, Y: newOptionValueExpr(g, r, o, typ)}
 		if ifs.Cond != nil {
 			ifs.Cond = GO.BinaryExpr{Op: logop, X: ifs.Cond, Y: cond}
 		} else {
@@ -643,22 +643,22 @@ func newRuleTypeBasicIfStmt(g *generator, code *varcode, r *analysis.Rule) (ifs 
 func newRuleTypeBasicLenIfStmt(g *generator, code *varcode, r *analysis.Rule) (ifs GO.IfStmt) {
 	typ := analysis.Type{Kind: analysis.TypeKindInt} // len(T) returns an int
 
-	if len(r.Args) == 1 {
-		a := r.Args[0]
-		ifs.Cond = GO.BinaryExpr{Op: GO.BinaryNeq, X: GO.CallLenExpr{code.vexpr}, Y: newArgValueExpr(g, r, a, typ)}
+	if len(r.Options) == 1 {
+		o := r.Options[0]
+		ifs.Cond = GO.BinaryExpr{Op: GO.BinaryNeq, X: GO.CallLenExpr{code.vexpr}, Y: newOptionValueExpr(g, r, o, typ)}
 		ifs.Body.Add(newErrorReturnStmt(g, code, r))
-	} else { // len(r.Args) == 2 is assumed
-		a1, a2 := r.Args[0], r.Args[1]
-		if len(a1.Value) > 0 && len(a2.Value) == 0 {
-			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLss, X: GO.CallLenExpr{code.vexpr}, Y: newArgValueExpr(g, r, a1, typ)}
+	} else { // len(r.Options) == 2 is assumed
+		o1, o2 := r.Options[0], r.Options[1]
+		if len(o1.Value) > 0 && len(o2.Value) == 0 {
+			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLss, X: GO.CallLenExpr{code.vexpr}, Y: newOptionValueExpr(g, r, o1, typ)}
 			ifs.Body.Add(newErrorReturnStmt(g, code, r))
-		} else if len(a1.Value) == 0 && len(a2.Value) > 0 {
-			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{code.vexpr}, Y: newArgValueExpr(g, r, a2, typ)}
+		} else if len(o1.Value) == 0 && len(o2.Value) > 0 {
+			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{code.vexpr}, Y: newOptionValueExpr(g, r, o2, typ)}
 			ifs.Body.Add(newErrorReturnStmt(g, code, r))
 		} else {
 			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLOr,
-				X: GO.BinaryExpr{Op: GO.BinaryLss, X: GO.CallLenExpr{code.vexpr}, Y: newArgValueExpr(g, r, a1, typ)},
-				Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{code.vexpr}, Y: newArgValueExpr(g, r, a2, typ)}}
+				X: GO.BinaryExpr{Op: GO.BinaryLss, X: GO.CallLenExpr{code.vexpr}, Y: newOptionValueExpr(g, r, o1, typ)},
+				Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{code.vexpr}, Y: newOptionValueExpr(g, r, o2, typ)}}
 			ifs.Cond = GO.ParenExpr{ifs.Cond}
 			ifs.Body.Add(newErrorReturnStmt(g, code, r))
 		}
@@ -680,22 +680,22 @@ func newRuleTypeBasicRuneCountIfStmt(g *generator, code *varcode, r *analysis.Ru
 		panic("shouldn't reach")
 	}
 
-	if len(r.Args) == 1 {
-		a := r.Args[0]
-		ifs.Cond = GO.BinaryExpr{Op: GO.BinaryNeq, X: call, Y: newArgValueExpr(g, r, a, typ)}
+	if len(r.Options) == 1 {
+		o := r.Options[0]
+		ifs.Cond = GO.BinaryExpr{Op: GO.BinaryNeq, X: call, Y: newOptionValueExpr(g, r, o, typ)}
 		ifs.Body.Add(newErrorReturnStmt(g, code, r))
-	} else { // len(r.Args) == 2 is assumed
-		a1, a2 := r.Args[0], r.Args[1]
-		if len(a1.Value) > 0 && len(a2.Value) == 0 {
-			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLss, X: call, Y: newArgValueExpr(g, r, a1, typ)}
+	} else { // len(r.Options) == 2 is assumed
+		o1, o2 := r.Options[0], r.Options[1]
+		if len(o1.Value) > 0 && len(o2.Value) == 0 {
+			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLss, X: call, Y: newOptionValueExpr(g, r, o1, typ)}
 			ifs.Body.Add(newErrorReturnStmt(g, code, r))
-		} else if len(a1.Value) == 0 && len(a2.Value) > 0 {
-			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryGtr, X: call, Y: newArgValueExpr(g, r, a2, typ)}
+		} else if len(o1.Value) == 0 && len(o2.Value) > 0 {
+			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryGtr, X: call, Y: newOptionValueExpr(g, r, o2, typ)}
 			ifs.Body.Add(newErrorReturnStmt(g, code, r))
 		} else {
 			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLOr,
-				X: GO.BinaryExpr{Op: GO.BinaryLss, X: call, Y: newArgValueExpr(g, r, a1, typ)},
-				Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: call, Y: newArgValueExpr(g, r, a2, typ)}}
+				X: GO.BinaryExpr{Op: GO.BinaryLss, X: call, Y: newOptionValueExpr(g, r, o1, typ)},
+				Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: call, Y: newOptionValueExpr(g, r, o2, typ)}}
 			ifs.Cond = GO.ParenExpr{ifs.Cond}
 			ifs.Body.Add(newErrorReturnStmt(g, code, r))
 		}
@@ -705,11 +705,11 @@ func newRuleTypeBasicRuneCountIfStmt(g *generator, code *varcode, r *analysis.Ru
 
 // newRuleTypeBasicRngIfStmt produces an if-statement that checks the varcode variable's numeric range.
 func newRuleTypeBasicRngIfStmt(g *generator, code *varcode, r *analysis.Rule) (ifs GO.IfStmt) {
-	a1, a2 := r.Args[0], r.Args[1]
+	o1, o2 := r.Options[0], r.Options[1]
 
 	ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLOr,
-		X: GO.BinaryExpr{Op: GO.BinaryLss, X: code.vexpr, Y: newArgValueExpr(g, r, a1, code.field.Type.PtrBase())},
-		Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: code.vexpr, Y: newArgValueExpr(g, r, a2, code.field.Type.PtrBase())}}
+		X: GO.BinaryExpr{Op: GO.BinaryLss, X: code.vexpr, Y: newOptionValueExpr(g, r, o1, code.field.Type.PtrBase())},
+		Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: code.vexpr, Y: newOptionValueExpr(g, r, o2, code.field.Type.PtrBase())}}
 	ifs.Cond = GO.ParenExpr{ifs.Cond}
 	ifs.Body.Add(newErrorReturnStmt(g, code, r))
 	return ifs
@@ -724,23 +724,19 @@ func newRuleTypeFuncIfStmt(g *generator, code *varcode, r *analysis.Rule, rt ana
 	call := GO.CallExpr{Fun: fn, Args: GO.ArgsList{List: code.vexpr}}
 	args := GO.ExprList{code.vexpr}
 
-	argtypes := rt.TypesForArgs(r.Args)
-	for i, a := range r.Args {
-		args = append(args, newArgValueExpr(g, r, a, argtypes[i]))
+	optypes := rt.TypesForOptions(r.Options)
+	for i, o := range r.Options {
+		args = append(args, newOptionValueExpr(g, r, o, optypes[i]))
 
 		if r.Name == "re" {
 			// if this is the regexp rule, then add a registry
 			// call for the init function and make sure to use
 			// raw string literals.
 			regrx := GO.CallExpr{Fun: GO.QualifiedIdent{imp.name, "RegisterRegexp"}}
-			regrx.Args.List = GO.RawStringLit(a.Value)
+			regrx.Args.List = GO.RawStringLit(o.Value)
 			g.file.init = append(g.file.init, GO.ExprStmt{regrx})
 		}
 	}
-
-	//if len(r.Args) == 0 && len(rt.DefaultArgValue) > 0 {
-	//	args = append(args, GO.ValueLit(rt.DefaultArgValue))
-	//}
 
 	call.Args.List = args
 	ifs.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: call}
@@ -749,15 +745,15 @@ func newRuleTypeFuncIfStmt(g *generator, code *varcode, r *analysis.Rule, rt ana
 }
 
 // newRuleTypeFuncChainIfStmt produces an if-statement that checks the varcode's variable
-// using the rule's function invoking it in a chain for each of the rule's arguments.
+// using the rule's function invoking it in a chain for each of the rule's options.
 func newRuleTypeFuncChainIfStmt(g *generator, code *varcode, r *analysis.Rule, rt analysis.RuleTypeFunc) (ifs GO.IfStmt) {
 	imp := addimport(g.file, rt.PkgPath)
 	retStmt := newErrorReturnStmt(g, code, r)
 
-	argtypes := rt.TypesForArgs(r.Args)
-	for i, a := range r.Args {
+	optypes := rt.TypesForOptions(r.Options)
+	for i, o := range r.Options {
 		call := GO.CallExpr{Fun: GO.QualifiedIdent{imp.name, rt.FuncName}}
-		call.Args.List = GO.ExprList{code.vexpr, newArgValueExpr(g, r, a, argtypes[i])}
+		call.Args.List = GO.ExprList{code.vexpr, newOptionValueExpr(g, r, o, optypes[i])}
 
 		switch rt.LOp {
 		case analysis.LogicalNot: // x || x || x....
@@ -784,17 +780,17 @@ func newRuleTypeFuncChainIfStmt(g *generator, code *varcode, r *analysis.Rule, r
 	return ifs
 }
 
-// newArgValueExpr produces an expression of the given argument's value.
-func newArgValueExpr(g *generator, r *analysis.Rule, a *analysis.RuleArg, t analysis.Type) GO.ExprNode {
-	if a.Type == analysis.ArgTypeField {
-		return newArgFieldSelectorExpr(g, r, a, t)
+// newOptionValueExpr produces an expression of the given option's value.
+func newOptionValueExpr(g *generator, r *analysis.Rule, o *analysis.RuleOption, t analysis.Type) GO.ExprNode {
+	if o.Type == analysis.OptionTypeField {
+		return newOptionFieldSelectorExpr(g, r, o, t)
 	}
-	return newArgConstExpr(g, r, a, t)
+	return newOptionConstExpr(g, r, o, t)
 }
 
-// newArgFieldSelectorExpr produces a field selector expression of the given argument's value.
-func newArgFieldSelectorExpr(g *generator, r *analysis.Rule, a *analysis.RuleArg, t analysis.Type) (x GO.ExprNode) {
-	var selector = g.info.SelectorMap[a.Value]
+// newOptionFieldSelectorExpr produces a field selector expression of the given option's value.
+func newOptionFieldSelectorExpr(g *generator, r *analysis.Rule, o *analysis.RuleOption, t analysis.Type) (x GO.ExprNode) {
+	var selector = g.info.SelectorMap[o.Value]
 	var last *analysis.StructField
 
 	x = g.recv
@@ -812,8 +808,8 @@ func newArgFieldSelectorExpr(g *generator, r *analysis.Rule, a *analysis.RuleArg
 	return x
 }
 
-// newArgConstExpr produces a constant expression of the given argument's value.
-func newArgConstExpr(g *generator, r *analysis.Rule, a *analysis.RuleArg, t analysis.Type) (x GO.ExprNode) {
+// newOptionConstExpr produces a constant expression of the given option's value.
+func newOptionConstExpr(g *generator, r *analysis.Rule, o *analysis.RuleOption, t analysis.Type) (x GO.ExprNode) {
 	var userawstring bool
 	rt := g.info.RuleTypeMap[r.Name]
 	if fn, ok := rt.(analysis.RuleTypeFunc); ok {
@@ -821,25 +817,25 @@ func newArgConstExpr(g *generator, r *analysis.Rule, a *analysis.RuleArg, t anal
 	}
 
 	if t.IsEmptyInterface {
-		if a.Type == analysis.ArgTypeString {
+		if o.Type == analysis.OptionTypeString {
 			if userawstring {
-				return GO.RawStringLit(a.Value)
+				return GO.RawStringLit(o.Value)
 			}
-			return GO.ValueLit(strconv.Quote(a.Value))
+			return GO.ValueLit(strconv.Quote(o.Value))
 		}
 
-		return GO.ValueLit(a.Value)
+		return GO.ValueLit(o.Value)
 	}
 
 	if t.Kind == analysis.TypeKindString {
 		if userawstring {
-			return GO.RawStringLit(a.Value)
+			return GO.RawStringLit(o.Value)
 		}
-		return GO.ValueLit(strconv.Quote(a.Value))
+		return GO.ValueLit(strconv.Quote(o.Value))
 	}
 
-	switch a.Type {
-	case analysis.ArgTypeUnknown:
+	switch o.Type {
+	case analysis.OptionTypeUnknown:
 		switch t.Kind {
 		case analysis.TypeKindString:
 			x = GO.StringLit("")
@@ -856,33 +852,33 @@ func newArgConstExpr(g *generator, r *analysis.Rule, a *analysis.RuleArg, t anal
 		}
 		return x
 
-	case analysis.ArgTypeBool:
-		x = GO.ValueLit(a.Value)
+	case analysis.OptionTypeBool:
+		x = GO.ValueLit(o.Value)
 		// TODO
 		return x
 
-	case analysis.ArgTypeInt:
-		x = GO.ValueLit(a.Value)
+	case analysis.OptionTypeInt:
+		x = GO.ValueLit(o.Value)
 		// TODO
 		return x
 
-	case analysis.ArgTypeFloat:
-		x = GO.ValueLit(a.Value)
+	case analysis.OptionTypeFloat:
+		x = GO.ValueLit(o.Value)
 		// TODO
 		return x
 
-	case analysis.ArgTypeString:
+	case analysis.OptionTypeString:
 		if userawstring {
-			x = GO.RawStringLit(a.Value)
+			x = GO.RawStringLit(o.Value)
 		} else {
-			x = GO.ValueLit(strconv.Quote(a.Value))
+			x = GO.ValueLit(strconv.Quote(o.Value))
 		}
 		// TODO
 		return x
 
-	case analysis.ArgTypeField:
+	case analysis.OptionTypeField:
 		x = g.recv
-		for _, f := range g.info.SelectorMap[a.Value] {
+		for _, f := range g.info.SelectorMap[o.Value] {
 			x = GO.SelectorExpr{X: x, Sel: GO.Ident{f.Name}}
 		}
 		return x
@@ -901,20 +897,20 @@ func newErrorReturnStmt(g *generator, code *varcode, r *analysis.Rule) GO.StmtNo
 		args[1] = code.vexpr
 		args[2] = GO.StringLit(r.Name)
 
-		for _, a := range r.Args {
-			switch a.Type {
-			case analysis.ArgTypeField:
+		for _, o := range r.Options {
+			switch o.Type {
+			case analysis.OptionTypeField:
 				x := GO.ExprNode(g.recv)
-				for _, f := range g.info.SelectorMap[a.Value] {
+				for _, f := range g.info.SelectorMap[o.Value] {
 					x = GO.SelectorExpr{X: x, Sel: GO.Ident{f.Name}}
 				}
 				args = append(args, x)
-			case analysis.ArgTypeString:
-				args = append(args, GO.StringLit(a.Value))
-			case analysis.ArgTypeUnknown:
+			case analysis.OptionTypeString:
+				args = append(args, GO.StringLit(o.Value))
+			case analysis.OptionTypeUnknown:
 				args = append(args, GO.StringLit(""))
 			default:
-				args = append(args, GO.ValueLit(a.Value))
+				args = append(args, GO.ValueLit(o.Value))
 			}
 		}
 
@@ -954,18 +950,18 @@ func newErrorExpr(g *generator, code *varcode, r *analysis.Rule) (errExpr GO.Exp
 
 	var textSuffix string
 	if r.Name == "len" || r.Name == "runecount" {
-		if len(r.Args) == 1 {
+		if len(r.Options) == 1 {
 			errConf.Text = errTextMap[r.Name][0]
-		} else if len(r.Args[0].Value) > 0 && len(r.Args[1].Value) == 0 {
+		} else if len(r.Options[0].Value) > 0 && len(r.Options[1].Value) == 0 {
 			errConf.Text = errTextMap[r.Name][1]
-		} else if len(r.Args[0].Value) == 0 && len(r.Args[1].Value) > 0 {
+		} else if len(r.Options[0].Value) == 0 && len(r.Options[1].Value) > 0 {
 			errConf.Text = errTextMap[r.Name][2]
 		} else {
 			errConf.Text = errTextMap[r.Name][3]
-			errConf.ArgSep = " and "
+			errConf.OptSep = " and "
 			textSuffix = "(inclusive)"
 		}
-		errConf.WithArgs = true
+		errConf.WithOpts = true
 	}
 	if len(errConf.Text) == 0 {
 		errConf.Text = "is not valid"
@@ -975,35 +971,35 @@ func newErrorExpr(g *generator, code *varcode, r *analysis.Rule) (errExpr GO.Exp
 	errText := code.field.Key + " " + errConf.Text
 
 	var refs GO.ExprList
-	if errConf.WithArgs {
-		var args []string
-		for _, a := range r.Args {
-			// if the field's type is numeric an unknown arg can be overwritten as 0.
-			if a.Type == analysis.ArgTypeUnknown && typ.Kind.IsNumeric() {
-				a = &analysis.RuleArg{Type: analysis.ArgTypeInt, Value: "0"}
+	if errConf.WithOpts {
+		var opts []string
+		for _, o := range r.Options {
+			// if the field's type is numeric an unknown option can be overwritten as 0.
+			if o.Type == analysis.OptionTypeUnknown && typ.Kind.IsNumeric() {
+				o = &analysis.RuleOption{Type: analysis.OptionTypeInt, Value: "0"}
 			}
 
 			// skip empty
-			if len(a.Value) == 0 {
+			if len(o.Value) == 0 {
 				continue
 			}
 
-			if a.Type == analysis.ArgTypeField {
+			if o.Type == analysis.OptionTypeField {
 				x := GO.ExprNode(g.recv)
-				for _, f := range g.info.SelectorMap[a.Value] {
+				for _, f := range g.info.SelectorMap[o.Value] {
 					x = GO.SelectorExpr{X: x, Sel: GO.Ident{f.Name}}
 				}
 				refs = append(refs, x)
-				args = append(args, "%v")
-			} else if a.Type == analysis.ArgTypeString {
-				args = append(args, strconv.Quote(a.Value))
+				opts = append(opts, "%v")
+			} else if o.Type == analysis.OptionTypeString {
+				opts = append(opts, strconv.Quote(o.Value))
 			} else {
-				args = append(args, a.Value)
+				opts = append(opts, o.Value)
 			}
 		}
 
-		if len(args) > 0 {
-			errText += ": " + strings.Join(args, errConf.ArgSep)
+		if len(opts) > 0 {
+			errText += ": " + strings.Join(opts, errConf.OptSep)
 		}
 	}
 	if len(textSuffix) > 0 {

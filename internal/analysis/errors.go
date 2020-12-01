@@ -17,8 +17,8 @@ type anError struct {
 	f *StructField `cmp:"+"`
 	// The rule that's associated with the error.
 	r *Rule `cmp:"+"`
-	// The rule arg that's associated with the error.
-	ra *RuleArg
+	// The rule option that's associated with the error.
+	opt *RuleOption
 	// The rule function that's associated with the error.
 	fn *types.Func `cmp:"+"`
 	// The original error
@@ -95,39 +95,39 @@ func (e *anError) RuleContext() string {
 	return "@" + e.r.Context
 }
 
-func (e *anError) RuleArgValue() string {
-	switch e.ra.Type {
-	case ArgTypeBool, ArgTypeInt, ArgTypeFloat:
-		return e.ra.Value
-	case ArgTypeString, ArgTypeUnknown:
-		return `"` + e.ra.Value + `"`
-	case ArgTypeField:
-		return "&" + e.ra.Value
+func (e *anError) RuleOptionValue() string {
+	switch e.opt.Type {
+	case OptionTypeBool, OptionTypeInt, OptionTypeFloat:
+		return e.opt.Value
+	case OptionTypeString, OptionTypeUnknown:
+		return `"` + e.opt.Value + `"`
+	case OptionTypeField:
+		return "&" + e.opt.Value
 	}
 
 	panic("shouldn't reach")
 	return ""
 }
 
-func (e *anError) RuleArgFieldKey() string {
-	if e.ra.Type == ArgTypeField {
-		return e.ra.Value
+func (e *anError) RuleOptionFieldKey() string {
+	if e.opt.Type == OptionTypeField {
+		return e.opt.Value
 	}
 	return ""
 }
 
-func (e *anError) RuleArgType() string {
-	if e.ra.Type == ArgTypeField {
-		sel := e.a.info.SelectorMap[e.ra.Value]
+func (e *anError) RuleOptionType() string {
+	if e.opt.Type == OptionTypeField {
+		sel := e.a.info.SelectorMap[e.opt.Value]
 		return sel.Last().Type.String()
 	}
-	return e.ra.Type.String()
+	return e.opt.Type.String()
 }
 
-func (e *anError) RuleArgPos() (out string) {
+func (e *anError) RuleOptionPos() (out string) {
 	var pos int
-	for i, ra := range e.r.Args {
-		if e.ra == ra {
+	for i, opt := range e.r.Options {
+		if e.opt == opt {
 			pos = i + 1
 			break
 		}
@@ -149,38 +149,38 @@ func (e *anError) RuleArgPos() (out string) {
 	return strconv.Itoa(pos) + "th"
 }
 
-func (e *anError) RuleArgs() (out string) {
-	for _, ra := range e.r.Args {
-		if ra.Type == ArgTypeField {
-			out += ":&" + ra.Value
+func (e *anError) RuleOptions() (out string) {
+	for _, opt := range e.r.Options {
+		if opt.Type == OptionTypeField {
+			out += ":&" + opt.Value
 		} else {
-			out += ":" + ra.Value
+			out += ":" + opt.Value
 		}
 	}
 	return out
 }
 
-func (e *anError) RuleArgNum() string {
-	return strconv.Itoa(len(e.r.Args))
+func (e *anError) RuleOptionNum() string {
+	return strconv.Itoa(len(e.r.Options))
 }
 
-func (e *anError) RuleArgNumWord() string {
-	if len(e.r.Args) == 1 {
-		return "argument"
+func (e *anError) RuleOptionNumWord() string {
+	if len(e.r.Options) == 1 {
+		return "option"
 	}
-	return "arguments"
+	return "options"
 }
 
-func (e *anError) RuleArgCount() (out string) {
+func (e *anError) RuleOptionCount() (out string) {
 	rt, ok := e.a.conf.customTypeMap[e.r.Name]
 	if !ok {
 		rt, ok = defaultRuleTypeMap[e.r.Name]
 		if !ok {
-			return "<unknown-argument-count>"
+			return "<unknown-option-count>"
 		}
 	}
 
-	count := rt.argCount()
+	count := rt.optCount()
 	if count.min == count.max {
 		return strconv.Itoa(count.min)
 	}
@@ -197,20 +197,20 @@ func (e *anError) RuleArgCount() (out string) {
 	return out
 }
 
-func (e *anError) RuleArgCountWord() (out string) {
+func (e *anError) RuleOptionCountWord() (out string) {
 	rt, ok := e.a.conf.customTypeMap[e.r.Name]
 	if !ok {
 		rt, ok = defaultRuleTypeMap[e.r.Name]
 		if !ok {
-			return "arguments"
+			return "options"
 		}
 	}
 
-	count := rt.argCount()
+	count := rt.optCount()
 	if count.min == 1 && count.max == 1 {
-		return "argument"
+		return "option"
 	}
-	return "arguments"
+	return "options"
 }
 
 func (e *anError) FuncNameQualified() (out string) {
@@ -227,7 +227,7 @@ func (e *anError) FuncFieldType() (out string) {
 		rt, ok = defaultRuleTypeMap[e.r.Name]
 	}
 	if fn, ok := rt.(RuleTypeFunc); ok {
-		return fn.ArgTypes[0].String()
+		return fn.FieldArgType.String()
 	}
 	return "<unknown-func>"
 }
@@ -242,24 +242,26 @@ func (e *anError) FuncArgType() (out string) {
 	case RuleTypeBasic:
 		return e.f.Type.String()
 	case RuleTypeFunc:
+		argtypes := append([]Type{rx.FieldArgType}, rx.OptionArgTypes...)
+
 		var pos int
-		for i, ra := range e.r.Args {
-			if e.ra == ra {
+		for i, opt := range e.r.Options {
+			if e.opt == opt {
 				pos = i + 1
 				break
 			}
 		}
 
-		if rx.IsVariadic && pos >= (len(rx.ArgTypes)-1) {
-			return rx.ArgTypes[len(rx.ArgTypes)-1].Elem.String()
+		if rx.IsVariadic && pos >= (len(argtypes)-1) {
+			return argtypes[len(argtypes)-1].Elem.String()
 		}
 		if rx.LOp > 0 {
-			return rx.ArgTypes[1].String()
+			return argtypes[1].String()
 		}
-		return rx.ArgTypes[pos].String()
+		return argtypes[pos].String()
 	}
 
-	return "<unknown-arg-type>"
+	return "<unknown-option-type>"
 }
 
 func (e *anError) Err() (out string) {
@@ -277,26 +279,26 @@ const (
 	errRuleConfOpts // TODO
 	errValidatorNoField
 	errRuleUnknown
-	errRuleArgCount
-	errRuleArgFieldUnknown
-	errRuleArgValueRegexp
-	errRuleArgValueUUIDVer
-	errRuleArgValueIPVer
-	errRuleArgValueMACVer
-	errRuleArgValueCountryCode
-	errRuleArgValueLanguageTag
-	errRuleArgValueISONum
-	errRuleArgValueRFCNum
-	errRuleArgValueConflict
-	errRuleArgValueBounds
+	errRuleOptionCount
+	errRuleOptionFieldUnknown
+	errRuleOptionValueRegexp
+	errRuleOptionValueUUIDVer
+	errRuleOptionValueIPVer
+	errRuleOptionValueMACVer
+	errRuleOptionValueCountryCode
+	errRuleOptionValueLanguageTag
+	errRuleOptionValueISONum
+	errRuleOptionValueRFCNum
+	errRuleOptionValueConflict
+	errRuleOptionValueBounds
 	errRuleFieldNonNilable
 	errRuleFieldLengthless
 	errRuleFieldRuneless
 	errRuleFieldNonNumeric
 	errRuleFuncFieldType
-	errRuleFuncArgType
-	errRuleBasicArgType
-	errRuleBasicArgTypeUint
+	errRuleFuncOptionType
+	errRuleBasicOptionType
+	errRuleBasicOptionTypeUint
 	errContextOptionFieldRequired
 	errErrorHandlerFieldConflict
 	errContextOptionFieldConflict
@@ -335,77 +337,77 @@ var error_template_string = `
   > The value "{{R .RuleName}}" does not match the name of any registered rule.
 {{ end }}
 
-{{ define "` + errRuleArgCount.name() + `" -}}
+{{ define "` + errRuleOptionCount.name() + `" -}}
 {{R "ERROR:"}} {{.FileAndLine}}: 
-  Cannot use rule "{{R .RuleName}}" with {{R .RuleArgNum}} {{.RuleArgNumWord}}.
-  > The rule "{{R .RuleName}}" must have {{R .RuleArgCount}} {{.RuleArgCountWord}}.
+  Cannot use rule "{{R .RuleName}}" with {{R .RuleOptionNum}} {{.RuleOptionNumWord}}.
+  > The rule "{{R .RuleName}}" must have {{R .RuleOptionCount}} {{.RuleOptionCountWord}}.
 {{ end }}
 
-{{ define "` + errRuleArgFieldUnknown.name() + `" -}}
+{{ define "` + errRuleOptionFieldUnknown.name() + `" -}}
 {{R "ERROR:"}} {{.FileAndLine}}:
-  Cannot use rule argument {{R .RuleArgValue}} in rule "{{R .RuleName}}" of field {{R .FieldNameAndType}}.
-  > The value {{R .RuleArgFieldKey}} does not match the key of any field in {{R .VtorName}}.
+  Cannot use rule option {{R .RuleOptionValue}} in rule "{{R .RuleName}}" of field {{R .FieldNameAndType}}.
+  > The value {{R .RuleOptionFieldKey}} does not match the key of any field in {{R .VtorName}}.
 {{ end }}
 
-{{ define "` + errRuleArgValueRegexp.name() + `" -}}
+{{ define "` + errRuleOptionValueRegexp.name() + `" -}}
 {{R "ERROR:"}} {{.FileAndLine}}: 
-  Cannot use value {{R .RuleArgValue}} as argument for rule "{{R .RuleName}}".
-  > The argument to rule "{{R .RuleName}}" must be a valid and compilable regular expression.
+  Cannot use value {{R .RuleOptionValue}} as option for rule "{{R .RuleName}}".
+  > The option to rule "{{R .RuleName}}" must be a valid and compilable regular expression.
   > Error received from "regexp" package compiler: {{R .Err}}
 {{ end }}
 
-{{ define "` + errRuleArgValueUUIDVer.name() + `" -}}
+{{ define "` + errRuleOptionValueUUIDVer.name() + `" -}}
 {{R "ERROR:"}} {{.FileAndLine}}: 
-  Cannot use value {{R .RuleArgValue}} as argument for rule "{{R .RuleName}}".
-  > The argument to rule "{{R .RuleName}}" must be a valid UUID version.
+  Cannot use value {{R .RuleOptionValue}} as option for rule "{{R .RuleName}}".
+  > The option to rule "{{R .RuleName}}" must be a valid UUID version.
 {{ end }}
 
-{{ define "` + errRuleArgValueIPVer.name() + `" -}}
+{{ define "` + errRuleOptionValueIPVer.name() + `" -}}
 {{R "ERROR:"}} {{.FileAndLine}}: 
-  Cannot use value {{R .RuleArgValue}} as argument for rule "{{R .RuleName}}".
-  > The argument to rule "{{R .RuleName}}" must be a valid IP version.
+  Cannot use value {{R .RuleOptionValue}} as option for rule "{{R .RuleName}}".
+  > The option to rule "{{R .RuleName}}" must be a valid IP version.
 {{ end }}
 
-{{ define "` + errRuleArgValueMACVer.name() + `" -}}
+{{ define "` + errRuleOptionValueMACVer.name() + `" -}}
 {{R "ERROR:"}} {{.FileAndLine}}: 
-  Cannot use value {{R .RuleArgValue}} as argument for rule "{{R .RuleName}}".
-  > The argument to rule "{{R .RuleName}}" must be a valid MAC version.
+  Cannot use value {{R .RuleOptionValue}} as option for rule "{{R .RuleName}}".
+  > The option to rule "{{R .RuleName}}" must be a valid MAC version.
 {{ end }}
 
-{{ define "` + errRuleArgValueCountryCode.name() + `" -}}
+{{ define "` + errRuleOptionValueCountryCode.name() + `" -}}
 {{R "ERROR:"}} {{.FileAndLine}}: 
-  Cannot use value {{R .RuleArgValue}} as argument for rule "{{R .RuleName}}".
-  > The argument to rule "{{R .RuleName}}" must be a valid Alpha-2 or Alpha-3 country code.
+  Cannot use value {{R .RuleOptionValue}} as option for rule "{{R .RuleName}}".
+  > The option to rule "{{R .RuleName}}" must be a valid Alpha-2 or Alpha-3 country code.
 {{ end }}
 
-{{ define "` + errRuleArgValueLanguageTag.name() + `" -}}
+{{ define "` + errRuleOptionValueLanguageTag.name() + `" -}}
 {{R "ERROR:"}} {{.FileAndLine}}: 
-  Cannot use value {{R .RuleArgValue}} as argument for rule "{{R .RuleName}}".
-  > The argument to rule "{{R .RuleName}}" must be one of the supported language tags.
+  Cannot use value {{R .RuleOptionValue}} as option for rule "{{R .RuleName}}".
+  > The option to rule "{{R .RuleName}}" must be one of the supported language tags.
 {{ end }}
 
-{{ define "` + errRuleArgValueISONum.name() + `" -}}
+{{ define "` + errRuleOptionValueISONum.name() + `" -}}
 {{R "ERROR:"}} {{.FileAndLine}}: 
-  Cannot use value {{R .RuleArgValue}} as argument for rule "{{R .RuleName}}".
-  > The argument to rule "{{R .RuleName}}" must be a number representing a supported ISO standard.
+  Cannot use value {{R .RuleOptionValue}} as option for rule "{{R .RuleName}}".
+  > The option to rule "{{R .RuleName}}" must be a number representing a supported ISO standard.
 {{ end }}
 
-{{ define "` + errRuleArgValueRFCNum.name() + `" -}}
+{{ define "` + errRuleOptionValueRFCNum.name() + `" -}}
 {{R "ERROR:"}} {{.FileAndLine}}: 
-  Cannot use value {{R .RuleArgValue}} as argument for rule "{{R .RuleName}}".
-  > The argument to rule "{{R .RuleName}}" must be a number representing a supported RFC standard.
+  Cannot use value {{R .RuleOptionValue}} as option for rule "{{R .RuleName}}".
+  > The option to rule "{{R .RuleName}}" must be a number representing a supported RFC standard.
 {{ end }}
 
-{{ define "` + errRuleArgValueConflict.name() + `" -}}
+{{ define "` + errRuleOptionValueConflict.name() + `" -}}
 {{R "ERROR:"}} {{.FileAndLine}}: 
-  Cannot use argument {{R .RuleArgValue}} in rule "{{R .RuleName}}" more than once.
-  > The argument {{R .RuleArgValue}} is in conflict with another argument representing the same value in the same rule.
+  Cannot use option {{R .RuleOptionValue}} in rule "{{R .RuleName}}" more than once.
+  > The option {{R .RuleOptionValue}} is in conflict with another option representing the same value in the same rule.
 {{ end }}
 
-{{ define "` + errRuleArgValueBounds.name() + `" -}}
+{{ define "` + errRuleOptionValueBounds.name() + `" -}}
 {{R "ERROR:"}} {{.FileAndLine}}: 
-  Cannot use arguments "{{R .RuleArgs}}" with rule "{{R .RuleName}}".
-  > The arguments to "{{R .RuleName}}" must represent a valid combination of lower and upper boundary.
+  Cannot use options "{{R .RuleOptions}}" with rule "{{R .RuleName}}".
+  > The options to "{{R .RuleName}}" must represent a valid combination of lower and upper boundary.
   > Valid combinations of boundaries are: {{R}}{{.RuleName}}:<lower>:{{off}} | {{R}}{{.RuleName}}::<upper>{{off}} | {{R}}{{.RuleName}}:<lower>:<upper>{{off}}
 {{ end }}
 
@@ -435,8 +437,8 @@ var error_template_string = `
 
 {{ define "` + errContextOptionFieldRequired.name() + `" -}}
 {{R "ERROR:"}} {{.FileAndLine}}: 
-  Cannot use argument {{R .RuleContext}} with rule "{{R .RuleName}}" in field {{R .FieldName}} in {{R .VtorName}}.
-  > An argument starting with {{R "@"}} denotes a "{{R "context attribute"}}" of the "{{R .RuleName}}" rule and, ` +
+  Cannot use option {{R .RuleContext}} with rule "{{R .RuleName}}" in field {{R .FieldName}} in {{R .VtorName}}.
+  > An option starting with {{R "@"}} denotes a "{{R "context attribute"}}" of the "{{R .RuleName}}" rule and, ` +
 	`it requires that the target {{R .VtorName}} struct type has, at the root, a corresponding field named ` +
 	`{{R "context"}} (case insensitive).
 {{ end }}
@@ -465,25 +467,25 @@ var error_template_string = `
   > Rule "{{R .RuleName}}" requires a field with a type convertible to {{R .FuncFieldType}}.
 {{ end }}
 
-{{ define "` + errRuleFuncArgType.name() + `" -}}
+{{ define "` + errRuleFuncOptionType.name() + `" -}}
 {{R "ERROR:"}} {{.FileAndLine}}: 
-  Cannot use {{R .RuleArgValue}} of type {{R .RuleArgType}} as the {{R .RuleArgPos}} argument to the "{{R .RuleName}}" rule.
-  > The {{R .RuleArgPos}} argument of the "{{R .RuleName}}" rule must be of a type convertible to {{R .FuncArgType}}.
+  Cannot use {{R .RuleOptionValue}} of type {{R .RuleOptionType}} as the {{R .RuleOptionPos}} option to the "{{R .RuleName}}" rule.
+  > The {{R .RuleOptionPos}} option of the "{{R .RuleName}}" rule must be of a type convertible to {{R .FuncArgType}}.
 {{ end }}
 
-{{ define "` + errRuleBasicArgType.name() + `" -}}
+{{ define "` + errRuleBasicOptionType.name() + `" -}}
 {{R "ERROR:"}} {{.FileAndLine}}: 
-  Cannot use {{R .RuleArgValue}} of type {{R .RuleArgType}} as the {{R .RuleArgPos}}` +
-	` argument to the "{{R .RuleName}}" rule of field {{R .FieldName}}.
-  > The {{R .RuleArgPos}} argument of the "{{R .RuleName}}" rule must be of a type` +
+  Cannot use {{R .RuleOptionValue}} of type {{R .RuleOptionType}} as the {{R .RuleOptionPos}}` +
+	` option to the "{{R .RuleName}}" rule of field {{R .FieldName}}.
+  > The {{R .RuleOptionPos}} option of the "{{R .RuleName}}" rule must be of a type` +
 	` convertible to the {{R .FieldName}} field's type {{R .FieldType}}.
 {{ end }}
 
-{{ define "` + errRuleBasicArgTypeUint.name() + `" -}}
+{{ define "` + errRuleBasicOptionTypeUint.name() + `" -}}
 {{R "ERROR:"}} {{.FileAndLine}}: 
-  Cannot use {{R .RuleArgValue}} of type {{R .RuleArgType}} as the {{R .RuleArgPos}}` +
-	` argument to the "{{R .RuleName}}" rule.
-  > The {{R .RuleArgPos}} argument of the "{{R .RuleName}}" rule must be of a type` +
+  Cannot use {{R .RuleOptionValue}} of type {{R .RuleOptionType}} as the {{R .RuleOptionPos}}` +
+	` option to the "{{R .RuleName}}" rule.
+  > The {{R .RuleOptionPos}} option of the "{{R .RuleName}}" rule must be of a type` +
 	` convertible to {{R "uint"}}.
 {{ end }}
 

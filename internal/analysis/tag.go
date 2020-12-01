@@ -63,9 +63,9 @@ var rxBool = regexp.MustCompile(`^(?:false|true)$`)
 // expected format of the "rule" tag in EBNF:
 //
 //      node      = rule | [ "[" [ node ] "]" ] [ ( node | rule "," node ) ] .
-//      rule      = rule_name [ { ":" rule_arg } ] { "," rule } .
+//      rule      = rule_name [ { ":" rule_opt } ] { "," rule } .
 //      rule_name = identifier .
-//      rule_arg  = | boolean_lit | integer_lit | float_lit | string_lit | quoted_string_lit | field_reference | context_property .
+//      rule_opt  = | boolean_lit | integer_lit | float_lit | string_lit | quoted_string_lit | field_reference | context_property .
 //
 //      boolean_lit       = "true" | "false" .
 //      integer_lit       = "0" | [ "-" ] "1"…"9" { "0"…"9" } .
@@ -180,11 +180,11 @@ func parseRuleTag(tag string) (*TagNode, error) {
 				continue
 			}
 
-			// scan the rule's arguments
+			// scan the rule's options
 			for tag != "" {
 				tag = tag[1:] // drop the leading ':'
 
-				// quoted arg value; scan to the end quote
+				// quoted option value; scan to the end quote
 				if len(tag) > 0 && tag[0] == '"' {
 					i := 1
 					for i < len(tag) && tag[i] != '"' {
@@ -194,10 +194,10 @@ func parseRuleTag(tag string) (*TagNode, error) {
 						i++
 					}
 
-					ra := &RuleArg{}
-					ra.Value = tag[1:i]
-					ra.Type = ArgTypeString
-					r.Args = append(r.Args, ra)
+					opt := &RuleOption{}
+					opt.Value = tag[1:i]
+					opt.Type = OptionTypeString
+					r.Options = append(r.Options, opt)
 
 					tag = tag[i:]
 
@@ -206,7 +206,7 @@ func parseRuleTag(tag string) (*TagNode, error) {
 						tag = tag[1:]
 					}
 
-					// next arg?
+					// next option?
 					if len(tag) > 0 && tag[0] == ':' {
 						continue
 					}
@@ -220,18 +220,18 @@ func parseRuleTag(tag string) (*TagNode, error) {
 					break
 				}
 
-				// scan to the end of a rule's argument
+				// scan to the end of a rule's option
 				i := 0
 				for i < len(tag) && tag[i] != ':' && tag[i] != ',' {
 					i++
 				}
 
-				arg := tag[:i]
-				if len(arg) > 0 && arg[0] == '@' {
-					r.Context = arg[1:]
+				optstr := tag[:i]
+				if len(optstr) > 0 && optstr[0] == '@' {
+					r.Context = optstr[1:]
 				} else {
-					ra := parseRuleTagArg(arg)
-					r.Args = append(r.Args, ra)
+					opt := parseRuleTagOption(optstr)
+					r.Options = append(r.Options, opt)
 				}
 
 				tag = tag[i:]
@@ -249,26 +249,26 @@ func parseRuleTag(tag string) (*TagNode, error) {
 	return parser(val)
 }
 
-// parseRuleTagArg parses the given as a RuleArg and returns the result.
-func parseRuleTagArg(val string) (ra *RuleArg) {
-	ra = &RuleArg{}
+// parseRuleTagOption parses the given as a RuleOption and returns the result.
+func parseRuleTagOption(val string) (opt *RuleOption) {
+	opt = &RuleOption{}
 	if len(val) > 0 {
 		if val[0] == '&' {
-			ra.Value = val[1:]
-			ra.Type = ArgTypeField
+			opt.Value = val[1:]
+			opt.Type = OptionTypeField
 		} else {
-			ra.Value = val
+			opt.Value = val
 			switch {
 			case isvalid.Int(val):
-				ra.Type = ArgTypeInt
+				opt.Type = OptionTypeInt
 			case isvalid.Float(val):
-				ra.Type = ArgTypeFloat
+				opt.Type = OptionTypeFloat
 			case rxBool.MatchString(val):
-				ra.Type = ArgTypeBool
+				opt.Type = OptionTypeBool
 			default:
-				ra.Type = ArgTypeString
+				opt.Type = OptionTypeString
 			}
 		}
 	}
-	return ra
+	return opt
 }

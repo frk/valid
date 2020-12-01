@@ -69,10 +69,10 @@ func TestAddRuleFunc(t *testing.T) {
 		pkgpath:  "github.com/frk/isvalid/internal/testdata/mypkg", funcname: "MyRule",
 		want: Config{customTypeMap: map[string]RuleType{
 			"myrule": RuleTypeFunc{
-				FuncName: "MyRule",
-				PkgPath:  "github.com/frk/isvalid/internal/testdata/mypkg",
-				ArgTypes: []Type{{Kind: TypeKindString}},
-				typ:      &types.Func{},
+				FuncName:     "MyRule",
+				PkgPath:      "github.com/frk/isvalid/internal/testdata/mypkg",
+				FieldArgType: Type{Kind: TypeKindString},
+				typ:          &types.Func{},
 			},
 		}},
 	}, {
@@ -80,11 +80,11 @@ func TestAddRuleFunc(t *testing.T) {
 		pkgpath:  "github.com/frk/isvalid/internal/testdata/mypkg", funcname: "MyRule2",
 		want: Config{customTypeMap: map[string]RuleType{
 			"myrule": RuleTypeFunc{
-				FuncName:   "MyRule2",
-				PkgPath:    "github.com/frk/isvalid/internal/testdata/mypkg",
-				ArgTypes:   []Type{{Kind: TypeKindSlice, Elem: &Type{Kind: TypeKindString}}},
-				IsVariadic: true,
-				typ:        &types.Func{},
+				FuncName:     "MyRule2",
+				PkgPath:      "github.com/frk/isvalid/internal/testdata/mypkg",
+				FieldArgType: Type{Kind: TypeKindSlice, Elem: &Type{Kind: TypeKindString}},
+				IsVariadic:   true,
+				typ:          &types.Func{},
 			},
 		}},
 	}, {
@@ -92,10 +92,10 @@ func TestAddRuleFunc(t *testing.T) {
 		pkgpath:  "github.com/frk/isvalid/internal/testdata/mypkg", funcname: "MyRule3",
 		want: Config{customTypeMap: map[string]RuleType{
 			"myrule": RuleTypeFunc{
-				FuncName: "MyRule3",
-				PkgPath:  "github.com/frk/isvalid/internal/testdata/mypkg",
-				ArgTypes: []Type{
-					{Kind: TypeKindInt64},
+				FuncName:     "MyRule3",
+				PkgPath:      "github.com/frk/isvalid/internal/testdata/mypkg",
+				FieldArgType: Type{Kind: TypeKindInt64},
+				OptionArgTypes: []Type{
 					{Kind: TypeKindInt},
 					{Kind: TypeKindFloat64},
 					{Kind: TypeKindString},
@@ -172,9 +172,9 @@ func TestAnalysisRun(t *testing.T) {
 		name: "AnalysisTestBAD_ContextOptionFieldRequiredValidator",
 		err:  &anError{Code: errContextOptionFieldRequired, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgFieldUnknownValidator",
-		err: &anError{Code: errRuleArgFieldUnknown, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "x", Type: ArgTypeField},
+		name: "AnalysisTestBAD_RuleOptionFieldUnknownValidator",
+		err: &anError{Code: errRuleOptionFieldUnknown, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "x", Type: OptionTypeField},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleUnknownValidator",
@@ -183,111 +183,111 @@ func TestAnalysisRun(t *testing.T) {
 		name: "AnalysisTestBAD_RuleUnknown2Validator",
 		err:  &anError{Code: errRuleUnknown, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumRequiredValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "foobar", Type: ArgTypeString}}},
+		name: "AnalysisTestBAD_RuleOptionNumRequiredValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "foobar", Type: OptionTypeString}}},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumNotNilValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "foobar", Type: ArgTypeString}}},
+		name: "AnalysisTestBAD_RuleOptionNumNotNilValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "foobar", Type: OptionTypeString}}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeNilNotNilValidator",
 		err:  &anError{Code: errRuleFieldNonNilable, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumEmailValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "foo", Type: ArgTypeString}}},
+		name: "AnalysisTestBAD_RuleOptionNumEmailValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "foo", Type: OptionTypeString}}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringEmailValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumURLValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "foo", Type: ArgTypeString}}},
+		name: "AnalysisTestBAD_RuleOptionNumURLValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "foo", Type: OptionTypeString}}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringURLValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumURIValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "foo", Type: ArgTypeString}}},
+		name: "AnalysisTestBAD_RuleOptionNumURIValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "foo", Type: OptionTypeString}}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringURIValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumPANValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "foo", Type: ArgTypeString}}},
+		name: "AnalysisTestBAD_RuleOptionNumPANValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "foo", Type: OptionTypeString}}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringPANValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumCVVValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "foo", Type: ArgTypeString}}},
+		name: "AnalysisTestBAD_RuleOptionNumCVVValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "foo", Type: OptionTypeString}}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringCVVValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumSSNValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "foo", Type: ArgTypeString}}},
+		name: "AnalysisTestBAD_RuleOptionNumSSNValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "foo", Type: OptionTypeString}}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringSSNValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumEINValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "foo", Type: ArgTypeString}}},
+		name: "AnalysisTestBAD_RuleOptionNumEINValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "foo", Type: OptionTypeString}}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringEINValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumNumericValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "foo", Type: ArgTypeString}}},
+		name: "AnalysisTestBAD_RuleOptionNumNumericValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "foo", Type: OptionTypeString}}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringNumericValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumHexValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "foo", Type: ArgTypeString}}},
+		name: "AnalysisTestBAD_RuleOptionNumHexValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "foo", Type: OptionTypeString}}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringHexValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumHexcolorValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "foo", Type: ArgTypeString}}},
+		name: "AnalysisTestBAD_RuleOptionNumHexcolorValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "foo", Type: OptionTypeString}}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringHexcolorValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumAlnumValidator",
-		err: &anError{Code: errRuleArgValueLanguageTag, a: &analysis{}, f: &StructField{},
-			r:  &Rule{Args: []*RuleArg{{Value: "foo", Type: ArgTypeString}}},
-			ra: &RuleArg{Value: "foo", Type: ArgTypeString},
+		name: "AnalysisTestBAD_RuleOptionNumAlnumValidator",
+		err: &anError{Code: errRuleOptionValueLanguageTag, a: &analysis{}, f: &StructField{},
+			r:   &Rule{Options: []*RuleOption{{Value: "foo", Type: OptionTypeString}}},
+			opt: &RuleOption{Value: "foo", Type: OptionTypeString},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringAlnumValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumCIDRValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "foo", Type: ArgTypeString}}},
+		name: "AnalysisTestBAD_RuleOptionNumCIDRValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "foo", Type: OptionTypeString}}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringCIDRValidator",
@@ -296,637 +296,637 @@ func TestAnalysisRun(t *testing.T) {
 		name: "AnalysisTestBAD_TypeKindStringPhoneValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypePhoneValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "321", Type: ArgTypeInt},
+		name: "AnalysisTestBAD_RuleOptionTypePhoneValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "321", Type: OptionTypeInt},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgType2PhoneValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "true", Type: ArgTypeBool},
+		name: "AnalysisTestBAD_RuleOptionType2PhoneValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "true", Type: OptionTypeBool},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgType3PhoneValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "0.2", Type: ArgTypeFloat},
+		name: "AnalysisTestBAD_RuleOptionType3PhoneValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "0.2", Type: OptionTypeFloat},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgValueCountryCodePhoneValidator",
-		err: &anError{Code: errRuleArgValueCountryCode, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "foo", Type: ArgTypeString},
+		name: "AnalysisTestBAD_RuleOptionValueCountryCodePhoneValidator",
+		err: &anError{Code: errRuleOptionValueCountryCode, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "foo", Type: OptionTypeString},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgValueCountryCode2PhoneValidator",
-		err: &anError{Code: errRuleArgValueCountryCode, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "ab", Type: ArgTypeString},
+		name: "AnalysisTestBAD_RuleOptionValueCountryCode2PhoneValidator",
+		err: &anError{Code: errRuleOptionValueCountryCode, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "ab", Type: OptionTypeString},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeReferenceKindPhoneValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "x", Type: ArgTypeField},
+		name: "AnalysisTestBAD_RuleOptionTypeReferenceKindPhoneValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "x", Type: OptionTypeField},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringZipValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeZipValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "321", Type: ArgTypeInt},
+		name: "AnalysisTestBAD_RuleOptionTypeZipValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "321", Type: OptionTypeInt},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgType2ZipValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "true", Type: ArgTypeBool},
+		name: "AnalysisTestBAD_RuleOptionType2ZipValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "true", Type: OptionTypeBool},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgType3ZipValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "0.2", Type: ArgTypeFloat},
+		name: "AnalysisTestBAD_RuleOptionType3ZipValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "0.2", Type: OptionTypeFloat},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgValueCountryCodeZipValidator",
-		err: &anError{Code: errRuleArgValueCountryCode, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "foo", Type: ArgTypeString},
+		name: "AnalysisTestBAD_RuleOptionValueCountryCodeZipValidator",
+		err: &anError{Code: errRuleOptionValueCountryCode, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "foo", Type: OptionTypeString},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgValueCountryCode2ZipValidator",
-		err: &anError{Code: errRuleArgValueCountryCode, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "ab", Type: ArgTypeString},
+		name: "AnalysisTestBAD_RuleOptionValueCountryCode2ZipValidator",
+		err: &anError{Code: errRuleOptionValueCountryCode, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "ab", Type: OptionTypeString},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeReferenceKindZipValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "x", Type: ArgTypeField},
+		name: "AnalysisTestBAD_RuleOptionTypeReferenceKindZipValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "x", Type: OptionTypeField},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringUUIDValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeUUIDValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "-4", Type: ArgTypeInt},
+		name: "AnalysisTestBAD_RuleOptionTypeUUIDValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "-4", Type: OptionTypeInt},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgType2UUIDValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "true", Type: ArgTypeBool},
+		name: "AnalysisTestBAD_RuleOptionType2UUIDValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "true", Type: OptionTypeBool},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgType3UUIDValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "0.2", Type: ArgTypeFloat},
+		name: "AnalysisTestBAD_RuleOptionType3UUIDValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "0.2", Type: OptionTypeFloat},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgValueUUIDVerUUIDValidator",
-		err: &anError{Code: errRuleArgValueUUIDVer, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "foo", Type: ArgTypeString},
+		name: "AnalysisTestBAD_RuleOptionValueUUIDVerUUIDValidator",
+		err: &anError{Code: errRuleOptionValueUUIDVer, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "foo", Type: OptionTypeString},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgValueUUIDVer2UUIDValidator",
-		err: &anError{Code: errRuleArgValueUUIDVer, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "v8", Type: ArgTypeString},
+		name: "AnalysisTestBAD_RuleOptionValueUUIDVer2UUIDValidator",
+		err: &anError{Code: errRuleOptionValueUUIDVer, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "v8", Type: OptionTypeString},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeReferenceKindUUIDValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "z", Type: ArgTypeField},
+		name: "AnalysisTestBAD_RuleOptionTypeReferenceKindUUIDValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "z", Type: OptionTypeField},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgValueConflictUUIDValidator",
-		err: &anError{Code: errRuleArgValueConflict, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "4", Type: ArgTypeInt},
+		name: "AnalysisTestBAD_RuleOptionValueConflictUUIDValidator",
+		err: &anError{Code: errRuleOptionValueConflict, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "4", Type: OptionTypeInt},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumUUIDValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{
-				{Value: "1", Type: ArgTypeInt},
-				{Value: "2", Type: ArgTypeInt},
-				{Value: "3", Type: ArgTypeInt},
-				{Value: "4", Type: ArgTypeInt},
-				{Value: "5", Type: ArgTypeInt},
-				{Value: "6", Type: ArgTypeInt},
+		name: "AnalysisTestBAD_RuleOptionNumUUIDValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{
+				{Value: "1", Type: OptionTypeInt},
+				{Value: "2", Type: OptionTypeInt},
+				{Value: "3", Type: OptionTypeInt},
+				{Value: "4", Type: OptionTypeInt},
+				{Value: "5", Type: OptionTypeInt},
+				{Value: "6", Type: OptionTypeInt},
 			}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringIPValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeIPValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "-4", Type: ArgTypeInt},
+		name: "AnalysisTestBAD_RuleOptionTypeIPValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "-4", Type: OptionTypeInt},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgType2IPValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "true", Type: ArgTypeBool},
+		name: "AnalysisTestBAD_RuleOptionType2IPValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "true", Type: OptionTypeBool},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgType3IPValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "0.2", Type: ArgTypeFloat},
+		name: "AnalysisTestBAD_RuleOptionType3IPValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "0.2", Type: OptionTypeFloat},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgValueIPVerIPValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "v7", Type: ArgTypeString},
+		name: "AnalysisTestBAD_RuleOptionValueIPVerIPValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "v7", Type: OptionTypeString},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgValueIPVer2IPValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "foo", Type: ArgTypeString},
+		name: "AnalysisTestBAD_RuleOptionValueIPVer2IPValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "foo", Type: OptionTypeString},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeReferenceKindIPValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "x", Type: ArgTypeField},
+		name: "AnalysisTestBAD_RuleOptionTypeReferenceKindIPValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "x", Type: OptionTypeField},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumIPValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{
-				{Value: "v4", Type: ArgTypeString},
-				{Value: "v6", Type: ArgTypeString},
-				{Value: "v8", Type: ArgTypeString},
+		name: "AnalysisTestBAD_RuleOptionNumIPValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{
+				{Value: "v4", Type: OptionTypeString},
+				{Value: "v6", Type: OptionTypeString},
+				{Value: "v8", Type: OptionTypeString},
 			}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringMACValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeMACValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "-6", Type: ArgTypeInt},
+		name: "AnalysisTestBAD_RuleOptionTypeMACValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "-6", Type: OptionTypeInt},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgType2MACValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "true", Type: ArgTypeBool},
+		name: "AnalysisTestBAD_RuleOptionType2MACValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "true", Type: OptionTypeBool},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgType3MACValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "0.2", Type: ArgTypeFloat},
+		name: "AnalysisTestBAD_RuleOptionType3MACValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "0.2", Type: OptionTypeFloat},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgValueMACVerMACValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "v8", Type: ArgTypeString},
+		name: "AnalysisTestBAD_RuleOptionValueMACVerMACValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "v8", Type: OptionTypeString},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgValueMACVer2MACValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "vv8", Type: ArgTypeString},
+		name: "AnalysisTestBAD_RuleOptionValueMACVer2MACValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "vv8", Type: OptionTypeString},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeReferenceKindMACValidator",
-		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleOptionTypeReferenceKindMACValidator",
+		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgValueConflictMACValidator",
-		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleOptionValueConflictMACValidator",
+		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumMACValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{
-				{Value: "6", Type: ArgTypeInt},
-				{Value: "8", Type: ArgTypeInt},
-				{Value: "10", Type: ArgTypeInt},
+		name: "AnalysisTestBAD_RuleOptionNumMACValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{
+				{Value: "6", Type: OptionTypeInt},
+				{Value: "8", Type: OptionTypeInt},
+				{Value: "10", Type: OptionTypeInt},
 			}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringISOValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeISOValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "foo", Type: ArgTypeString},
+		name: "AnalysisTestBAD_RuleOptionTypeISOValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "foo", Type: OptionTypeString},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgType2ISOValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "true", Type: ArgTypeBool},
+		name: "AnalysisTestBAD_RuleOptionType2ISOValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "true", Type: OptionTypeBool},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgType3ISOValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "0.2", Type: ArgTypeFloat},
+		name: "AnalysisTestBAD_RuleOptionType3ISOValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "0.2", Type: OptionTypeFloat},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeReferenceKindISOValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "x", Type: ArgTypeField},
+		name: "AnalysisTestBAD_RuleOptionTypeReferenceKindISOValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "x", Type: OptionTypeField},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumISOValidator",
-		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleOptionNumISOValidator",
+		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNum2ISOValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "6", Type: ArgTypeInt}, {Value: "8", Type: ArgTypeInt}}},
+		name: "AnalysisTestBAD_RuleOptionNum2ISOValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "6", Type: OptionTypeInt}, {Value: "8", Type: OptionTypeInt}}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringRFCValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeRFCValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "foo", Type: ArgTypeString},
+		name: "AnalysisTestBAD_RuleOptionTypeRFCValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "foo", Type: OptionTypeString},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgType2RFCValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "true", Type: ArgTypeBool},
+		name: "AnalysisTestBAD_RuleOptionType2RFCValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "true", Type: OptionTypeBool},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgType3RFCValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "0.2", Type: ArgTypeFloat},
+		name: "AnalysisTestBAD_RuleOptionType3RFCValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "0.2", Type: OptionTypeFloat},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeReferenceKindRFCValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "x", Type: ArgTypeField},
+		name: "AnalysisTestBAD_RuleOptionTypeReferenceKindRFCValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "x", Type: OptionTypeField},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumRFCValidator",
-		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleOptionNumRFCValidator",
+		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNum2RFCValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "6", Type: ArgTypeInt}, {Value: "8", Type: ArgTypeInt}}},
+		name: "AnalysisTestBAD_RuleOptionNum2RFCValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "6", Type: OptionTypeInt}, {Value: "8", Type: OptionTypeInt}}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringRegexpValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgValueRegexpRegexpValidator",
-		err: &anError{Code: errRuleArgValueRegexp, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "^($", Type: ArgTypeString},
+		name: "AnalysisTestBAD_RuleOptionValueRegexpRegexpValidator",
+		err: &anError{Code: errRuleOptionValueRegexp, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "^($", Type: OptionTypeString},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeReferenceKindRegexpValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "x", Type: ArgTypeField},
+		name: "AnalysisTestBAD_RuleOptionTypeReferenceKindRegexpValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "x", Type: OptionTypeField},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumRegexpValidator",
-		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleOptionNumRegexpValidator",
+		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNum2RegexpValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "foo", Type: ArgTypeString}, {Value: "bar", Type: ArgTypeString}}},
+		name: "AnalysisTestBAD_RuleOptionNum2RegexpValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "foo", Type: OptionTypeString}, {Value: "bar", Type: OptionTypeString}}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringPrefixValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeReferenceKindPrefixValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "y", Type: ArgTypeField},
+		name: "AnalysisTestBAD_RuleOptionTypeReferenceKindPrefixValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "y", Type: OptionTypeField},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumPrefixValidator",
-		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleOptionNumPrefixValidator",
+		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringSuffixValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeReferenceKindSuffixValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "y", Type: ArgTypeField},
+		name: "AnalysisTestBAD_RuleOptionTypeReferenceKindSuffixValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "y", Type: OptionTypeField},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumSuffixValidator",
-		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleOptionNumSuffixValidator",
+		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringContainsValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeReferenceKindContainsValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "y", Type: ArgTypeField},
+		name: "AnalysisTestBAD_RuleOptionTypeReferenceKindContainsValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "y", Type: OptionTypeField},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumContainsValidator",
-		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleOptionNumContainsValidator",
+		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumEQValidator",
-		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleOptionNumEQValidator",
+		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeStringEQValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "foo", Type: ArgTypeString},
+		name: "AnalysisTestBAD_RuleOptionTypeStringEQValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "foo", Type: OptionTypeString},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeNintEQValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "-123", Type: ArgTypeInt},
+		name: "AnalysisTestBAD_RuleOptionTypeNintEQValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "-123", Type: OptionTypeInt},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeUintEQValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "123", Type: ArgTypeInt},
+		name: "AnalysisTestBAD_RuleOptionTypeUintEQValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "123", Type: OptionTypeInt},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeFloatEQValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "1.23", Type: ArgTypeFloat},
+		name: "AnalysisTestBAD_RuleOptionTypeFloatEQValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "1.23", Type: OptionTypeFloat},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeReferenceKindEQValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "x", Type: ArgTypeField},
+		name: "AnalysisTestBAD_RuleOptionTypeReferenceKindEQValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "x", Type: OptionTypeField},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumNEValidator",
-		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleOptionNumNEValidator",
+		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeStringNEValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "foo", Type: ArgTypeString},
+		name: "AnalysisTestBAD_RuleOptionTypeStringNEValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "foo", Type: OptionTypeString},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeNintNEValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "-123", Type: ArgTypeInt},
+		name: "AnalysisTestBAD_RuleOptionTypeNintNEValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "-123", Type: OptionTypeInt},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeUintNEValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "123", Type: ArgTypeInt},
+		name: "AnalysisTestBAD_RuleOptionTypeUintNEValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "123", Type: OptionTypeInt},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeFloatNEValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "1.23", Type: ArgTypeFloat},
+		name: "AnalysisTestBAD_RuleOptionTypeFloatNEValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "1.23", Type: OptionTypeFloat},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeReferenceKindNEValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "x", Type: ArgTypeField},
+		name: "AnalysisTestBAD_RuleOptionTypeReferenceKindNEValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "x", Type: OptionTypeField},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumGTValidator",
-		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleOptionNumGTValidator",
+		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNum2GTValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "1", Type: ArgTypeInt}, {Value: "2", Type: ArgTypeInt}}},
+		name: "AnalysisTestBAD_RuleOptionNum2GTValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "1", Type: OptionTypeInt}, {Value: "2", Type: OptionTypeInt}}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeNumericGTValidator",
 		err:  &anError{Code: errRuleFieldNonNumeric, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeNintGTValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "-123", Type: ArgTypeInt},
+		name: "AnalysisTestBAD_RuleOptionTypeNintGTValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "-123", Type: OptionTypeInt},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeFloatGTValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "1.23", Type: ArgTypeFloat},
+		name: "AnalysisTestBAD_RuleOptionTypeFloatGTValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "1.23", Type: OptionTypeFloat},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeReferenceKindGTValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "x", Type: ArgTypeField},
+		name: "AnalysisTestBAD_RuleOptionTypeReferenceKindGTValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "x", Type: OptionTypeField},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumLTValidator",
-		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleOptionNumLTValidator",
+		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNum2LTValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "1", Type: ArgTypeInt}, {Value: "2", Type: ArgTypeInt}}},
+		name: "AnalysisTestBAD_RuleOptionNum2LTValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "1", Type: OptionTypeInt}, {Value: "2", Type: OptionTypeInt}}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeNumericLTValidator",
 		err:  &anError{Code: errRuleFieldNonNumeric, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeNintLTValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "-123", Type: ArgTypeInt},
+		name: "AnalysisTestBAD_RuleOptionTypeNintLTValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "-123", Type: OptionTypeInt},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeFloatLTValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "1.23", Type: ArgTypeFloat},
+		name: "AnalysisTestBAD_RuleOptionTypeFloatLTValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "1.23", Type: OptionTypeFloat},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeReferenceKindLTValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "x", Type: ArgTypeField},
+		name: "AnalysisTestBAD_RuleOptionTypeReferenceKindLTValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "x", Type: OptionTypeField},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumGTEValidator",
-		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleOptionNumGTEValidator",
+		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNum2GTEValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "1", Type: ArgTypeInt}, {Value: "2", Type: ArgTypeInt}}},
+		name: "AnalysisTestBAD_RuleOptionNum2GTEValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "1", Type: OptionTypeInt}, {Value: "2", Type: OptionTypeInt}}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeNumericGTEValidator",
 		err:  &anError{Code: errRuleFieldNonNumeric, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeNintGTEValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "-123", Type: ArgTypeInt},
+		name: "AnalysisTestBAD_RuleOptionTypeNintGTEValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "-123", Type: OptionTypeInt},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeFloatGTEValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "1.23", Type: ArgTypeFloat},
+		name: "AnalysisTestBAD_RuleOptionTypeFloatGTEValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "1.23", Type: OptionTypeFloat},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeReferenceKindGTEValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "x", Type: ArgTypeField},
+		name: "AnalysisTestBAD_RuleOptionTypeReferenceKindGTEValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "x", Type: OptionTypeField},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumLTEValidator",
-		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleOptionNumLTEValidator",
+		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNum2LTEValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "1", Type: ArgTypeInt}, {Value: "2", Type: ArgTypeInt}}},
+		name: "AnalysisTestBAD_RuleOptionNum2LTEValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "1", Type: OptionTypeInt}, {Value: "2", Type: OptionTypeInt}}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeNumericLTEValidator",
 		err:  &anError{Code: errRuleFieldNonNumeric, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeNintLTEValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "-123", Type: ArgTypeInt},
+		name: "AnalysisTestBAD_RuleOptionTypeNintLTEValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "-123", Type: OptionTypeInt},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeFloatLTEValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "1.23", Type: ArgTypeFloat},
+		name: "AnalysisTestBAD_RuleOptionTypeFloatLTEValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "1.23", Type: OptionTypeFloat},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeReferenceKindLTEValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "x", Type: ArgTypeField},
+		name: "AnalysisTestBAD_RuleOptionTypeReferenceKindLTEValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "x", Type: OptionTypeField},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumMinValidator",
-		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleOptionNumMinValidator",
+		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNum2MinValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "1", Type: ArgTypeInt}, {Value: "2", Type: ArgTypeInt}}},
+		name: "AnalysisTestBAD_RuleOptionNum2MinValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "1", Type: OptionTypeInt}, {Value: "2", Type: OptionTypeInt}}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeNumericMinValidator",
 		err:  &anError{Code: errRuleFieldNonNumeric, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeNintMinValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "-123", Type: ArgTypeInt},
+		name: "AnalysisTestBAD_RuleOptionTypeNintMinValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "-123", Type: OptionTypeInt},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeFloatMinValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "1.23", Type: ArgTypeFloat},
+		name: "AnalysisTestBAD_RuleOptionTypeFloatMinValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "1.23", Type: OptionTypeFloat},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeReferenceKindMinValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "x", Type: ArgTypeField},
+		name: "AnalysisTestBAD_RuleOptionTypeReferenceKindMinValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "x", Type: OptionTypeField},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumMaxValidator",
-		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleOptionNumMaxValidator",
+		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNum2MaxValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "1", Type: ArgTypeInt}, {Value: "2", Type: ArgTypeInt}}},
+		name: "AnalysisTestBAD_RuleOptionNum2MaxValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "1", Type: OptionTypeInt}, {Value: "2", Type: OptionTypeInt}}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeNumericMaxValidator",
 		err:  &anError{Code: errRuleFieldNonNumeric, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeNintMaxValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "-123", Type: ArgTypeInt},
+		name: "AnalysisTestBAD_RuleOptionTypeNintMaxValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "-123", Type: OptionTypeInt},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeFloatMaxValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "1.23", Type: ArgTypeFloat},
+		name: "AnalysisTestBAD_RuleOptionTypeFloatMaxValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "1.23", Type: OptionTypeFloat},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeReferenceKindMaxValidator",
-		err: &anError{Code: errRuleBasicArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "x", Type: ArgTypeField},
+		name: "AnalysisTestBAD_RuleOptionTypeReferenceKindMaxValidator",
+		err: &anError{Code: errRuleBasicOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "x", Type: OptionTypeField},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumRngValidator",
-		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleOptionNumRngValidator",
+		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNum2RngValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "123", Type: ArgTypeInt}}},
+		name: "AnalysisTestBAD_RuleOptionNum2RngValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "123", Type: OptionTypeInt}}},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNum3RngValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{
-				{Value: "1", Type: ArgTypeInt},
-				{Value: "2", Type: ArgTypeInt},
-				{Value: "3", Type: ArgTypeInt},
+		name: "AnalysisTestBAD_RuleOptionNum3RngValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{
+				{Value: "1", Type: OptionTypeInt},
+				{Value: "2", Type: OptionTypeInt},
+				{Value: "3", Type: OptionTypeInt},
 			}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeNumericRngValidator",
 		err:  &anError{Code: errRuleFieldNonNumeric, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeStringRngValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "foo", Type: ArgTypeString},
+		name: "AnalysisTestBAD_RuleOptionTypeStringRngValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "foo", Type: OptionTypeString},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeString2RngValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "bar", Type: ArgTypeString},
+		name: "AnalysisTestBAD_RuleOptionTypeString2RngValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "bar", Type: OptionTypeString},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeNintRngValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "-123", Type: ArgTypeInt},
+		name: "AnalysisTestBAD_RuleOptionTypeNintRngValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "-123", Type: OptionTypeInt},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeFloatRngValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "1.23", Type: ArgTypeFloat},
+		name: "AnalysisTestBAD_RuleOptionTypeFloatRngValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "1.23", Type: OptionTypeFloat},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgValueBoundsRngValidator",
-		err: &anError{Code: errRuleArgValueBounds, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "2", Type: ArgTypeInt}, {Value: "1.23", Type: ArgTypeFloat}}},
+		name: "AnalysisTestBAD_RuleOptionValueBoundsRngValidator",
+		err: &anError{Code: errRuleOptionValueBounds, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "2", Type: OptionTypeInt}, {Value: "1.23", Type: OptionTypeFloat}}},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgValueBounds2RngValidator",
-		err: &anError{Code: errRuleArgValueBounds, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "", Type: ArgTypeUnknown}, {Value: "", Type: ArgTypeUnknown}}},
+		name: "AnalysisTestBAD_RuleOptionValueBounds2RngValidator",
+		err: &anError{Code: errRuleOptionValueBounds, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "", Type: OptionTypeUnknown}, {Value: "", Type: OptionTypeUnknown}}},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeReferenceKindRngValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "y", Type: ArgTypeField},
+		name: "AnalysisTestBAD_RuleOptionTypeReferenceKindRngValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "y", Type: OptionTypeField},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumLenValidator",
-		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleOptionNumLenValidator",
+		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNum2LenValidator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{
-				{Value: "1", Type: ArgTypeInt},
-				{Value: "2", Type: ArgTypeInt},
-				{Value: "3", Type: ArgTypeInt},
+		name: "AnalysisTestBAD_RuleOptionNum2LenValidator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{
+				{Value: "1", Type: OptionTypeInt},
+				{Value: "2", Type: OptionTypeInt},
+				{Value: "3", Type: OptionTypeInt},
 			}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeLengthLenValidator",
 		err:  &anError{Code: errRuleFieldLengthless, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeLenValidator",
-		err: &anError{Code: errRuleBasicArgTypeUint, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "foo", Type: ArgTypeString},
+		name: "AnalysisTestBAD_RuleOptionTypeLenValidator",
+		err: &anError{Code: errRuleBasicOptionTypeUint, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "foo", Type: OptionTypeString},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgType2LenValidator",
-		err: &anError{Code: errRuleBasicArgTypeUint, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "-123", Type: ArgTypeInt},
+		name: "AnalysisTestBAD_RuleOptionType2LenValidator",
+		err: &anError{Code: errRuleBasicOptionTypeUint, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "-123", Type: OptionTypeInt},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgType3LenValidator",
-		err: &anError{Code: errRuleBasicArgTypeUint, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "1.23", Type: ArgTypeFloat},
+		name: "AnalysisTestBAD_RuleOptionType3LenValidator",
+		err: &anError{Code: errRuleBasicOptionTypeUint, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "1.23", Type: OptionTypeFloat},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgValueBoundsLenValidator",
-		err: &anError{Code: errRuleArgValueBounds, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "20", Type: ArgTypeInt}, {Value: "10", Type: ArgTypeInt}}},
+		name: "AnalysisTestBAD_RuleOptionValueBoundsLenValidator",
+		err: &anError{Code: errRuleOptionValueBounds, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "20", Type: OptionTypeInt}, {Value: "10", Type: OptionTypeInt}}},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgValueBounds2LenValidator",
-		err: &anError{Code: errRuleArgValueBounds, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "", Type: ArgTypeUnknown}, {Value: "", Type: ArgTypeUnknown}}},
+		name: "AnalysisTestBAD_RuleOptionValueBounds2LenValidator",
+		err: &anError{Code: errRuleOptionValueBounds, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "", Type: OptionTypeUnknown}, {Value: "", Type: OptionTypeUnknown}}},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeReferenceKindLenValidator",
-		err: &anError{Code: errRuleBasicArgTypeUint, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "y", Type: ArgTypeField},
+		name: "AnalysisTestBAD_RuleOptionTypeReferenceKindLenValidator",
+		err: &anError{Code: errRuleBasicOptionTypeUint, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "y", Type: OptionTypeField},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNumRuneCountValidator",
-		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleOptionNumRuneCountValidator",
+		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgNum2RuneCountValidator",
-		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleOptionNum2RuneCountValidator",
+		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
 		name: "AnalysisTestBAD_TypeRunelessRuneCountValidator",
 		err:  &anError{Code: errRuleFieldRuneless, a: &analysis{}, f: &StructField{}, r: &Rule{}},
@@ -937,52 +937,52 @@ func TestAnalysisRun(t *testing.T) {
 		name: "AnalysisTestBAD_TypeRuneless3RuneCountValidator",
 		err:  &anError{Code: errRuleFieldRuneless, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeRuneCountValidator",
-		err: &anError{Code: errRuleBasicArgTypeUint, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "foo", Type: ArgTypeString}},
+		name: "AnalysisTestBAD_RuleOptionTypeRuneCountValidator",
+		err: &anError{Code: errRuleBasicOptionTypeUint, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "foo", Type: OptionTypeString}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgType2RuneCountValidator",
-		err: &anError{Code: errRuleBasicArgTypeUint, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "-123", Type: ArgTypeInt}},
+		name: "AnalysisTestBAD_RuleOptionType2RuneCountValidator",
+		err: &anError{Code: errRuleBasicOptionTypeUint, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "-123", Type: OptionTypeInt}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgType3RuneCountValidator",
-		err: &anError{Code: errRuleBasicArgTypeUint, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "1.23", Type: ArgTypeFloat}},
+		name: "AnalysisTestBAD_RuleOptionType3RuneCountValidator",
+		err: &anError{Code: errRuleBasicOptionTypeUint, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "1.23", Type: OptionTypeFloat}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgValueBoundsRuneCountValidator",
-		err:  &anError{Code: errRuleArgValueBounds, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleOptionValueBoundsRuneCountValidator",
+		err:  &anError{Code: errRuleOptionValueBounds, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgValueBounds2RuneCountValidator",
-		err: &anError{Code: errRuleArgValueBounds, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{{Value: "", Type: ArgTypeUnknown}, {Value: "", Type: ArgTypeUnknown}}}},
+		name: "AnalysisTestBAD_RuleOptionValueBounds2RuneCountValidator",
+		err: &anError{Code: errRuleOptionValueBounds, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{{Value: "", Type: OptionTypeUnknown}, {Value: "", Type: OptionTypeUnknown}}}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgTypeFieldKindRuneCountValidator",
-		err: &anError{Code: errRuleBasicArgTypeUint, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "y", Type: ArgTypeField}},
+		name: "AnalysisTestBAD_RuleOptionTypeFieldKindRuneCountValidator",
+		err: &anError{Code: errRuleBasicOptionTypeUint, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{Value: "y", Type: OptionTypeField}},
 	}, {
-		name: "AnalysisTestBAD_RuleFuncRuleArgCountValidator",
-		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleFuncRuleOptionCountValidator",
+		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleFuncRuleArgCount2Validator",
-		err: &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Args: []*RuleArg{
-				{Value: "a", Type: ArgTypeString},
-				{Value: "b", Type: ArgTypeString},
-				{Value: "c", Type: ArgTypeString},
+		name: "AnalysisTestBAD_RuleFuncRuleOptionCount2Validator",
+		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
+			r: &Rule{Options: []*RuleOption{
+				{Value: "a", Type: OptionTypeString},
+				{Value: "b", Type: OptionTypeString},
+				{Value: "c", Type: OptionTypeString},
 			}},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleFuncFieldArgTypeValidator",
+		name: "AnalysisTestBAD_RuleFuncFieldOptionTypeValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleFuncRuleArgTypeValidator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{"foo", ArgTypeString},
+		name: "AnalysisTestBAD_RuleFuncRuleOptionTypeValidator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{"foo", OptionTypeString},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleFuncRuleArgType2Validator",
-		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{"abc", ArgTypeString},
+		name: "AnalysisTestBAD_RuleFuncRuleOptionType2Validator",
+		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
+			opt: &RuleOption{"abc", OptionTypeString},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleEnumTypeUnnamedValidator",
@@ -1018,14 +1018,14 @@ func TestAnalysisRun(t *testing.T) {
 		name: "AnalysisTestBAD_RuleElem3Validator",
 		err:  &anError{Code: errRuleElem, a: &analysis{}, f: &StructField{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgCountKeyValidator",
-		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleOptionCountKeyValidator",
+		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgCountElemValidator",
-		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleOptionCountElemValidator",
+		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleArgCountSubfieldValidator",
-		err:  &anError{Code: errRuleArgCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
+		name: "AnalysisTestBAD_RuleOptionCountSubfieldValidator",
+		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
 		name: "AnalysisTestOK_ErrorConstructorValidator",
 		want: &ValidatorStruct{
@@ -1193,8 +1193,8 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "F15", Key: "F15", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{"alnum"}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "alnum", Args: []*RuleArg{
-								{Value: "en", Type: ArgTypeString},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "alnum", Options: []*RuleOption{
+								{Value: "en", Type: OptionTypeString},
 							}}}},
 						}, {
 							Name: "F16", Key: "F16", IsExported: true,
@@ -1210,16 +1210,16 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "F18", Key: "F18", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{"phone:us:ca"}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "phone", Args: []*RuleArg{
-								{Value: "us", Type: ArgTypeString},
-								{Value: "ca", Type: ArgTypeString},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "phone", Options: []*RuleOption{
+								{Value: "us", Type: OptionTypeString},
+								{Value: "ca", Type: OptionTypeString},
 							}}}},
 						}, {
 							Name: "F19", Key: "F19", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{"phone:&CountryCode"}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "phone", Args: []*RuleArg{
-								{Value: "CountryCode", Type: ArgTypeField},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "phone", Options: []*RuleOption{
+								{Value: "CountryCode", Type: OptionTypeField},
 							}}}},
 						}, {
 							Name: "F20", Key: "F20", IsExported: true,
@@ -1230,16 +1230,16 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "F21", Key: "F21", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{"zip:deu:fin"}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "zip", Args: []*RuleArg{
-								{Value: "deu", Type: ArgTypeString},
-								{Value: "fin", Type: ArgTypeString},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "zip", Options: []*RuleOption{
+								{Value: "deu", Type: OptionTypeString},
+								{Value: "fin", Type: OptionTypeString},
 							}}}},
 						}, {
 							Name: "F22", Key: "F22", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{"zip:&CountryCode"}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "zip", Args: []*RuleArg{
-								{Value: "CountryCode", Type: ArgTypeField},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "zip", Options: []*RuleOption{
+								{Value: "CountryCode", Type: OptionTypeField},
 							}}}},
 						}, {
 							Name: "F23", Key: "F23", IsExported: true,
@@ -1250,378 +1250,378 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "F24", Key: "F24", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{"uuid:3"}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "uuid", Args: []*RuleArg{
-								{Value: "3", Type: ArgTypeInt},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "uuid", Options: []*RuleOption{
+								{Value: "3", Type: OptionTypeInt},
 							}}}},
 						}, {
 							Name: "F25", Key: "F25", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{"uuid:v4"}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "uuid", Args: []*RuleArg{
-								{Value: "4", Type: ArgTypeInt},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "uuid", Options: []*RuleOption{
+								{Value: "4", Type: OptionTypeInt},
 							}}}},
 						}, {
 							Name: "F26", Key: "F26", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{"uuid:&SomeVersion"}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "uuid", Args: []*RuleArg{
-								{Value: "SomeVersion", Type: ArgTypeField},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "uuid", Options: []*RuleOption{
+								{Value: "SomeVersion", Type: OptionTypeField},
 							}}}},
 						}, {
 							Name: "F27", Key: "F27", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{"ip"}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "ip", Args: []*RuleArg{
-								{Value: "0", Type: ArgTypeInt},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "ip", Options: []*RuleOption{
+								{Value: "0", Type: OptionTypeInt},
 							}}}},
 						}, {
 							Name: "F28", Key: "F28", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{"ip:4"}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "ip", Args: []*RuleArg{
-								{Value: "4", Type: ArgTypeInt},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "ip", Options: []*RuleOption{
+								{Value: "4", Type: OptionTypeInt},
 							}}}},
 						}, {
 							Name: "F29", Key: "F29", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{"ip:6"}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "ip", Args: []*RuleArg{
-								{Value: "6", Type: ArgTypeInt},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "ip", Options: []*RuleOption{
+								{Value: "6", Type: OptionTypeInt},
 							}}}},
 						}, {
 							Name: "F30", Key: "F30", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{"ip:&SomeVersion"}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "ip", Args: []*RuleArg{
-								{Value: "SomeVersion", Type: ArgTypeField},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "ip", Options: []*RuleOption{
+								{Value: "SomeVersion", Type: OptionTypeField},
 							}}}},
 						}, {
 							Name: "F31", Key: "F31", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{"mac"}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "mac", Args: []*RuleArg{
-								{Value: "0", Type: ArgTypeInt},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "mac", Options: []*RuleOption{
+								{Value: "0", Type: OptionTypeInt},
 							}}}},
 						}, {
 							Name: "F32", Key: "F32", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{"mac:6"}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "mac", Args: []*RuleArg{
-								{Value: "6", Type: ArgTypeInt},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "mac", Options: []*RuleOption{
+								{Value: "6", Type: OptionTypeInt},
 							}}}},
 						}, {
 							Name: "F33", Key: "F33", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{"mac:8"}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "mac", Args: []*RuleArg{
-								{Value: "8", Type: ArgTypeInt},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "mac", Options: []*RuleOption{
+								{Value: "8", Type: OptionTypeInt},
 							}}}},
 						}, {
 							Name: "F34", Key: "F34", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{"mac:&SomeVersion"}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "mac", Args: []*RuleArg{
-								{Value: "SomeVersion", Type: ArgTypeField},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "mac", Options: []*RuleOption{
+								{Value: "SomeVersion", Type: OptionTypeField},
 							}}}},
 						}, {
 							Name: "F35", Key: "F35", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{"iso:1234"}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "iso", Args: []*RuleArg{
-								{Value: "1234", Type: ArgTypeInt},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "iso", Options: []*RuleOption{
+								{Value: "1234", Type: OptionTypeInt},
 							}}}},
 						}, {
 							Name: "F36", Key: "F36", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{"rfc:1234"}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "rfc", Args: []*RuleArg{
-								{Value: "1234", Type: ArgTypeInt},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "rfc", Options: []*RuleOption{
+								{Value: "1234", Type: OptionTypeInt},
 							}}}},
 						}, {
 							Name: "F37", Key: "F37", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`re:"^[a-z]+\[[0-9]+\]$"`}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "re", Args: []*RuleArg{
-								{Value: `^[a-z]+\[[0-9]+\]$`, Type: ArgTypeString},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "re", Options: []*RuleOption{
+								{Value: `^[a-z]+\[[0-9]+\]$`, Type: OptionTypeString},
 							}}}},
 						}, {
 							Name: "F38", Key: "F38", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`re:"\w+"`}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "re", Args: []*RuleArg{
-								{Value: `\w+`, Type: ArgTypeString},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "re", Options: []*RuleOption{
+								{Value: `\w+`, Type: OptionTypeString},
 							}}}},
 						}, {
 							Name: "F39", Key: "F39", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`contains:foo bar`}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "contains", Args: []*RuleArg{
-								{Value: "foo bar", Type: ArgTypeString},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "contains", Options: []*RuleOption{
+								{Value: "foo bar", Type: OptionTypeString},
 							}}}},
 						}, {
 							Name: "F40", Key: "F40", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`contains:&SomeValue`}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "contains", Args: []*RuleArg{
-								{Value: "SomeValue", Type: ArgTypeField},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "contains", Options: []*RuleOption{
+								{Value: "SomeValue", Type: OptionTypeField},
 							}}}},
 						}, {
 							Name: "F41", Key: "F41", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`prefix:foo bar`}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "prefix", Args: []*RuleArg{
-								{Value: "foo bar", Type: ArgTypeString},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "prefix", Options: []*RuleOption{
+								{Value: "foo bar", Type: OptionTypeString},
 							}}}},
 						}, {
 							Name: "F42", Key: "F42", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`prefix:&SomeValue`}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "prefix", Args: []*RuleArg{
-								{Value: "SomeValue", Type: ArgTypeField},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "prefix", Options: []*RuleOption{
+								{Value: "SomeValue", Type: OptionTypeField},
 							}}}},
 						}, {
 							Name: "F43", Key: "F43", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`suffix:foo bar`}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "suffix", Args: []*RuleArg{
-								{Value: "foo bar", Type: ArgTypeString},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "suffix", Options: []*RuleOption{
+								{Value: "foo bar", Type: OptionTypeString},
 							}}}},
 						}, {
 							Name: "F44", Key: "F44", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`suffix:&SomeValue`}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "suffix", Args: []*RuleArg{
-								{Value: "SomeValue", Type: ArgTypeField},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "suffix", Options: []*RuleOption{
+								{Value: "SomeValue", Type: OptionTypeField},
 							}}}},
 						}, {
 							Name: "F45", Key: "F45", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`eq:foo bar`}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "eq", Args: []*RuleArg{
-								{Value: "foo bar", Type: ArgTypeString},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "eq", Options: []*RuleOption{
+								{Value: "foo bar", Type: OptionTypeString},
 							}}}},
 						}, {
 							Name: "F46", Key: "F46", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`eq:-123`}},
 							Type: Type{Kind: TypeKindInt},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "eq", Args: []*RuleArg{
-								{Value: "-123", Type: ArgTypeInt},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "eq", Options: []*RuleOption{
+								{Value: "-123", Type: OptionTypeInt},
 							}}}},
 						}, {
 							Name: "F47", Key: "F47", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`eq:123.987`}},
 							Type: Type{Kind: TypeKindFloat64},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "eq", Args: []*RuleArg{
-								{Value: "123.987", Type: ArgTypeFloat},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "eq", Options: []*RuleOption{
+								{Value: "123.987", Type: OptionTypeFloat},
 							}}}},
 						}, {
 							Name: "F48", Key: "F48", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`eq:&SomeValue`}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "eq", Args: []*RuleArg{
-								{Value: "SomeValue", Type: ArgTypeField},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "eq", Options: []*RuleOption{
+								{Value: "SomeValue", Type: OptionTypeField},
 							}}}},
 						}, {
 							Name: "F49", Key: "F49", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`ne:foo bar`}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "ne", Args: []*RuleArg{
-								{Value: "foo bar", Type: ArgTypeString},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "ne", Options: []*RuleOption{
+								{Value: "foo bar", Type: OptionTypeString},
 							}}}},
 						}, {
 							Name: "F50", Key: "F50", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`ne:-123`}},
 							Type: Type{Kind: TypeKindInt},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "ne", Args: []*RuleArg{
-								{Value: "-123", Type: ArgTypeInt},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "ne", Options: []*RuleOption{
+								{Value: "-123", Type: OptionTypeInt},
 							}}}},
 						}, {
 							Name: "F51", Key: "F51", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`ne:123.987`}},
 							Type: Type{Kind: TypeKindFloat64},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "ne", Args: []*RuleArg{
-								{Value: "123.987", Type: ArgTypeFloat},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "ne", Options: []*RuleOption{
+								{Value: "123.987", Type: OptionTypeFloat},
 							}}}},
 						}, {
 							Name: "F52", Key: "F52", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`ne:&SomeValue`}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "ne", Args: []*RuleArg{
-								{Value: "SomeValue", Type: ArgTypeField}}}}},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "ne", Options: []*RuleOption{
+								{Value: "SomeValue", Type: OptionTypeField}}}}},
 						}, {
 							Name: "F53", Key: "F53", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`gt:24`, `lt:128`}},
 							Type: Type{Kind: TypeKindUint8},
 							RuleTag: &TagNode{Rules: []*Rule{
-								{Name: "gt", Args: []*RuleArg{
-									{Value: "24", Type: ArgTypeInt}}},
-								{Name: "lt", Args: []*RuleArg{
-									{Value: "128", Type: ArgTypeInt}}},
+								{Name: "gt", Options: []*RuleOption{
+									{Value: "24", Type: OptionTypeInt}}},
+								{Name: "lt", Options: []*RuleOption{
+									{Value: "128", Type: OptionTypeInt}}},
 							}},
 						}, {
 							Name: "F54", Key: "F54", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`gt:-128`, `lt:-24`}},
 							Type: Type{Kind: TypeKindInt16},
 							RuleTag: &TagNode{Rules: []*Rule{
-								{Name: "gt", Args: []*RuleArg{
-									{Value: "-128", Type: ArgTypeInt}}},
-								{Name: "lt", Args: []*RuleArg{
-									{Value: "-24", Type: ArgTypeInt}}},
+								{Name: "gt", Options: []*RuleOption{
+									{Value: "-128", Type: OptionTypeInt}}},
+								{Name: "lt", Options: []*RuleOption{
+									{Value: "-24", Type: OptionTypeInt}}},
 							}},
 						}, {
 							Name: "F55", Key: "F55", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`gt:0.24`, `lt:1.28`}},
 							Type: Type{Kind: TypeKindFloat32},
 							RuleTag: &TagNode{Rules: []*Rule{
-								{Name: "gt", Args: []*RuleArg{
-									{Value: "0.24", Type: ArgTypeFloat}}},
-								{Name: "lt", Args: []*RuleArg{
-									{Value: "1.28", Type: ArgTypeFloat}}},
+								{Name: "gt", Options: []*RuleOption{
+									{Value: "0.24", Type: OptionTypeFloat}}},
+								{Name: "lt", Options: []*RuleOption{
+									{Value: "1.28", Type: OptionTypeFloat}}},
 							}},
 						}, {
 							Name: "F56", Key: "F56", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`gte:24`, `lte:128`}},
 							Type: Type{Kind: TypeKindUint8},
 							RuleTag: &TagNode{Rules: []*Rule{
-								{Name: "gte", Args: []*RuleArg{
-									{Value: "24", Type: ArgTypeInt}}},
-								{Name: "lte", Args: []*RuleArg{
-									{Value: "128", Type: ArgTypeInt}}},
+								{Name: "gte", Options: []*RuleOption{
+									{Value: "24", Type: OptionTypeInt}}},
+								{Name: "lte", Options: []*RuleOption{
+									{Value: "128", Type: OptionTypeInt}}},
 							}},
 						}, {
 							Name: "F57", Key: "F57", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`gte:-128`, `lte:-24`}},
 							Type: Type{Kind: TypeKindInt16},
 							RuleTag: &TagNode{Rules: []*Rule{
-								{Name: "gte", Args: []*RuleArg{
-									{Value: "-128", Type: ArgTypeInt}}},
-								{Name: "lte", Args: []*RuleArg{
-									{Value: "-24", Type: ArgTypeInt}}},
+								{Name: "gte", Options: []*RuleOption{
+									{Value: "-128", Type: OptionTypeInt}}},
+								{Name: "lte", Options: []*RuleOption{
+									{Value: "-24", Type: OptionTypeInt}}},
 							}},
 						}, {
 							Name: "F58", Key: "F58", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`gte:0.24`, `lte:1.28`}},
 							Type: Type{Kind: TypeKindFloat32},
 							RuleTag: &TagNode{Rules: []*Rule{
-								{Name: "gte", Args: []*RuleArg{
-									{Value: "0.24", Type: ArgTypeFloat}}},
-								{Name: "lte", Args: []*RuleArg{
-									{Value: "1.28", Type: ArgTypeFloat}}},
+								{Name: "gte", Options: []*RuleOption{
+									{Value: "0.24", Type: OptionTypeFloat}}},
+								{Name: "lte", Options: []*RuleOption{
+									{Value: "1.28", Type: OptionTypeFloat}}},
 							}},
 						}, {
 							Name: "F59", Key: "F59", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`min:24`, `max:128`}},
 							Type: Type{Kind: TypeKindUint8},
 							RuleTag: &TagNode{Rules: []*Rule{
-								{Name: "min", Args: []*RuleArg{
-									{Value: "24", Type: ArgTypeInt}}},
-								{Name: "max", Args: []*RuleArg{
-									{Value: "128", Type: ArgTypeInt}}},
+								{Name: "min", Options: []*RuleOption{
+									{Value: "24", Type: OptionTypeInt}}},
+								{Name: "max", Options: []*RuleOption{
+									{Value: "128", Type: OptionTypeInt}}},
 							}},
 						}, {
 							Name: "F60", Key: "F60", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`min:-128`, `max:-24`}},
 							Type: Type{Kind: TypeKindInt16},
 							RuleTag: &TagNode{Rules: []*Rule{
-								{Name: "min", Args: []*RuleArg{
-									{Value: "-128", Type: ArgTypeInt}}},
-								{Name: "max", Args: []*RuleArg{
-									{Value: "-24", Type: ArgTypeInt}}},
+								{Name: "min", Options: []*RuleOption{
+									{Value: "-128", Type: OptionTypeInt}}},
+								{Name: "max", Options: []*RuleOption{
+									{Value: "-24", Type: OptionTypeInt}}},
 							}},
 						}, {
 							Name: "F61", Key: "F61", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`min:0.24`, `max:1.28`}},
 							Type: Type{Kind: TypeKindFloat32},
 							RuleTag: &TagNode{Rules: []*Rule{
-								{Name: "min", Args: []*RuleArg{
-									{Value: "0.24", Type: ArgTypeFloat}}},
-								{Name: "max", Args: []*RuleArg{
-									{Value: "1.28", Type: ArgTypeFloat}}},
+								{Name: "min", Options: []*RuleOption{
+									{Value: "0.24", Type: OptionTypeFloat}}},
+								{Name: "max", Options: []*RuleOption{
+									{Value: "1.28", Type: OptionTypeFloat}}},
 							}},
 						}, {
 							Name: "F62", Key: "F62", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`rng:24:128`}},
 							Type: Type{Kind: TypeKindUint8},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "rng", Args: []*RuleArg{
-								{Value: "24", Type: ArgTypeInt},
-								{Value: "128", Type: ArgTypeInt}}},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "rng", Options: []*RuleOption{
+								{Value: "24", Type: OptionTypeInt},
+								{Value: "128", Type: OptionTypeInt}}},
 							}},
 						}, {
 							Name: "F63", Key: "F63", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`rng:-128:-24`}},
 							Type: Type{Kind: TypeKindInt16},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "rng", Args: []*RuleArg{
-								{Value: "-128", Type: ArgTypeInt},
-								{Value: "-24", Type: ArgTypeInt}}},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "rng", Options: []*RuleOption{
+								{Value: "-128", Type: OptionTypeInt},
+								{Value: "-24", Type: OptionTypeInt}}},
 							}},
 						}, {
 							Name: "F64", Key: "F64", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`rng:0.24:1.28`}},
 							Type: Type{Kind: TypeKindFloat32},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "rng", Args: []*RuleArg{
-								{Value: "0.24", Type: ArgTypeFloat},
-								{Value: "1.28", Type: ArgTypeFloat}}},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "rng", Options: []*RuleOption{
+								{Value: "0.24", Type: OptionTypeFloat},
+								{Value: "1.28", Type: OptionTypeFloat}}},
 							}},
 						}, {
 							Name: "F65", Key: "F65", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`len:28`}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "len", Args: []*RuleArg{
-								{Value: "28", Type: ArgTypeInt}}},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "len", Options: []*RuleOption{
+								{Value: "28", Type: OptionTypeInt}}},
 							}},
 						}, {
 							Name: "F66", Key: "F66", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`len:28`}},
 							Type: Type{Kind: TypeKindSlice, Elem: &Type{Kind: TypeKindInt}},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "len", Args: []*RuleArg{
-								{Value: "28", Type: ArgTypeInt}}},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "len", Options: []*RuleOption{
+								{Value: "28", Type: OptionTypeInt}}},
 							}},
 						}, {
 							Name: "F67", Key: "F67", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`len:28`}},
 							Type: Type{Kind: TypeKindMap, Key: &Type{Kind: TypeKindString}, Elem: &Type{Kind: TypeKindInt}},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "len", Args: []*RuleArg{
-								{Value: "28", Type: ArgTypeInt}}},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "len", Options: []*RuleOption{
+								{Value: "28", Type: OptionTypeInt}}},
 							}},
 						}, {
 							Name: "F68", Key: "F68", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`len:4:28`}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "len", Args: []*RuleArg{
-								{Value: "4", Type: ArgTypeInt},
-								{Value: "28", Type: ArgTypeInt}}},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "len", Options: []*RuleOption{
+								{Value: "4", Type: OptionTypeInt},
+								{Value: "28", Type: OptionTypeInt}}},
 							}},
 						}, {
 							Name: "F69", Key: "F69", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`len:4:28`}},
 							Type: Type{Kind: TypeKindSlice, Elem: &Type{Kind: TypeKindInt}},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "len", Args: []*RuleArg{
-								{Value: "4", Type: ArgTypeInt},
-								{Value: "28", Type: ArgTypeInt}}},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "len", Options: []*RuleOption{
+								{Value: "4", Type: OptionTypeInt},
+								{Value: "28", Type: OptionTypeInt}}},
 							}},
 						}, {
 							Name: "F70", Key: "F70", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`len:4:28`}},
 							Type: Type{Kind: TypeKindMap, Key: &Type{Kind: TypeKindString}, Elem: &Type{Kind: TypeKindInt}},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "len", Args: []*RuleArg{
-								{Value: "4", Type: ArgTypeInt},
-								{Value: "28", Type: ArgTypeInt}}},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "len", Options: []*RuleOption{
+								{Value: "4", Type: OptionTypeInt},
+								{Value: "28", Type: OptionTypeInt}}},
 							}},
 						}, {
 							Name: "F71", Key: "F71", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`len::28`}},
 							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "len", Args: []*RuleArg{
-								{Value: "", Type: ArgTypeUnknown},
-								{Value: "28", Type: ArgTypeInt}}},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "len", Options: []*RuleOption{
+								{Value: "", Type: OptionTypeUnknown},
+								{Value: "28", Type: OptionTypeInt}}},
 							}},
 						}, {
 							Name: "F72", Key: "F72", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{`len:4:`}},
 							Type: Type{Kind: TypeKindSlice, Elem: &Type{Kind: TypeKindInt}},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "len", Args: []*RuleArg{
-								{Value: "4", Type: ArgTypeInt},
-								{Value: "", Type: ArgTypeUnknown}}},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "len", Options: []*RuleOption{
+								{Value: "4", Type: OptionTypeInt},
+								{Value: "", Type: OptionTypeUnknown}}},
 							}},
 						}, {
 							Name: "G1", Key: "G1", IsExported: true,
@@ -1817,15 +1817,15 @@ func TestAnalysisRun(t *testing.T) {
 							Tag: tagutil.Tag{"is": []string{`[phone:us:ca]zip:ca:us`}},
 							RuleTag: &TagNode{
 								Key: &TagNode{Rules: []*Rule{
-									{Name: "phone", Args: []*RuleArg{
-										{Value: "us", Type: ArgTypeString},
-										{Value: "ca", Type: ArgTypeString},
+									{Name: "phone", Options: []*RuleOption{
+										{Value: "us", Type: OptionTypeString},
+										{Value: "ca", Type: OptionTypeString},
 									}},
 								}},
 								Elem: &TagNode{Rules: []*Rule{
-									{Name: "zip", Args: []*RuleArg{
-										{Value: "ca", Type: ArgTypeString},
-										{Value: "us", Type: ArgTypeString},
+									{Name: "zip", Options: []*RuleOption{
+										{Value: "ca", Type: OptionTypeString},
+										{Value: "us", Type: OptionTypeString},
 									}},
 								}},
 							},
@@ -1840,17 +1840,17 @@ func TestAnalysisRun(t *testing.T) {
 										Name: "F1", Key: "F87.F1", IsExported: true,
 										Type: Type{Kind: TypeKindString},
 										Tag:  tagutil.Tag{"is": []string{`len:2:32`}},
-										RuleTag: &TagNode{Rules: []*Rule{{Name: "len", Args: []*RuleArg{
-											{Value: "2", Type: ArgTypeInt},
-											{Value: "32", Type: ArgTypeInt},
+										RuleTag: &TagNode{Rules: []*Rule{{Name: "len", Options: []*RuleOption{
+											{Value: "2", Type: OptionTypeInt},
+											{Value: "32", Type: OptionTypeInt},
 										}}}},
 									}, {
 										Name: "F2", Key: "F87.F2", IsExported: true,
 										Type: Type{Kind: TypeKindString},
 										Tag:  tagutil.Tag{"is": []string{`len:2:32`}},
-										RuleTag: &TagNode{Rules: []*Rule{{Name: "len", Args: []*RuleArg{
-											{Value: "2", Type: ArgTypeInt},
-											{Value: "32", Type: ArgTypeInt},
+										RuleTag: &TagNode{Rules: []*Rule{{Name: "len", Options: []*RuleOption{
+											{Value: "2", Type: OptionTypeInt},
+											{Value: "32", Type: OptionTypeInt},
 										}}}},
 									}, {
 										Name: "F3", Key: "F87.F3", IsExported: true,
@@ -1930,23 +1930,23 @@ func TestAnalysisRun(t *testing.T) {
 									Key: &TagNode{
 										Key: &TagNode{Rules: []*Rule{{Name: "email"}}},
 										Elem: &TagNode{Rules: []*Rule{
-											{Name: "phone", Args: []*RuleArg{
-												{Value: "us", Type: ArgTypeString},
-												{Value: "ca", Type: ArgTypeString},
+											{Name: "phone", Options: []*RuleOption{
+												{Value: "us", Type: OptionTypeString},
+												{Value: "ca", Type: OptionTypeString},
 											}},
 										}},
 									},
 									Elem: &TagNode{
 										Rules: []*Rule{
-											{Name: "len", Args: []*RuleArg{
-												{Value: "", Type: ArgTypeUnknown},
-												{Value: "10", Type: ArgTypeInt},
+											{Name: "len", Options: []*RuleOption{
+												{Value: "", Type: OptionTypeUnknown},
+												{Value: "10", Type: OptionTypeInt},
 											}},
 										},
 										Elem: &TagNode{Rules: []*Rule{
-											{Name: "rng", Args: []*RuleArg{
-												{Value: "-54", Type: ArgTypeInt},
-												{Value: "256", Type: ArgTypeInt},
+											{Name: "rng", Options: []*RuleOption{
+												{Value: "-54", Type: OptionTypeInt},
+												{Value: "256", Type: OptionTypeInt},
 											}},
 										}},
 									},
@@ -1956,16 +1956,16 @@ func TestAnalysisRun(t *testing.T) {
 							Name: "F93", Key: "F93", IsExported: true,
 							Type: Type{Kind: TypeKindString},
 							Tag:  tagutil.Tag{"is": []string{`runecount:28`}},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "runecount", Args: []*RuleArg{
-								{Value: "28", Type: ArgTypeInt},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "runecount", Options: []*RuleOption{
+								{Value: "28", Type: OptionTypeInt},
 							}}}},
 						}, {
 							Name: "F94", Key: "F94", IsExported: true,
 							Type: Type{Kind: TypeKindString},
 							Tag:  tagutil.Tag{"is": []string{`runecount:4:28`}},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "runecount", Args: []*RuleArg{
-								{Value: "4", Type: ArgTypeInt},
-								{Value: "28", Type: ArgTypeInt},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "runecount", Options: []*RuleOption{
+								{Value: "4", Type: OptionTypeInt},
+								{Value: "28", Type: OptionTypeInt},
 							}}}},
 						}, {
 							Name: "F95", Key: "F95", IsExported: true,
@@ -1973,9 +1973,9 @@ func TestAnalysisRun(t *testing.T) {
 								Kind: TypeKindUint8, IsByte: true,
 							}},
 							Tag: tagutil.Tag{"is": []string{`runecount::28`}},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "runecount", Args: []*RuleArg{
-								{Value: "", Type: ArgTypeUnknown},
-								{Value: "28", Type: ArgTypeInt},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "runecount", Options: []*RuleOption{
+								{Value: "", Type: OptionTypeUnknown},
+								{Value: "28", Type: OptionTypeInt},
 							}}}},
 						}, {
 							Name: "F96", Key: "F96", IsExported: true,
@@ -1988,9 +1988,9 @@ func TestAnalysisRun(t *testing.T) {
 								IsImported: true,
 							},
 							Tag: tagutil.Tag{"is": []string{`runecount:4:`}},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "runecount", Args: []*RuleArg{
-								{Value: "4", Type: ArgTypeInt},
-								{Value: "", Type: ArgTypeUnknown},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "runecount", Options: []*RuleOption{
+								{Value: "4", Type: OptionTypeInt},
+								{Value: "", Type: OptionTypeUnknown},
 							}}}},
 						}},
 					},
@@ -2006,31 +2006,32 @@ func TestAnalysisRun(t *testing.T) {
 	anConf.customTypeMap = map[string]RuleType{
 		// legit
 		"utf8": RuleTypeFunc{
-			FuncName: "ValidString",
-			PkgPath:  "unicode/utf8",
-			ArgTypes: []Type{{Kind: TypeKindString}},
+			FuncName:     "ValidString",
+			PkgPath:      "unicode/utf8",
+			FieldArgType: Type{Kind: TypeKindString},
 		},
 
 		// for testing success
 		"timecheck": RuleTypeFunc{
 			FuncName: "TimeCheck", PkgPath: "path/to/rule",
-			ArgTypes: []Type{{Kind: TypeKindStruct, Name: "Time", PkgPath: "time", PkgName: "time"}},
+			FieldArgType: Type{Kind: TypeKindStruct, Name: "Time", PkgPath: "time", PkgName: "time"},
 		},
 		"ifacecheck": RuleTypeFunc{
 			FuncName: "IfaceCheck", PkgPath: "path/to/rule",
-			ArgTypes: []Type{{Kind: TypeKindInterface, IsEmptyInterface: true}},
+			FieldArgType: Type{Kind: TypeKindInterface, IsEmptyInterface: true},
 		},
 
 		// for testing errors
 		"rulefunc1": RuleTypeFunc{
 			FuncName: "RuleFunc1", PkgPath: "path/to/rule",
-			ArgTypes: []Type{{Kind: TypeKindString}, {Kind: TypeKindInt}},
+			FieldArgType:   Type{Kind: TypeKindString},
+			OptionArgTypes: []Type{{Kind: TypeKindInt}},
 		},
 		"rulefunc2": RuleTypeFunc{
 			FuncName: "RuleFunc2", PkgPath: "path/to/rule",
-			ArgTypes: []Type{{Kind: TypeKindString}, {Kind: TypeKindInt},
-				{Kind: TypeKindSlice, Elem: &Type{Kind: TypeKindBool}}},
-			IsVariadic: true,
+			FieldArgType:   Type{Kind: TypeKindString},
+			OptionArgTypes: []Type{{Kind: TypeKindInt}, {Kind: TypeKindSlice, Elem: &Type{Kind: TypeKindBool}}},
+			IsVariadic:     true,
 		},
 	}
 
