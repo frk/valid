@@ -274,6 +274,7 @@ const (
 	_ errorCode = iota
 	errRuleNameReserved
 	errRuleFuncSignature
+	errRuleConfOpts // TODO
 	errValidatorNoField
 	errRuleUnknown
 	errRuleArgCount
@@ -316,6 +317,10 @@ var error_template_string = `
 {{R "ERROR:"}} Cannot use function {{R .FuncNameQualified}} of type {{R .FuncType}} as custom rule function.
   > A custom rule function must have {{R "at least one"}} parameter value and it must have {{R "exactly one"}}` +
 	` result value which must be of type {{R "bool"}}.
+{{ end }}
+
+{{ define "` + errRuleConfOpts.name() + `" -}}
+{{R "ERROR:"}} bad things happend!?
 {{ end }}
 
 {{ define "` + errValidatorNoField.name() + `" -}}

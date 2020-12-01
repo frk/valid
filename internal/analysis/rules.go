@@ -431,25 +431,12 @@ func isValidRuleUUID(a *analysis, r *Rule, t Type, f *StructField) error {
 	return nil
 }
 
-var rxIPVer = regexp.MustCompile(`^(?:v?(?:4|6))$`)
-
 // checks that the rule args' values are valid IP versions.
 func isValidRuleIP(a *analysis, r *Rule, t Type, f *StructField) error {
-	var version string // the first version
 	for _, ra := range r.Args {
-		if ra.Type == ArgTypeString || ra.IsUInt() {
-			if !rxIPVer.MatchString(ra.Value) {
+		if ra.IsUInt() {
+			if ra.Value != "0" && ra.Value != "4" && ra.Value != "6" {
 				return &anError{Code: errRuleArgValueIPVer, a: a, f: f, r: r, ra: ra}
-			}
-
-			if len(ra.Value) > 1 && (ra.Value[0] == 'v' || ra.Value[0] == 'V') {
-				ra.Value = ra.Value[1:]
-				ra.Type = ArgTypeInt
-			}
-			if len(version) > 0 && version == ra.Value {
-				return &anError{Code: errRuleArgValueConflict, a: a, f: f, r: r, ra: ra}
-			} else {
-				version = ra.Value
 			}
 		} else if ra.Type != ArgTypeField {
 			return &anError{Code: errRuleFuncArgType, a: a, f: f, r: r, ra: ra}

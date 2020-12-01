@@ -428,23 +428,18 @@ func TestAnalysisRun(t *testing.T) {
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgValueIPVerIPValidator",
-		err: &anError{Code: errRuleArgValueIPVer, a: &analysis{}, f: &StructField{}, r: &Rule{},
+		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
 			ra: &RuleArg{Value: "v7", Type: ArgTypeString},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgValueIPVer2IPValidator",
-		err: &anError{Code: errRuleArgValueIPVer, a: &analysis{}, f: &StructField{}, r: &Rule{},
+		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
 			ra: &RuleArg{Value: "foo", Type: ArgTypeString},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgTypeReferenceKindIPValidator",
 		err: &anError{Code: errRuleFuncArgType, a: &analysis{}, f: &StructField{}, r: &Rule{},
 			ra: &RuleArg{Value: "x", Type: ArgTypeField},
-		},
-	}, {
-		name: "AnalysisTestBAD_RuleArgValueConflictIPValidator",
-		err: &anError{Code: errRuleArgValueConflict, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			ra: &RuleArg{Value: "4", Type: ArgTypeInt},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleArgNumIPValidator",
@@ -1088,7 +1083,8 @@ func TestAnalysisRun(t *testing.T) {
 			}},
 		},
 	}, {
-		name: "AnalysisTestOK_Validator",
+		name:     "AnalysisTestOK_Validator",
+		printerr: true,
 		want: &ValidatorStruct{
 			TypeName: "AnalysisTestOK_Validator",
 			ContextOption: &ContextOptionField{
@@ -1195,9 +1191,11 @@ func TestAnalysisRun(t *testing.T) {
 							RuleTag: &TagNode{Rules: []*Rule{{Name: "hexcolor"}}},
 						}, {
 							Name: "F15", Key: "F15", IsExported: true,
-							Tag:     tagutil.Tag{"is": []string{"alnum"}},
-							Type:    Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "alnum"}}},
+							Tag:  tagutil.Tag{"is": []string{"alnum"}},
+							Type: Type{Kind: TypeKindString},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "alnum", Args: []*RuleArg{
+								{Value: "en", Type: ArgTypeString},
+							}}}},
 						}, {
 							Name: "F16", Key: "F16", IsExported: true,
 							Tag:     tagutil.Tag{"is": []string{"cidr"}},
@@ -1271,9 +1269,11 @@ func TestAnalysisRun(t *testing.T) {
 							}}}},
 						}, {
 							Name: "F27", Key: "F27", IsExported: true,
-							Tag:     tagutil.Tag{"is": []string{"ip"}},
-							Type:    Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "ip"}}},
+							Tag:  tagutil.Tag{"is": []string{"ip"}},
+							Type: Type{Kind: TypeKindString},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "ip", Args: []*RuleArg{
+								{Value: "0", Type: ArgTypeInt},
+							}}}},
 						}, {
 							Name: "F28", Key: "F28", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{"ip:4"}},
@@ -1283,7 +1283,7 @@ func TestAnalysisRun(t *testing.T) {
 							}}}},
 						}, {
 							Name: "F29", Key: "F29", IsExported: true,
-							Tag:  tagutil.Tag{"is": []string{"ip:v6"}},
+							Tag:  tagutil.Tag{"is": []string{"ip:6"}},
 							Type: Type{Kind: TypeKindString},
 							RuleTag: &TagNode{Rules: []*Rule{{Name: "ip", Args: []*RuleArg{
 								{Value: "6", Type: ArgTypeInt},

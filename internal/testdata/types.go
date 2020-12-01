@@ -47,7 +47,7 @@ type UserInput struct {
 
 	F27 string `is:"ip"`
 	F28 string `is:"ip:4"`
-	F29 string `is:"ip:v6"`
+	F29 string `is:"ip:6"`
 	F30 string `is:"ip:&SomeVersion"`
 
 	F31 string `is:"mac"`

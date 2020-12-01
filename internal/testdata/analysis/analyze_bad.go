@@ -287,13 +287,8 @@ type AnalysisTestBAD_RuleArgValueIPVer2IPValidator struct {
 }
 
 type AnalysisTestBAD_RuleArgTypeReferenceKindIPValidator struct {
-	F string `is:"ip:&x:&y"`
+	F string `is:"ip:&x"`
 	x string
-	y float32
-}
-
-type AnalysisTestBAD_RuleArgValueConflictIPValidator struct {
-	F string `is:"ip:v4:4"`
 }
 
 type AnalysisTestBAD_RuleArgNumIPValidator struct {
