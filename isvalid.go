@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/frk/isvalid/locale"
 )
 
 var rxASCII = regexp.MustCompile(`^[[:ascii:]]*$`)
@@ -363,12 +365,32 @@ func HSL(v string) bool {
 	return rxHSLComma.MatchString(v) || rxHSLSpace.MatchString(v)
 }
 
+var hashAlgoLengths = map[string]int{
+	"md5":       32,
+	"md4":       32,
+	"sha1":      40,
+	"sha256":    64,
+	"sha384":    96,
+	"sha512":    128,
+	"ripemd128": 32,
+	"ripemd160": 40,
+	"tiger128":  32,
+	"tiger160":  40,
+	"tiger192":  48,
+	"crc32":     8,
+	"crc32b":    8,
+}
+
+var rxHash = regexp.MustCompile(`^[0-9A-Fa-f]+$`)
+
 // Hash reports whether or not v is a hash of the specified algorithm.
 //
 // isvalid:rule
 //	{ "name": "hash", "err": {"text": "must be a valid hash"} }
 func Hash(v string, algo string) bool {
-	// TODO
+	if length := hashAlgoLengths[algo]; length > 0 && length == len(v) {
+		return rxHash.MatchString(v)
+	}
 	return false
 }
 
@@ -397,8 +419,59 @@ func HexColor(v string) bool {
 // isvalid:rule
 //	{ "name": "iban", "err": { "text": "must be a valid IBAN" } }
 func IBAN(v string) bool {
-	// TODO
-	return false
+	v = rmchar(v, func(r rune) bool { return r == ' ' || r == '-' })
+	if len(v) < 2 {
+		return false
+	}
+
+	v = strings.ToUpper(v)
+	if rx, ok := locale.IBANRegexpTable[v[:2]]; !ok || !rx.MatchString(v) {
+		return false
+	}
+
+	// rearrange by moving the four initial characters to the end of the string
+	v = v[4:] + v[:4]
+
+	// convert to decimal int by replacing each letter in the string with two digits
+	var D string
+	for _, r := range v {
+		if r >= 'A' && 'Z' >= r {
+			D += strconv.Itoa(int(r - 55))
+		} else {
+			D += string(r)
+		}
+	}
+
+	// NOTE: The D here, based on the above steps, is known to contain only
+	// digits which is why the checking of errors from strconv.Atoi is omitted.
+	//
+	// The modulo algorithm for checking the IBAN is taken from:
+	// https://en.wikipedia.org/wiki/International_Bank_Account_Number#Modulo_operation_on_IBAN
+	//
+	// 1. Starting from the leftmost digit of D, construct a number using
+	//    the first 9 digits and call it N.
+	// 2. Calculate N mod 97.
+	// 3. Construct a new 9-digit N by concatenating above result (step 2)
+	//    with the next 7 digits of D. If there are fewer than 7 digits remaining
+	//    in D but at least one, then construct a new N, which will have less
+	//    than 9 digits, from the above result (step 2) followed by the remaining
+	//    digits of D.
+	// 4. Repeat steps 2–3 until all the digits of D have been processed.
+	//
+	d, D := D[:9], D[9:]
+	for len(D) > 0 {
+		N, _ := strconv.Atoi(d)
+		mod := strconv.Itoa(N % 97)
+
+		if len(D) >= 7 {
+			d, D = (mod + D[:7]), D[7:]
+		} else {
+			d, D = (mod + D), ""
+		}
+	}
+
+	N, _ := strconv.Atoi(d)
+	return (N % 97) == 1
 }
 
 // IC reports whether or not v is an Identity Card number.
@@ -715,13 +788,7 @@ var rxPAN = regexp.MustCompile(`^(?:4[0-9]{12}(?:[0-9]{3,6})?|5[1-5][0-9]{14}|(?
 // isvalid:rule
 //	{ "name": "pan", "err": { "text": "must be a valid PAN" } }
 func PAN(v string) bool {
-	// remove "-" and/or " " if present
-	v = strings.Map(func(r rune) rune {
-		if r == ' ' || r == '-' {
-			return -1
-		}
-		return r
-	}, v)
+	v = rmchar(v, func(r rune) bool { return r == ' ' || r == '-' })
 	if !rxPAN.MatchString(v) {
 		return false
 	}
@@ -887,4 +954,15 @@ func VAT(v string) bool {
 func Zip(v string, cc ...string) bool {
 	// TODO
 	return false
+}
+
+// remove characters from string
+func rmchar(v string, f func(r rune) bool) string {
+	return strings.Map(func(r rune) rune {
+		if f(r) {
+			return -1
+		}
+		return r
+	}, v)
+
 }
