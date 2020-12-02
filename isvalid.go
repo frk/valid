@@ -1,15 +1,39 @@
+// NOTE(mkopriva): DO NOT REMOVE THE "isvalid:rule" DIRECTIVES AND THE JSON THAT
+// FOLLOWS AFTER THEM. The directives & json in the functions' comments are required
+// by the internal/analysis code to resolve the properties of a rule's function.
+
 package isvalid
 
 import (
 	"encoding/base64"
+	"log"
 	"net"
 	"net/mail"
 	"regexp"
 	"strconv"
 	"strings"
 
-	"github.com/frk/isvalid/locale"
+	"github.com/frk/isvalid/internal/tables"
 )
+
+var _ = log.Println
+
+// convenience func for removing characters from a string
+func rmchar(v string, f func(r rune) bool) string {
+	return strings.Map(func(r rune) rune {
+		if f(r) {
+			return -1
+		}
+		return r
+	}, v)
+
+}
+
+// convenience func for strings known to contain digits only
+func atoi(v string) int {
+	i, _ := strconv.Atoi(v)
+	return i
+}
 
 var rxASCII = regexp.MustCompile(`^[[:ascii:]]*$`)
 
@@ -253,21 +277,15 @@ func EAN(v string) bool {
 			weight = 3
 		}
 
-		num, _ := strconv.Atoi(string(digit))
-		checksum += num * weight
+		checksum += atoi(string(digit)) * weight
 	}
-
-	// the expected check digit
-	want, _ := strconv.Atoi(string(v[length-1]))
 
 	// the calculated check digit
-	got := 0
+	check := 0
 	if remainder := (10 - (checksum % 10)); remainder < 10 {
-		got = remainder
+		check = remainder
 	}
-
-	// do they match?
-	return got == want
+	return check == atoi(string(v[length-1]))
 }
 
 // EIN reports whether or not v is a valid Employer Identification Number.
@@ -365,22 +383,6 @@ func HSL(v string) bool {
 	return rxHSLComma.MatchString(v) || rxHSLSpace.MatchString(v)
 }
 
-var hashAlgoLengths = map[string]int{
-	"md5":       32,
-	"md4":       32,
-	"sha1":      40,
-	"sha256":    64,
-	"sha384":    96,
-	"sha512":    128,
-	"ripemd128": 32,
-	"ripemd160": 40,
-	"tiger128":  32,
-	"tiger160":  40,
-	"tiger192":  48,
-	"crc32":     8,
-	"crc32b":    8,
-}
-
 var rxHash = regexp.MustCompile(`^[0-9A-Fa-f]+$`)
 
 // Hash reports whether or not v is a hash of the specified algorithm.
@@ -388,7 +390,7 @@ var rxHash = regexp.MustCompile(`^[0-9A-Fa-f]+$`)
 // isvalid:rule
 //	{ "name": "hash", "err": {"text": "must be a valid hash"} }
 func Hash(v string, algo string) bool {
-	if length := hashAlgoLengths[algo]; length > 0 && length == len(v) {
+	if hlen := tables.HashAlgoLen[algo]; hlen > 0 && hlen == len(v) {
 		return rxHash.MatchString(v)
 	}
 	return false
@@ -425,7 +427,7 @@ func IBAN(v string) bool {
 	}
 
 	v = strings.ToUpper(v)
-	if rx, ok := locale.IBANRegexpTable[v[:2]]; !ok || !rx.MatchString(v) {
+	if rx, ok := tables.IBANRegexp[v[:2]]; !ok || !rx.MatchString(v) {
 		return false
 	}
 
@@ -442,9 +444,6 @@ func IBAN(v string) bool {
 		}
 	}
 
-	// NOTE: The D here, based on the above steps, is known to contain only
-	// digits which is why the checking of errors from strconv.Atoi is omitted.
-	//
 	// The modulo algorithm for checking the IBAN is taken from:
 	// https://en.wikipedia.org/wiki/International_Bank_Account_Number#Modulo_operation_on_IBAN
 	//
@@ -460,8 +459,7 @@ func IBAN(v string) bool {
 	//
 	d, D := D[:9], D[9:]
 	for len(D) > 0 {
-		N, _ := strconv.Atoi(d)
-		mod := strconv.Itoa(N % 97)
+		mod := strconv.Itoa(atoi(d) % 97)
 
 		if len(D) >= 7 {
 			d, D = (mod + D[:7]), D[7:]
@@ -470,8 +468,7 @@ func IBAN(v string) bool {
 		}
 	}
 
-	N, _ := strconv.Atoi(d)
-	return (N % 97) == 1
+	return (atoi(d) % 97) == 1
 }
 
 // IC reports whether or not v is an Identity Card number.
@@ -483,14 +480,43 @@ func IC(v string) bool {
 	return false
 }
 
+var rxIMEI = regexp.MustCompile(`^[0-9]{15}$`)
+var rxIMEIHyphenated = regexp.MustCompile(`^\d{2}-\d{6}-\d{6}-\d{1}$`)
+
 // IMEI reports whether or not v is an IMEI number.
 //
 // isvalid:rule
 //	{ "name": "imei", "err": { "text": "must be a valid IMEI number" } }
 func IMEI(v string) bool {
-	// TODO
-	return false
+	if !rxIMEI.MatchString(v) && !rxIMEIHyphenated.MatchString(v) {
+		return false
+	}
+
+	v = rmchar(v, func(r rune) bool { return r == '-' })
+
+	vlen := len(v)
+	check := atoi(string(v[vlen-1]))
+
+	sum, mul := 0, 2
+	for i := vlen - 2; i >= 0; i-- {
+		prod := atoi(v[i:i+1]) * mul
+		if prod >= 10 {
+			sum += (prod % 10) + 1
+		} else {
+			sum += prod
+		}
+
+		if mul == 2 {
+			mul = 1
+		} else {
+			mul = 2
+		}
+	}
+
+	return check == ((10 - (sum % 10)) % 10)
 }
+
+var rxIPv6Block = regexp.MustCompile(`^(?i)[0-9A-F]{1,4}$`)
 
 // IP reports whether or not v is a valid IP address. The ver argument specifies
 // the IP's expected version. The ver argument can be one of the following three
@@ -511,7 +537,99 @@ func IMEI(v string) bool {
 //		"err": { "text": "must be a valid IP" }
 //	}
 func IP(v string, ver int) bool {
-	// TODO
+	if ver == 0 {
+		return IP(v, 4) || IP(v, 6)
+	}
+
+	if ver == 4 {
+		numbers := strings.Split(v, ".")
+		if len(numbers) != 4 {
+			return false
+		}
+
+		for _, num := range numbers {
+			if len(num) > 1 && num[0] == '0' {
+				return false // fail if leading zero
+			}
+
+			i, err := strconv.Atoi(num)
+			if err != nil {
+				return false
+			}
+
+			if i < 0 || i > 255 {
+				return false
+			}
+		}
+		return true
+	}
+
+	if ver == 6 {
+		parts := strings.Split(v, "%")
+		// too many parts
+		if len(parts) > 2 {
+			return false
+		}
+		// zoneid must not be empty
+		if len(parts) == 2 && len(parts[1]) == 0 {
+			return false
+		}
+
+		address := parts[0]
+		if address == "::" {
+			return true
+		}
+
+		blocks := strings.Split(address, ":")
+		hasIPv4 := false
+		hasOmissionBlock := false
+		wantBlockNum := 8
+		for i := 0; i < len(blocks); i++ {
+			// check omission block
+			if blocks[i] == "" {
+				// more than one omission block? fail
+				if hasOmissionBlock {
+					return false
+				}
+
+				// trailing or leading single ":"; fail
+				if i+1 >= len(blocks) || (i == 0 && blocks[i+1] != "") {
+					return false
+				}
+
+				// trailing or leading "::"; skip the next block
+				if blocks[i+1] == "" && (i == 0 || i+2 == len(blocks)) {
+					i += 1
+				}
+
+				hasOmissionBlock = true
+				continue
+			}
+
+			// check last block for ipv4 mapping
+			if len(blocks) == i+1 {
+				// At least some OS accept the last 32 bits of an IPv6 address
+				// (i.e. 2 of the blocks) in IPv4 notation, and RFC 3493 says
+				// that '::ffff:a.b.c.d' is valid for IPv4-mapped IPv6 addresses,
+				// and '::a.b.c.d' is deprecated, but also valid.
+				if hasIPv4 = IP(blocks[i], 4); hasIPv4 {
+					wantBlockNum = 7
+					continue
+				}
+			}
+
+			// check individual block
+			if !rxIPv6Block.MatchString(blocks[i]) {
+				return false
+			}
+		}
+
+		if hasOmissionBlock {
+			return len(blocks) >= 1 && len(blocks) < wantBlockNum
+		}
+		return len(blocks) == wantBlockNum
+	}
+
 	return false
 }
 
@@ -520,9 +638,25 @@ func IP(v string, ver int) bool {
 // isvalid:rule
 //	{ "name": "iprange", "err": { "text": "must be a valid IP range" } }
 func IPRange(v string) bool {
-	// TODO
-	return false
+	parts := strings.Split(v, "/")
+	if len(parts) != 2 {
+		return false
+	}
+
+	subnet := parts[1]
+	if len(subnet) < 1 || len(subnet) > 2 || !rxDigits.MatchString(subnet) {
+		return false
+	}
+
+	if len(subnet) > 1 && subnet[0] == '0' {
+		return false
+	}
+
+	num := atoi(subnet)
+	return IP(parts[0], 4) && num >= 0 && num <= 32
 }
+
+var rxISBN10Maybe = regexp.MustCompile(`^(?:[0-9]{9}X|[0-9]{10})$`)
 
 // ISBN reports whether or not v is a valid International Standard Book Number.
 // The ver argument specifies the ISBN's expected version. The ver argument can
@@ -539,17 +673,103 @@ func IPRange(v string) bool {
 //		"err": { "text": "must be a valid ISBN" }
 //	}
 func ISBN(v string, ver int) bool {
-	// TODO
+	if ver == 0 {
+		return ISBN(v, 10) || ISBN(v, 13)
+	}
+
+	v = rmchar(v, func(r rune) bool { return r == ' ' || r == '-' })
+
+	if ver == 10 {
+		if len(v) != 10 || !rxISBN10Maybe.MatchString(v) {
+			return false
+		}
+
+		tmp, sum := 0, 0
+		for i := 0; i < 9; i++ {
+			tmp += atoi(string(v[i]))
+			sum += tmp
+		}
+
+		if v[9] == 'X' {
+			tmp += 10
+		} else {
+			tmp += atoi(string(v[9]))
+		}
+		sum += tmp
+
+		return sum%11 == 0
+	}
+
+	if ver == 13 {
+		if len(v) != 13 || !rxDigits.MatchString(v) {
+			return false
+		}
+
+		sum := 0
+		for i := 0; i < 12; i++ {
+			if i%2 == 0 {
+				sum += atoi(string(v[i]))
+			} else {
+				sum += 3 * atoi(string(v[i]))
+			}
+		}
+
+		r := 10 - (sum % 10)
+		d := atoi(string(v[12]))
+		return (r == 10 && d == 0) || (r < 10 && r == d)
+	}
 	return false
 }
+
+var rxISIN = regexp.MustCompile(`^[A-Z]{2}[0-9A-Z]{9}[0-9]$`)
 
 // ISIN reports whether or not v is a valid International Securities Identification Number.
 //
 // isvalid:rule
 //	{ "name": "isin", "err": { "text": "must be a valid ISIN" } }
 func ISIN(v string) bool {
-	// TODO
-	return false
+	if !rxISIN.MatchString(v) {
+		return false
+	}
+
+	ints := make([]int, 0, len(v))
+	for _, r := range v {
+		if r >= 'A' && r <= 'Z' {
+			i64, err := strconv.ParseInt(string(r), 36, 32)
+			if err != nil {
+				return false
+			}
+			if i64 >= 10 {
+				d1 := int(i64 / 10)
+				ints = append(ints, d1)
+			}
+
+			d2 := int(i64 % 10)
+			ints = append(ints, d2)
+		} else {
+			ints = append(ints, atoi(string(r)))
+		}
+	}
+
+	sum := 0
+	double := true
+	for i := len(ints) - 2; i >= 0; i-- {
+		num := ints[i]
+		if double {
+			num *= 2
+			if num >= 10 {
+				sum += num + 1
+			} else {
+				sum += num
+			}
+		} else {
+			sum += num
+		}
+
+		double = !double
+	}
+
+	return (10000-sum)%10 == ints[len(ints)-1]
 }
 
 // ISO reports whether or not v is a valid representation of the specified ISO standard.
@@ -562,9 +782,9 @@ func ISO(v string, num int) bool {
 }
 
 // ISO31661A reports whether or not v is a valid country code as defined by the
-// ISO 3166-1 Alpha standard. The num argument specifies the which of the two
-// alpha sets of the standard should be tested. The num argument can be one of
-// the following three values:
+// ISO 3166-1 Alpha standard. The num argument specifies which of the two alpha
+// sets of the standard should be tested. The num argument can be one of the
+// following three values:
 //
 //	0 tests against both Alpha-2 and Alpha-3
 //	2 tests against Alpha-2 only
@@ -577,26 +797,73 @@ func ISO(v string, num int) bool {
 //		"err": { "text": "must be a valid ISO 3166-1 Alpha value" }
 //	}
 func ISO31661A(v string, num int) bool {
-	// TODO
+	if num == 0 {
+		if len(v) == 2 && ISO31661A(v, 2) {
+			return true
+		}
+		if len(v) == 3 && ISO31661A(v, 3) {
+			return true
+		}
+		return false
+	}
+
+	if num == 2 && len(v) == 2 {
+		v = strings.ToUpper(v)
+		_, ok := tables.ISO31661A2[v]
+		return ok
+	}
+
+	if num == 3 && len(v) == 3 {
+		v = strings.ToUpper(v)
+		_, ok := tables.ISO31661A3[v]
+		return ok
+	}
+
 	return false
 }
+
+var rxISRC = regexp.MustCompile(`^[A-Z]{2}[0-9A-Z]{3}\d{2}\d{5}$`)
 
 // ISRC reports whether or not v is a valid International Standard Recording Code.
 //
 // isvalid:rule
 //	{ "name": "isrc", "err": { "text": "must be a valid ISRC" } }
 func ISRC(v string) bool {
-	// TODO
-	return false
+	return rxISRC.MatchString(v)
 }
+
+var rxISSN = regexp.MustCompile(`^(?i)[0-9]{4}-?[0-9]{3}[0-9X]$`)
 
 // ISSN reports whether or not v is a valid International Standard Serial Number.
 //
 // isvalid:rule
-//	{ "name": "issn", "err": { "text": "must be a valid ISSN" } }
-func ISSN(v string) bool {
-	// TODO
-	return false
+//	{
+//		"name": "issn",
+//		"err": { "text": "must be a valid ISSN" }
+//	}
+func ISSN(v string, requireHyphen, caseSensitive bool) bool {
+	if requireHyphen && !strings.Contains(v, "-") {
+		return false
+	}
+	if caseSensitive && strings.Contains(v, "x") {
+		return false
+	}
+	if !rxISSN.MatchString(v) {
+		return false
+	}
+
+	v = rmchar(v, func(r rune) bool { return r == '-' })
+	v = strings.ToUpper(v)
+
+	sum := 0
+	for i := 0; i < len(v); i++ {
+		if v[i] == 'X' {
+			sum += 10 * (8 - i)
+		} else {
+			sum += atoi(string(v[i])) * (8 - i)
+		}
+	}
+	return sum%11 == 0
 }
 
 // In reports whether or not v is in the list.
@@ -797,7 +1064,7 @@ func PAN(v string) bool {
 	var sum int
 	var double bool
 	for i := len(v) - 1; i >= 0; i-- {
-		num, _ := strconv.Atoi(string(v[i]))
+		num := atoi(string(v[i]))
 
 		if double {
 			num *= 2
@@ -954,15 +1221,4 @@ func VAT(v string) bool {
 func Zip(v string, cc ...string) bool {
 	// TODO
 	return false
-}
-
-// remove characters from string
-func rmchar(v string, f func(r rune) bool) string {
-	return strings.Map(func(r rune) rune {
-		if f(r) {
-			return -1
-		}
-		return r
-	}, v)
-
 }
