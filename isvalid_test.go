@@ -28,12 +28,723 @@ func Test(t *testing.T) {
 				"test@example.com",
 				"1234abcDEF",
 			},
-
 			fail: []string{
 				"ｆｏｏbar",
 				"ｘｙｚ０９８",
 				"１２３456",
 				"ｶﾀｶﾅ",
+			},
+		}},
+	}, {
+		Name: "Alpha", Func: Alpha, Cases: Cases{{
+			args: args{{""}},
+			pass: []string{
+				"abc",
+				"ABC",
+				"FoObar",
+			},
+			fail: []string{
+				"abc1",
+				"  foo  ",
+				"",
+				"ÄBC",
+				"FÜübar",
+				"Jön",
+				"Heiß",
+			},
+		}, {
+			args: args{{"aze"}, {"az"}},
+			pass: []string{
+				"Azərbaycan",
+				"Bakı",
+				"üöğıəçş",
+				"sizAzərbaycanlaşdırılmışlardansınızmı",
+				"dahaBirDüzgünString",
+				"abcçdeəfgğhxıijkqlmnoöprsştuüvyz",
+			},
+			fail: []string{
+				"rəqəm1",
+				"  foo  ",
+				"",
+				"ab(cd)",
+				"simvol@",
+				"wəkil",
+			},
+		}, {
+			args: args{{"bul"}, {"bg"}},
+			pass: []string{
+				"абв",
+				"АБВ",
+				"жаба",
+				"яГоДа",
+			},
+			fail: []string{
+				"abc1",
+				"  foo  ",
+				"",
+				"ЁЧПС",
+				"_аз_обичам_обувки_",
+				"ехо!",
+			},
+		}, {
+			args: args{{"ces"}, {"cs"}},
+			pass: []string{
+				"žluťoučký",
+				"KŮŇ",
+				"Pěl",
+				"Ďábelské",
+				"ódy",
+			},
+			fail: []string{
+				"ábc1",
+				"  fůj  ",
+				"",
+			},
+		}, {
+			args: args{{"slk"}, {"sk"}},
+			pass: []string{
+				"môj",
+				"ľúbím",
+				"mäkčeň",
+				"stĹp",
+				"vŕba",
+				"ňorimberk",
+				"ťava",
+				"žanéta",
+				"Ďábelské",
+				"ódy",
+			},
+			fail: []string{
+				"1moj",
+				"你好世界",
+				"  Привет мир  ",
+				"مرحبا العا ",
+			},
+		}, {
+			args: args{{"dan"}, {"da"}},
+			pass: []string{
+				"aøå",
+				"Ære",
+				"Øre",
+				"Åre",
+			},
+			fail: []string{
+				"äbc123",
+				"ÄBC11",
+				"",
+			},
+		}, {
+			args: args{{"nld"}, {"nl"}},
+			pass: []string{
+				"Kán",
+				"één",
+				"vóór",
+				"nú",
+				"héél",
+			},
+			fail: []string{
+				"äca ",
+				"abcß",
+				"Øre",
+			},
+		}, {
+			args: args{{"deu"}, {"de"}},
+			pass: []string{
+				"äbc",
+				"ÄBC",
+				"FöÖbär",
+				"Heiß",
+			},
+			fail: []string{
+				"äbc1",
+				"  föö  ",
+				"",
+			},
+		}, {
+			args: args{{"hun"}, {"hu"}},
+			pass: []string{
+				"árvíztűrőtükörfúrógép",
+				"ÁRVÍZTŰRŐTÜKÖRFÚRÓGÉP",
+			},
+			fail: []string{
+				"äbc1",
+				"  fäö  ",
+				"Heiß",
+				"",
+			},
+		}, {
+			args: args{{"por"}, {"pt"}},
+			pass: []string{
+				"palíndromo",
+				"órgão",
+				"qwértyúão",
+				"àäãcëüïÄÏÜ",
+			},
+			fail: []string{
+				"12abc",
+				"Heiß",
+				"Øre",
+				"æøå",
+				"",
+			},
+		}, {
+			args: args{{"ita"}, {"it"}},
+			pass: []string{
+				"àéèìîóòù",
+				"correnti",
+				"DEFINIZIONE",
+				"compilazione",
+				"metró",
+				"pèsca",
+				"PÉSCA",
+				"genî",
+			},
+			fail: []string{
+				"äbc123",
+				"ÄBC11",
+				"æøå",
+				"",
+			},
+		}, {
+			args: args{{"vie"}, {"vi"}},
+			pass: []string{
+				"thiến",
+				"nghiêng",
+				"xin",
+				"chào",
+				"thế",
+				"giới",
+			},
+			fail: []string{
+				"thầy3",
+				"Ba gà",
+				"",
+			},
+		}, {
+			args: args{{"ara"}, {"ar"}},
+			pass: []string{
+				"أبت",
+				"اَبِتَثّجً",
+			},
+			fail: []string{
+				"١٢٣أبت",
+				"١٢٣",
+				"abc1",
+				"  foo  ",
+				"",
+				"ÄBC",
+				"FÜübar",
+				"Jön",
+				"Heiß",
+			},
+		}, {
+			args: args{{"fas"}, {"fa"}},
+			pass: []string{
+				"پدر",
+				"مادر",
+				"برادر",
+				"خواهر",
+			},
+			fail: []string{
+				"فارسی۱۲۳",
+				"۱۶۴",
+				"abc1",
+				"  foo  ",
+				"",
+				"ÄBC",
+				"FÜübar",
+				"Jön",
+				"Heiß",
+			},
+		}, {
+			args: args{{"kur"}, {"ku"}},
+			pass: []string{
+				"ئؤڤگێ",
+				"کوردستان",
+			},
+			fail: []string{
+				"ئؤڤگێ١٢٣",
+				"١٢٣",
+				"abc1",
+				"  foo  ",
+				"",
+				"ÄBC",
+				"FÜübar",
+				"Jön",
+				"Heiß",
+			},
+		}, {
+			args: args{{"nob"}, {"nb"}},
+			pass: []string{
+				"aøå",
+				"Ære",
+				"Øre",
+				"Åre",
+			},
+			fail: []string{
+				"äbc123",
+				"ÄBC11",
+				"",
+			},
+		}, {
+			args: args{{"pol"}, {"pl"}},
+			pass: []string{
+				"kreską",
+				"zamknięte",
+				"zwykłe",
+				"kropką",
+				"przyjęły",
+				"święty",
+				"Pozwól",
+			},
+			fail: []string{
+				"12řiď ",
+				"blé!!",
+				"föö!2!",
+			},
+		}, {
+			args: args{{"srp"}, {"sr"}},
+			pass: []string{
+				"ШћжЂљЕ",
+				"ЧПСТЋЏ",
+			},
+			fail: []string{
+				"řiď ",
+				"blé33!!",
+				"föö!!",
+			},
+		}, {
+			args: args{{"spa"}, {"es"}},
+			pass: []string{
+				"ábcó",
+				"ÁBCÓ",
+				"dormís",
+				"volvés",
+				"español",
+			},
+			fail: []string{
+				"äca ",
+				"abcß",
+				"föö!!",
+			},
+		}, {
+			args: args{{"swe"}, {"sv"}},
+			pass: []string{
+				"religiös",
+				"stjäla",
+				"västgöte",
+				"Åre",
+			},
+			fail: []string{
+				"AİıÖöÇçŞşĞğÜüZ",
+				"religiös23",
+				"",
+			},
+		}, {
+			args: args{{"tur"}, {"tr"}},
+			pass: []string{
+				"AİıÖöÇçŞşĞğÜüZ",
+			},
+			fail: []string{
+				"0AİıÖöÇçŞşĞğÜüZ1",
+				"  AİıÖöÇçŞşĞğÜüZ  ",
+				"abc1",
+				"  foo  ",
+				"",
+				"ÄBC",
+				"Heiß",
+			},
+		}, {
+			args: args{{"ukr"}, {"uk"}},
+			pass: []string{
+				"АБВГҐДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦШЩЬЮЯ",
+			},
+			fail: []string{
+				"0AİıÖöÇçŞşĞğÜüZ1",
+				"  AİıÖöÇçŞşĞğÜüZ  ",
+				"abc1",
+				"  foo  ",
+				"",
+				"ÄBC",
+				"Heiß",
+				"ЫыЪъЭэ",
+			},
+		}, {
+			args: args{{"ell"}, {"el"}},
+			pass: []string{
+				"αβγδεζηθικλμνξοπρςστυφχψω",
+				"ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ",
+				"άέήίΰϊϋόύώ",
+				"ΆΈΉΊΪΫΎΏ",
+			},
+			fail: []string{
+				"0AİıÖöÇçŞşĞğÜüZ1",
+				"  AİıÖöÇçŞşĞğÜüZ  ",
+				"ÄBC",
+				"Heiß",
+				"ЫыЪъЭэ",
+				"120",
+				"jαckγ",
+			},
+		}, {
+			args: args{{"heb"}, {"he"}},
+			pass: []string{
+				"בדיקה",
+				"שלום",
+			},
+			fail: []string{
+				"בדיקה123",
+				"  foo  ",
+				"abc1",
+				"",
+			},
+		}, {
+			args: args{{"fas"}, {"fa"}},
+			pass: []string{
+				"تست",
+				"عزیزم",
+				"ح",
+			},
+			fail: []string{
+				"تست 1",
+				"  عزیزم  ",
+				"",
+			},
+		}, {
+			args: args{{"tha"}, {"th"}},
+			pass: []string{
+				"สวัสดี",
+				"ยินดีต้อนรับเทสเคส",
+			},
+			fail: []string{
+				"สวัสดีHi",
+				"123 ยินดีต้อนรับ",
+				"ยินดีต้อนรับ-๑๒๓",
+			},
+		}},
+	}, {
+		Name: "Alnum", Func: Alnum, Cases: Cases{{
+			args: args{{""}, {"eng"}, {"en"}},
+			pass: []string{
+				"abc123",
+				"ABC11",
+			},
+			fail: []string{
+				"abc ",
+				"foo!!",
+				"ÄBC",
+				"FÜübar",
+				"Jön",
+			},
+		}, {
+			args: args{{"aze"}, {"az"}},
+			pass: []string{
+				"Azərbaycan",
+				"Bakı",
+				"abc1",
+				"abcç2",
+				"3kərə4kərə",
+			},
+			fail: []string{
+				"  foo1  ",
+				"",
+				"ab(cd)",
+				"simvol@",
+				"wəkil",
+			},
+		}, {
+			args: args{{"bul"}, {"bg"}},
+			pass: []string{
+				"абв1",
+				"4АБ5В6",
+				"жаба",
+				"яГоДа2",
+				"йЮя",
+				"123",
+			},
+			fail: []string{
+				" ",
+				"789  ",
+				"hello000",
+			},
+		}, {
+			args: args{{"ces"}, {"cs"}},
+			pass: []string{
+				"řiť123",
+				"KŮŇ11",
+			},
+			fail: []string{
+				"řiď ",
+				"blé!!",
+			},
+		}, {
+			args: args{{"slk"}, {"sk"}},
+			pass: []string{
+				"1môj",
+				"2ľúbím",
+				"3mäkčeň",
+				"4stĹp",
+				"5vŕba",
+				"6ňorimberk",
+				"7ťava",
+				"8žanéta",
+				"9Ďábelské",
+				"10ódy",
+			},
+			fail: []string{
+				"1moj!",
+				"你好世界",
+				"  Привет мир  ",
+			},
+		}, {
+			args: args{{"dan"}, {"da"}},
+			pass: []string{
+				"ÆØÅ123",
+				"Ære321",
+				"321Øre",
+				"123Åre",
+			},
+			fail: []string{
+				"äbc123",
+				"ÄBC11",
+				"",
+			},
+		}, {
+			args: args{{"nld"}, {"nl"}},
+			pass: []string{
+				"Kán123",
+				"één354",
+				"v4óór",
+				"nú234",
+				"hé54él",
+			},
+			fail: []string{
+				"1äca ",
+				"ab3cß",
+				"Øre",
+			},
+		}, {
+			args: args{{"deu"}, {"de"}},
+			pass: []string{
+				"äbc123",
+				"ÄBC11",
+			},
+			fail: []string{
+				"äca ",
+				"föö!!",
+			},
+		}, {
+			args: args{{"hun"}, {"hu"}},
+			pass: []string{
+				"0árvíztűrőtükörfúrógép123",
+				"0ÁRVÍZTŰRŐTÜKÖRFÚRÓGÉP123",
+			},
+			fail: []string{
+				"1időúr!",
+				"äbc1",
+				"  fäö  ",
+				"Heiß!",
+				"",
+			},
+		}, {
+			args: args{{"por"}, {"pt"}},
+			pass: []string{
+				"palíndromo",
+				"2órgão",
+				"qwértyúão9",
+				"àäãcë4üïÄÏÜ",
+			},
+			fail: []string{
+				"!abc",
+				"Heiß",
+				"Øre",
+				"æøå",
+				"",
+			},
+		}, {
+			args: args{{"ita"}, {"it"}},
+			pass: []string{
+				"123àéèìîóòù",
+				"123correnti",
+				"DEFINIZIONE321",
+				"compil123azione",
+				"met23ró",
+				"pès56ca",
+				"PÉS45CA",
+				"gen45î",
+			},
+			fail: []string{
+				"äbc123",
+				"ÄBC11",
+				"æøå",
+				"",
+			},
+		}, {
+			args: args{{"spa"}, {"es"}},
+			pass: []string{
+				"ábcó123",
+				"ÁBCÓ11",
+			},
+			fail: []string{
+				"äca ",
+				"abcß",
+				"föö!!",
+			},
+		}, {
+			args: args{{"vie"}, {"vi"}},
+			pass: []string{
+				"Thầy3",
+				"3Gà",
+			},
+			fail: []string{
+				"toang!",
+				"Cậu Vàng",
+			},
+		}, {
+			args: args{{"ara"}, {"ar"}},
+			pass: []string{
+				"أبت123",
+				"أبتَُِ١٢٣",
+			},
+			fail: []string{
+				"äca ",
+				"abcß",
+				"föö!!",
+			},
+		}, {
+			args: args{{"fas"}, {"fa"}},
+			pass: []string{
+				"پارسی۱۲۳",
+				"۱۴۵۶",
+			},
+			fail: []string{
+				"äca ",
+				"abcßة",
+				"föö!!",
+				"٤٥٦",
+				"مژگان9",
+			},
+		}, {
+			args: args{{"kur"}, {"ku"}},
+			pass: []string{
+				"ئؤڤگێ١٢٣",
+			},
+			fail: []string{
+				"äca ",
+				"abcß",
+				"föö!!",
+			},
+		}, {
+			args: args{{"nob"}, {"nb"}},
+			pass: []string{
+				"ÆØÅ123",
+				"Ære321",
+				"321Øre",
+				"123Åre",
+			},
+			fail: []string{
+				"äbc123",
+				"ÄBC11",
+				"",
+			},
+		}, {
+			args: args{{"pol"}, {"pl"}},
+			pass: []string{
+				"kre123ską",
+				"zam21knięte",
+				"zw23ykłe",
+				"123",
+				"prz23yjęły",
+				"świ23ęty",
+				"Poz1322wól",
+			},
+			fail: []string{
+				"12řiď ",
+				"blé!!",
+				"föö!2!",
+			},
+		}, {
+			args: args{{"srp"}, {"sr"}},
+			pass: []string{
+				"ШћжЂљЕ123",
+				"ЧПСТ132ЋЏ",
+			},
+			fail: []string{
+				"řiď ",
+				"blé!!",
+				"föö!!",
+			},
+		}, {
+			args: args{{"swe"}, {"sv"}},
+			pass: []string{
+				"religiös13",
+				"st23jäla",
+				"västgöte123",
+				"123Åre",
+			},
+			fail: []string{
+				"AİıÖöÇçŞşĞğÜüZ",
+				"foo!!",
+				"",
+			},
+		}, {
+			args: args{{"tur"}, {"tr"}},
+			pass: []string{
+				"AİıÖöÇçŞşĞğÜüZ123",
+			},
+			fail: []string{
+				"AİıÖöÇçŞşĞğÜüZ ",
+				"foo!!",
+				"ÄBC",
+			},
+		}, {
+			args: args{{"ukr"}, {"uk"}},
+			pass: []string{
+				"АБВГҐДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦШЩЬЮЯ123",
+			},
+			fail: []string{
+				"éeoc ",
+				"foo!!",
+				"ÄBC",
+				"ЫыЪъЭэ",
+			},
+		}, {
+			args: args{{"ell"}, {"el"}},
+			pass: []string{
+				"αβγδεζηθικλμνξοπρςστυφχψω",
+				"ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ",
+				"20θ",
+				"1234568960",
+			},
+			fail: []string{
+				"0AİıÖöÇçŞşĞğÜüZ1",
+				"  AİıÖöÇçŞşĞğÜüZ  ",
+				"ÄBC",
+				"Heiß",
+				"ЫыЪъЭэ",
+				"jαckγ",
+			},
+		}, {
+			args: args{{"heb"}, {"he"}},
+			pass: []string{
+				"אבג123",
+				"שלום11",
+			},
+			fail: []string{
+				"אבג ",
+				"לא!!",
+				"abc",
+				"  foo  ",
+			},
+		}, {
+			args: args{{"tha"}, {"th"}},
+			pass: []string{
+				"สวัสดี๑๒๓",
+				"ยินดีต้อนรับทั้ง๒คน",
+			},
+			fail: []string{
+				"1.สวัสดี",
+				"ยินดีต้อนรับทั้ง 2 คน",
 			},
 		}},
 	}, {
@@ -360,6 +1071,39 @@ func Test(t *testing.T) {
 			},
 		}},
 	}, {
+		Name: "Email", Func: Email, Cases: Cases{{
+			pass: []string{
+				"foo@bar.com",
+				"x@x.au",
+				"foo@bar.com.au",
+				"foo+bar@bar.com",
+				"hans.m端ller@test.com",
+				"hans@m端ller.com",
+				"test|123@m端ller.com",
+				"test123+ext@gmail.com",
+				"some.name.midd.leNa.me+extension@GoogleMail.com",
+				`"foobar"@example.com`,
+				`"  foo  m端ller "@example.com`,
+				`"foo\\@bar"@example.com`,
+				"test@gmail.com",
+				"test.1@gmail.com",
+			},
+			fail: []string{
+				`invalidemail@`,
+				`invalid.com`,
+				`@invalid.com`,
+				`foo@bar.com.`,
+				`foo@bar.co.uk.`,
+				`multiple..dots@stillinvalid.com`,
+				`test123+invalid! sub_address@gmail.com`,
+				`gmail...ignores...dots...@gmail.com`,
+				`ends.with.dot.@gmail.com`,
+				`multiple..dots@gmail.com`,
+				`wrong()[]",:;<>@@gmail.com`,
+				`"wrong()[]",:;<>@@gmail.com`,
+			},
+		}},
+	}, {
 		Name: "FQDN", Func: FQDN, Cases: Cases{{
 			pass: []string{
 				"domain.com",
@@ -574,6 +1318,46 @@ func Test(t *testing.T) {
 				"q94375dj93458w34",
 				"39485729348",
 				"%&FHKJFvk",
+			},
+		}},
+	}, {
+		Name: "Hex", Func: Hex, Cases: Cases{{
+			pass: []string{
+				"deadBEEF",
+				"ff0044",
+				"0xff0044",
+				"0XfF0044",
+				"0x0123456789abcDEF",
+				"0X0123456789abcDEF",
+				"0hfedCBA9876543210",
+				"0HfedCBA9876543210",
+				"0123456789abcDEF",
+			},
+			fail: []string{
+				"abcdefg",
+				"",
+				"..",
+				"0xa2h",
+				"0xa20x",
+				"0x0123456789abcDEFq",
+				"0hfedCBA9876543210q",
+				"01234q56789abcDEF",
+			},
+		}},
+	}, {
+		Name: "HexColor", Func: HexColor, Cases: Cases{{
+			pass: []string{
+				"#ff0000ff",
+				"#ff0034",
+				"#CCCCCC",
+				"0f38",
+				"fff",
+				"#f00",
+			},
+			fail: []string{
+				"#ff",
+				"fff0a",
+				"#ff12FG",
 			},
 		}},
 	}, {
@@ -948,6 +1732,11 @@ func Test(t *testing.T) {
 			},
 		}},
 	}, {
+		Name: "In", Func: In, Cases: Cases{{
+			pass: []string{},
+			fail: []string{},
+		}},
+	}, {
 		Name: "Int", Func: Int, Cases: Cases{{
 			pass: []string{
 				"0",
@@ -974,137 +1763,29 @@ func Test(t *testing.T) {
 			},
 		}},
 	}, {
-		Name: "Uint", Func: Uint, Cases: Cases{{
-			pass: []string{
-				"0",
-				"1",
-				"+0",
-				"123",
-				"+987",
-				"13",
-				"123",
-				"+1",
-				"01",
-				"+01",
-				"000",
-				"1234567890",
-			},
-			fail: []string{
-				"",
-				"-0",
-				".01",
-				"0.1",
-				"123e45",
-				"abcdef",
-				"      ",
-				"-987654321",
-			},
+		Name: "JSON", Func: JSON, Cases: Cases{{
+			pass: []string{},
+			fail: []string{},
 		}},
 	}, {
-		Name: "Octal", Func: Octal, Cases: Cases{{
-			pass: []string{
-				"076543210",
-				"0o01234567",
-			},
-			fail: []string{
-				"abcdefg",
-				"012345678",
-				"012345670c",
-				"00c12345670c",
-				"",
-				"..",
-			},
+		Name: "JWT", Func: JWT, Cases: Cases{{
+			pass: []string{},
+			fail: []string{},
 		}},
 	}, {
-		Name: "Hex", Func: Hex, Cases: Cases{{
-			pass: []string{
-				"deadBEEF",
-				"ff0044",
-				"0xff0044",
-				"0XfF0044",
-				"0x0123456789abcDEF",
-				"0X0123456789abcDEF",
-				"0hfedCBA9876543210",
-				"0HfedCBA9876543210",
-				"0123456789abcDEF",
-			},
-			fail: []string{
-				"abcdefg",
-				"",
-				"..",
-				"0xa2h",
-				"0xa20x",
-				"0x0123456789abcDEFq",
-				"0hfedCBA9876543210q",
-				"01234q56789abcDEF",
-			},
+		Name: "LatLong", Func: LatLong, Cases: Cases{{
+			pass: []string{},
+			fail: []string{},
 		}},
 	}, {
-		Name: "Numeric", Func: Numeric, Cases: Cases{{
-			pass: []string{
-				"123",
-				"00123",
-				"-00123",
-				"0",
-				"-0",
-				"+123",
-				"123.123",
-				"+000000",
-			},
-			fail: []string{
-				" ",
-				"",
-				".",
-			},
+		Name: "Locale", Func: Locale, Cases: Cases{{
+			pass: []string{},
+			fail: []string{},
 		}},
 	}, {
-		Name: "HexColor", Func: HexColor, Cases: Cases{{
-			pass: []string{
-				"#ff0000ff",
-				"#ff0034",
-				"#CCCCCC",
-				"0f38",
-				"fff",
-				"#f00",
-			},
-			fail: []string{
-				"#ff",
-				"fff0a",
-				"#ff12FG",
-			},
-		}},
-	}, {
-		Name: "Email", Func: Email, Cases: Cases{{
-			pass: []string{
-				"foo@bar.com",
-				"x@x.au",
-				"foo@bar.com.au",
-				"foo+bar@bar.com",
-				"hans.m端ller@test.com",
-				"hans@m端ller.com",
-				"test|123@m端ller.com",
-				"test123+ext@gmail.com",
-				"some.name.midd.leNa.me+extension@GoogleMail.com",
-				`"foobar"@example.com`,
-				`"  foo  m端ller "@example.com`,
-				`"foo\\@bar"@example.com`,
-				"test@gmail.com",
-				"test.1@gmail.com",
-			},
-			fail: []string{
-				`invalidemail@`,
-				`invalid.com`,
-				`@invalid.com`,
-				`foo@bar.com.`,
-				`foo@bar.co.uk.`,
-				`multiple..dots@stillinvalid.com`,
-				`test123+invalid! sub_address@gmail.com`,
-				`gmail...ignores...dots...@gmail.com`,
-				`ends.with.dot.@gmail.com`,
-				`multiple..dots@gmail.com`,
-				`wrong()[]",:;<>@@gmail.com`,
-				`"wrong()[]",:;<>@@gmail.com`,
-			},
+		Name: "LowerCase", Func: LowerCase, Cases: Cases{{
+			pass: []string{},
+			fail: []string{},
 		}},
 	}, {
 		Name: "MAC", Func: MAC, Cases: Cases{{
@@ -1196,6 +1877,141 @@ func Test(t *testing.T) {
 			},
 		}},
 	}, {
+		Name: "MIME", Func: MIME, Cases: Cases{{
+			pass: []string{
+				"application/json",
+				"application/xhtml+xml",
+				"audio/mp4",
+				"image/bmp",
+				"font/woff2",
+				"message/http",
+				"model/vnd.gtw",
+				"multipart/form-data",
+				"multipart/form-data; boundary=something",
+				"multipart/form-data; charset=utf-8; boundary=something",
+				"multipart/form-data; boundary=something; charset=utf-8",
+				"multipart/form-data; boundary=something; charset=\"utf-8\"",
+				"multipart/form-data; boundary=\"something\"; charset=utf-8",
+				"multipart/form-data; boundary=\"something\"; charset=\"utf-8\"",
+				"text/css",
+				"text/plain; charset=utf8",
+				"Text/HTML;Charset=\"utf-8\"",
+				"text/html;charset=UTF-8",
+				"Text/html;charset=UTF-8",
+				"text/html; charset=us-ascii",
+				"text/html; charset=us-ascii (Plain text)",
+				"text/html; charset=\"us-ascii\"",
+				"video/mp4",
+			},
+			fail: []string{
+				"",
+				" ",
+				"/",
+				"f/b",
+				"application",
+				"application\\json",
+				"application/json/text",
+				"application/json; charset=utf-8",
+				"audio/mp4; charset=utf-8",
+				"image/bmp; charset=utf-8",
+				"font/woff2; charset=utf-8",
+				"message/http; charset=utf-8",
+				"model/vnd.gtw; charset=utf-8",
+				"video/mp4; charset=utf-8",
+			},
+		}},
+	}, {
+		Name: "MD5", Func: MD5, Cases: Cases{{
+			pass: []string{
+				"d94f3f016ae679c3008de268209132f2",
+				"751adbc511ccbe8edf23d486fa4581cd",
+				"88dae00e614d8f24cfd5a8b3f8002e93",
+				"0bf1c35032a71a14c2f719e5a14c1e96",
+			},
+			fail: []string{
+				"KYT0bf1c35032a71a14c2f719e5a14c1",
+				"q94375dj93458w34",
+				"39485729348",
+				"%&FHKJFvk",
+			},
+		}},
+	}, {
+		Name: "MagnetURI", Func: MagnetURI, Cases: Cases{{
+			pass: []string{
+				"magnet:?xt=urn:btih:06E2A9683BF4DA92C73A661AC56F0ECC9C63C5B4&dn=helloword2000&tr=udp://helloworld:1337/announce",
+				"magnet:?xt=urn:btih:3E30322D5BFC7444B7B1D8DD42404B75D0531DFB&dn=world&tr=udp://world.com:1337",
+				"magnet:?xt=urn:btih:4ODKSDJBVMSDSNJVBCBFYFBKNRU875DW8D97DWC6&dn=helloworld&tr=udp://helloworld.com:1337",
+				"magnet:?xt=urn:btih:1GSHJVBDVDVJFYEHKFHEFIO8573898434JBFEGHD&dn=foo&tr=udp://foo.com:1337",
+				"magnet:?xt=urn:btih:MCJDCYUFHEUD6E2752T7UJNEKHSUGEJFGTFHVBJS&dn=bar&tr=udp://bar.com:1337",
+				"magnet:?xt=urn:btih:LAKDHWDHEBFRFVUFJENBYYTEUY837562JH2GEFYH&dn=foobar&tr=udp://foobar.com:1337",
+				"magnet:?xt=urn:btih:MKCJBHCBJDCU725TGEB3Y6RE8EJ2U267UNJFGUID&dn=test&tr=udp://test.com:1337",
+				"magnet:?xt=urn:btih:UHWY2892JNEJ2GTEYOMDNU67E8ICGICYE92JDUGH&dn=baz&tr=udp://baz.com:1337",
+				"magnet:?xt=urn:btih:HS263FG8U3GFIDHWD7829BYFCIXB78XIHG7CWCUG&dn=foz&tr=udp://foz.com:1337",
+			},
+			fail: []string{
+				"",
+				":?xt=urn:btih:06E2A9683BF4DA92C73A661AC56F0ECC9C63C5B4&dn=helloword2000&tr=udp://helloworld:1337/announce",
+				"magnett:?xt=urn:btih:3E30322D5BFC7444B7B1D8DD42404B75D0531DFB&dn=world&tr=udp://world.com:1337",
+				"xt=urn:btih:4ODKSDJBVMSDSNJVBCBFYFBKNRU875DW8D97DWC6&dn=helloworld&tr=udp://helloworld.com:1337",
+				"magneta:?xt=urn:btih:1GSHJVBDVDVJFYEHKFHEFIO8573898434JBFEGHD&dn=foo&tr=udp://foo.com:1337",
+				"magnet:?xt=uarn:btih:MCJDCYUFHEUD6E2752T7UJNEKHSUGEJFGTFHVBJS&dn=bar&tr=udp://bar.com:1337",
+				"magnet:?xt=urn:btihz&dn=foobar&tr=udp://foobar.com:1337",
+				"magnet:?xat=urn:btih:MKCJBHCBJDCU725TGEB3Y6RE8EJ2U267UNJFGUID&dn=test&tr=udp://test.com:1337",
+				"magnet::?xt=urn:btih:UHWY2892JNEJ2GTEYOMDNU67E8ICGICYE92JDUGH&dn=baz&tr=udp://baz.com:1337",
+				"magnet:?xt:btih:HS263FG8U3GFIDHWD7829BYFCIXB78XIHG7CWCUG&dn=foz&tr=udp://foz.com:1337",
+			},
+		}},
+	}, {
+		Name: "Match", Func: Match, Cases: Cases{{
+			pass: []string{},
+			fail: []string{},
+		}},
+	}, {
+		Name: "MongoId", Func: MongoId, Cases: Cases{{
+			pass: []string{
+				"507f1f77bcf86cd799439011",
+			},
+			fail: []string{
+				"507f1f77bcf86cd7994390",
+				"507f1f77bcf86cd79943901z",
+				"",
+				"507f1f77bcf86cd799439011 ",
+			},
+		}},
+	}, {
+		Name: "Numeric", Func: Numeric, Cases: Cases{{
+			pass: []string{
+				"123",
+				"00123",
+				"-00123",
+				"0",
+				"-0",
+				"+123",
+				"123.123",
+				"+000000",
+			},
+			fail: []string{
+				" ",
+				"",
+				".",
+			},
+		}},
+	}, {
+		Name: "Octal", Func: Octal, Cases: Cases{{
+			pass: []string{
+				"076543210",
+				"0o01234567",
+			},
+			fail: []string{
+				"abcdefg",
+				"012345678",
+				"012345670c",
+				"00c12345670c",
+				"",
+				"..",
+			},
+		}},
+	}, {
 		Name: "PAN", Func: PAN, Cases: Cases{{
 			pass: []string{
 				"375556917985515",
@@ -1231,6 +2047,221 @@ func Test(t *testing.T) {
 				"6234917882863855suffix",
 				"4716989580001715213",
 			},
+		}},
+	}, {
+		Name: "PassportNumber", Func: PassportNumber, Cases: Cases{{
+			pass: []string{},
+			fail: []string{},
+		}},
+	}, {
+		Name: "Phone", Func: Phone, Cases: Cases{{
+			pass: []string{},
+			fail: []string{},
+		}},
+	}, {
+		Name: "Port", Func: Port, Cases: Cases{{
+			pass: []string{
+				"0",
+				"22",
+				"80",
+				"443",
+				"3000",
+				"8080",
+				"65535",
+			},
+			fail: []string{
+				"",
+				"-1",
+				"65536",
+			},
+		}},
+	}, {
+		Name: "RFC", Func: RFC, Cases: Cases{{
+			pass: []string{},
+			fail: []string{},
+		}},
+	}, {
+		Name: "RGB", Func: RGB, Cases: Cases{{
+			pass: []string{
+				"rgb(0,0,0)",
+				"rgb(255,255,255)",
+				"rgba(0,0,0,0)",
+				"rgba(255,255,255,1)",
+				"rgba(255,255,255,.1)",
+				"rgba(255,255,255,0.1)",
+				"rgb(5%,5%,5%)",
+				"rgba(5%,5%,5%,.3)",
+			},
+			fail: []string{
+				"rgb(0,0,0,)",
+				"rgb(0,0,)",
+				"rgb(0,0,256)",
+				"rgb()",
+				"rgba(0,0,0)",
+				"rgba(255,255,255,2)",
+				"rgba(255,255,255,.12)",
+				"rgba(255,255,256,0.1)",
+				"rgb(4,4,5%)",
+				"rgba(5%,5%,5%)",
+				"rgba(3,3,3%,.3)",
+				"rgb(101%,101%,101%)",
+				"rgba(3%,3%,101%,0.3)",
+			},
+		}},
+	}, {
+		Name: "SSN", Func: SSN, Cases: Cases{{
+			pass: []string{},
+			fail: []string{},
+		}},
+	}, {
+		Name: "SemVer", Func: SemVer, Cases: Cases{{
+			pass: []string{
+				"0.0.4",
+				"1.2.3",
+				"10.20.30",
+				"1.1.2-prerelease+meta",
+				"1.1.2+meta",
+				"1.1.2+meta-valid",
+				"1.0.0-alpha",
+				"1.0.0-beta",
+				"1.0.0-alpha.beta",
+				"1.0.0-alpha.beta.1",
+				"1.0.0-alpha.1",
+				"1.0.0-alpha0.valid",
+				"1.0.0-alpha.0valid",
+				"1.0.0-alpha-a.b-c-somethinglong+build.1-aef.1-its-okay",
+				"1.0.0-rc.1+build.1",
+				"2.0.0-rc.1+build.123",
+				"1.2.3-beta",
+				"10.2.3-DEV-SNAPSHOT",
+				"1.2.3-SNAPSHOT-123",
+				"1.0.0",
+				"2.0.0",
+				"1.1.7",
+				"2.0.0+build.1848",
+				"2.0.1-alpha.1227",
+				"1.0.0-alpha+beta",
+				"1.2.3----RC-SNAPSHOT.12.9.1--.12+788",
+				"1.2.3----R-S.12.9.1--.12+meta",
+				"1.2.3----RC-SNAPSHOT.12.9.1--.12",
+				"1.0.0+0.build.1-rc.10000aaa-kk-0.1",
+				"99999999999999999999999.999999999999999999.99999999999999999",
+				"1.0.0-0A.is.legal",
+			},
+			fail: []string{
+				"-invalid+invalid",
+				"-invalid.01",
+				"alpha",
+				"alpha.beta",
+				"alpha.beta.1",
+				"alpha.1",
+				"alpha+beta",
+				"alpha_beta",
+				"alpha.",
+				"alpha..",
+				"beta",
+				"1.0.0-alpha_beta",
+				"-alpha.",
+				"1.0.0-alpha..",
+				"1.0.0-alpha..1",
+				"1.0.0-alpha...1",
+				"1.0.0-alpha....1",
+				"1.0.0-alpha.....1",
+				"1.0.0-alpha......1",
+				"1.0.0-alpha.......1",
+				"01.1.1",
+				"1.01.1",
+				"1.1.01",
+				"1.2",
+				"1.2.3.DEV",
+				"1.2-SNAPSHOT",
+				"1.2.31.2.3----RC-SNAPSHOT.12.09.1--..12+788",
+				"1.2-RC-SNAPSHOT",
+				"-1.0.3-gamma+b7718",
+				"+justmeta",
+				"9.8.7+meta+meta",
+				"9.8.7-whatever+meta+meta",
+				"99999999999999999999999.999999999999999999.99999999999999999-",
+				"---RC-SNAPSHOT.12.09.1--------------------------------..12",
+			},
+		}},
+	}, {
+		Name: "Slug", Func: Slug, Cases: Cases{{
+			pass: []string{
+				"cs-cz",
+				"cscz",
+			},
+			fail: []string{
+				"not-----------slug",
+				"@#_$@",
+				"-not-slug",
+				"not-slug-",
+				"_not-slug",
+				"not-slug_",
+				"not slug",
+			},
+		}},
+	}, {
+		Name: "StrongPassword", Func: StrongPassword, Cases: Cases{{
+			pass: []string{},
+			fail: []string{},
+		}},
+	}, {
+		Name: "URI", Func: URI, Cases: Cases{{
+			pass: []string{},
+			fail: []string{},
+		}},
+	}, {
+		Name: "URI", Func: URI, Cases: Cases{{
+			pass: []string{},
+			fail: []string{},
+		}},
+	}, {
+		Name: "UUID", Func: UUID, Cases: Cases{{
+			pass: []string{},
+			fail: []string{},
+		}},
+	}, {
+		Name: "Uint", Func: Uint, Cases: Cases{{
+			pass: []string{
+				"0",
+				"1",
+				"+0",
+				"123",
+				"+987",
+				"13",
+				"123",
+				"+1",
+				"01",
+				"+01",
+				"000",
+				"1234567890",
+			},
+			fail: []string{
+				"",
+				"-0",
+				".01",
+				"0.1",
+				"123e45",
+				"abcdef",
+				"      ",
+				"-987654321",
+			},
+		}},
+	}, {
+		Name: "UpperCase", Func: UpperCase, Cases: Cases{{
+			pass: []string{},
+			fail: []string{},
+		}},
+	}, {
+		Name: "VAT", Func: VAT, Cases: Cases{{
+			pass: []string{},
+			fail: []string{},
+		}},
+	}, {
+		Name: "Zip", Func: Zip, Cases: Cases{{
+			pass: []string{},
+			fail: []string{},
 		}},
 	}}
 

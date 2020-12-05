@@ -2,7 +2,7 @@ package tables
 
 // from https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
 
-var ISO31661A2 = map[string]struct{}{
+var ISO31661A_2 = map[string]struct{}{
 	"AD": {}, "AE": {}, "AF": {}, "AG": {}, "AI": {}, "AL": {}, "AM": {}, "AO": {},
 	"AQ": {}, "AR": {}, "AS": {}, "AT": {}, "AU": {}, "AW": {}, "AX": {}, "AZ": {},
 	"BA": {}, "BB": {}, "BD": {}, "BE": {}, "BF": {}, "BG": {}, "BH": {}, "BI": {},
@@ -37,7 +37,7 @@ var ISO31661A2 = map[string]struct{}{
 	"ZW": {},
 }
 
-var ISO31661A3 = map[string]struct{}{
+var ISO31661A_3 = map[string]struct{}{
 	"AFG": {}, "ALA": {}, "ALB": {}, "DZA": {}, "ASM": {}, "AND": {}, "AGO": {}, "AIA": {},
 	"ATA": {}, "ATG": {}, "ARG": {}, "ARM": {}, "ABW": {}, "AUS": {}, "AUT": {}, "AZE": {},
 	"BHS": {}, "BHR": {}, "BGD": {}, "BRB": {}, "BLR": {}, "BEL": {}, "BLZ": {}, "BEN": {},

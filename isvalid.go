@@ -53,8 +53,15 @@ func ASCII(v string) bool {
 //		"opts": [[ { "key": null, "value": "en" } ]],
 //		"err": { "text": "must be an alphabetic string" }
 //	}
-func Alpha(v string, loc ...string) bool {
-	// TODO
+func Alpha(v string, lang string) bool {
+	lang = strings.ToLower(lang)
+	if len(lang) == 0 {
+		lang = "en"
+	}
+
+	if rx, ok := tables.Alpha[lang]; ok {
+		return rx.MatchString(v)
+	}
 	return false
 }
 
@@ -66,8 +73,15 @@ func Alpha(v string, loc ...string) bool {
 //		"opts": [[ { "key": null, "value": "en" } ]],
 //		"err": { "text": "must be an alphanumeric string" }
 //	}
-func Alnum(v string, loc ...string) bool {
-	// TODO
+func Alnum(v string, lang string) bool {
+	lang = strings.ToLower(lang)
+	if len(lang) == 0 {
+		lang = "en"
+	}
+
+	if rx, ok := tables.Alnum[lang]; ok {
+		return rx.MatchString(v)
+	}
 	return false
 }
 
@@ -184,8 +198,14 @@ func CVV(v string) bool {
 // Currency reports whether or not v is a valid Currency amount.
 //
 // isvalid:rule
-//	{ "name": "currency", "err": {"text": "must be a valid currency amount"} }
-func Currency(v string) bool {
+//	{
+//		"name": "ccy",
+//		"opts": [[
+//			{ "key": null, "value": "usd" }
+//		]],
+//		"err": { "text": "must be a valid currency amount" }
+// 	}
+func Currency(v string, code string) bool {
 	// TODO
 	return false
 }
@@ -266,7 +286,7 @@ func EAN(v string) bool {
 	}
 
 	// the accumulate checksum
-	checksum := 0
+	sum := 0
 	for i, digit := range v[:length-1] {
 
 		// the digit's weigth by position
@@ -277,12 +297,12 @@ func EAN(v string) bool {
 			weight = 3
 		}
 
-		checksum += atoi(string(digit)) * weight
+		sum += atoi(string(digit)) * weight
 	}
 
 	// the calculated check digit
 	check := 0
-	if remainder := (10 - (checksum % 10)); remainder < 10 {
+	if remainder := (10 - (sum % 10)); remainder < 10 {
 		check = remainder
 	}
 	return check == atoi(string(v[length-1]))
@@ -781,6 +801,47 @@ func ISO(v string, num int) bool {
 	return false
 }
 
+// ISO639 reports whether or not v is a valid language code as defined by the
+// ISO 639 set of standards. Currently only standards 639-1 & 639-2 are supported.
+// The num argument specifies which of the supported standards should be tested.
+// The num argument can be one of the following three values:
+//
+//	0 tests against both 639-1 & 639-2
+//	1 tests against 639-1 only
+//	2 tests against 639-2 only
+//
+// isvalid:rule
+//	{
+//		"name": "iso369",
+//		"opts": [[ { "key": null, "value": "0" } ]],
+//		"err": { "text": "must be a valid ISO 639 value" }
+//	}
+func ISO639(v string, num int) bool {
+	if num == 0 {
+		if len(v) == 2 && ISO639(v, 1) {
+			return true
+		}
+		if len(v) == 3 && ISO639(v, 2) {
+			return true
+		}
+		return false
+	}
+
+	if num == 1 && len(v) == 2 {
+		v = strings.ToLower(v)
+		_, ok := tables.ISO639_1[v]
+		return ok
+	}
+
+	if num == 2 && len(v) == 3 {
+		v = strings.ToLower(v)
+		_, ok := tables.ISO639_2[v]
+		return ok
+	}
+
+	return false
+}
+
 // ISO31661A reports whether or not v is a valid country code as defined by the
 // ISO 3166-1 Alpha standard. The num argument specifies which of the two alpha
 // sets of the standard should be tested. The num argument can be one of the
@@ -809,13 +870,27 @@ func ISO31661A(v string, num int) bool {
 
 	if num == 2 && len(v) == 2 {
 		v = strings.ToUpper(v)
-		_, ok := tables.ISO31661A2[v]
+		_, ok := tables.ISO31661A_2[v]
 		return ok
 	}
 
 	if num == 3 && len(v) == 3 {
 		v = strings.ToUpper(v)
-		_, ok := tables.ISO31661A3[v]
+		_, ok := tables.ISO31661A_3[v]
+		return ok
+	}
+
+	return false
+}
+
+// ISO4217 reports whether or not v is a valid currency code as defined by the ISO 4217 standard.
+//
+// isvalid:rule
+//	{ "name": "iso4217", "err": { "text": "must be a valid ISO 4217 value" } }
+func ISO4217(v string) bool {
+	if len(v) == 3 {
+		v = strings.ToUpper(v)
+		_, ok := tables.ISO4217[v]
 		return ok
 	}
 
@@ -866,7 +941,7 @@ func ISSN(v string, requireHyphen, caseSensitive bool) bool {
 	return sum%11 == 0
 }
 
-// In reports whether or not v is in the list.
+// In reports whether or not v is in the provided list.
 //
 // isvalid:rule
 //	{ "name": "in", "err": { "text": "must be in the list" } }
@@ -988,17 +1063,29 @@ func MAC(v string, space int) bool {
 // isvalid:rule
 //	{ "name": "md5", "err": {"text": "must be a valid MD5 hash"} }
 func MD5(v string) bool {
-	// TODO
-	return false
+	return len(v) == 32 && rxHash.MatchString(v)
 }
+
+var rxMIMESimple = regexp.MustCompile(`^(?i)(?:application|audio|font|image|message|model|multipart|text|video)\/[a-zA-Z0-9\.\-\+]{1,100}$`)
+var rxMIMEText = regexp.MustCompile(`^(?i)text\/[a-zA-Z0-9\.\-\+]{1,100};\s?charset=(?:"[a-zA-Z0-9\.\-\+\s]{0,70}"|[a-zA-Z0-9\.\-\+]{0,70})(?:\s?\([a-zA-Z0-9\.\-\+\s]{1,20}\))?$`)
+var rxMIMEMultipart = regexp.MustCompile(`^(?i)multipart\/[a-zA-Z0-9\.\-\+]{1,100}(?:;\s?(?:boundary|charset)=(?:"[a-zA-Z0-9\.\-\+\s]{0,70}"|[a-zA-Z0-9\.\-\+]{0,70})(?:\s?\([a-zA-Z0-9\.\-\+\s]{1,20}\))?){0,2}$`)
+
+// MIME reports whether or not v is a valid Media type (or MIME type).
+//
+// isvalid:rule
+//	{ "name": "mime", "err": {"text": "must be a valid media type"} }
+func MIME(v string) bool {
+	return rxMIMESimple.MatchString(v) || rxMIMEText.MatchString(v) || rxMIMEMultipart.MatchString(v)
+}
+
+var rxMagnetURI = regexp.MustCompile(`^(?i)magnet:\?xt=urn:[a-z0-9]+:[a-z0-9]{32,40}&dn=.+&tr=.+$`)
 
 // MagnetURI reports whether or not v is a valid magned URI.
 //
 // isvalid:rule
 //	{ "name": "magneturi", "err": {"text": "must be a valid magnet URI"} }
 func MagnetURI(v string) bool {
-	// TODO
-	return false
+	return rxMagnetURI.MatchString(v)
 }
 
 // Match reports whether or not the v contains any match of the regular expression re.
@@ -1010,22 +1097,12 @@ func Match(v string, re string) bool {
 	return regexpCache.m[re].MatchString(v)
 }
 
-// MediaType reports whether or not v is a valid Media type (or MIME type).
-//
-// isvalid:rule
-//	{ "name": "mediatype", "err": {"text": "must be a valid media type"} }
-func MediaType(v string) bool {
-	// TODO
-	return false
-}
-
 // MongoId reports whether or not v is a valid hex-encoded representation of a MongoDB ObjectId.
 //
 // isvalid:rule
 //	{ "name": "mongoid", "err": {"text": "must be a valid Mongo Object Id"} }
 func MongoId(v string) bool {
-	// TODO
-	return false
+	return len(v) == 24 && rxHex.MatchString(v)
 }
 
 var rxNumeric = regexp.MustCompile(`^[+-]?[0-9]*\.?[0-9]+$`)
@@ -1102,8 +1179,8 @@ func Phone(v string, cc ...string) bool {
 // isvalid:rule
 //	{ "name": "port", "err": { "text": "must be a valid port number" } }
 func Port(v string) bool {
-	// TODO
-	return false
+	_, err := strconv.ParseUint(v, 10, 16)
+	return err == nil
 }
 
 // RFC reports whether or not v is a valid representation of the specified RFC standard.
@@ -1115,12 +1192,32 @@ func RFC(v string, num int) bool {
 	return false
 }
 
+var rxRGB = regexp.MustCompile(`^rgb\((?:(?:[0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5]),){2}(?:[0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\)$`)
+var rxRGBA = regexp.MustCompile(`^rgba\((?:(?:[0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5]),){3}(?:0?\.\d|1(?:\.0)?|0(?:\.0)?)\)$`)
+var rxRGBPercent = regexp.MustCompile(`^rgb\((?:(?:[0-9]%|[1-9][0-9]%|100%),){2}(?:[0-9]%|[1-9][0-9]%|100%)\)`)
+var rxRGBAPercent = regexp.MustCompile(`^rgba\((?:(?:[0-9]%|[1-9][0-9]%|100%),){3}(?:0?\.\d|1(?:\.0)?|0(?:\.0)?)\)`)
+
 // RGB reports whether or not v is a valid RGB color.
 //
 // isvalid:rule
 //	{ "name": "rgb", "err": { "text": "must be a valid RGB color" } }
 func RGB(v string) bool {
-	// TODO
+
+	// TODO https://en.wikipedia.org/wiki/Web_colors#CSS_colors
+
+	if strings.HasPrefix(v, "rgba") {
+		if strings.Contains(v, "%") {
+			return rxRGBAPercent.MatchString(v)
+		} else {
+			return rxRGBA.MatchString(v)
+		}
+	} else {
+		if strings.Contains(v, "%") {
+			return rxRGBPercent.MatchString(v)
+		} else {
+			return rxRGB.MatchString(v)
+		}
+	}
 	return false
 }
 
@@ -1133,22 +1230,27 @@ func SSN(v string) bool {
 	return false
 }
 
+var rxSemVer = regexp.MustCompile(`^(?i)(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)` +
+	`(?:-(?:(?:0|[1-9]\d*|\d*[a-z-][0-9a-z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-z-][0-9a-z-]*))*))` +
+	`?(?:\+(?:[0-9a-z-]+(?:\.[0-9a-z-]+)*))?$`)
+
 // SemVer reports whether or not v is a valid Semantic Versioning number.
+// For reference: https://semver.org/
 //
 // isvalid:rule
 //	{ "name": "semver", "err": { "text": "must be a valid semver number" } }
 func SemVer(v string) bool {
-	// TODO
-	return false
+	return rxSemVer.MatchString(v)
 }
+
+var rxSlug = regexp.MustCompile(`^(?:(?:[a-z0-9]+)(?:-[a-z0-9]+)?)+$`)
 
 // Slug reports whether or not v is a valid slug.
 //
 // isvalid:rule
 //	{ "name": "slug", "err": { "text": "must be a valid slug" } }
 func Slug(v string) bool {
-	// TODO
-	return false
+	return rxSlug.MatchString(v)
 }
 
 // StrongPassword reports whether or not v is a strong password.
@@ -1211,6 +1313,9 @@ func UpperCase(v string) bool {
 //	{ "name": "vat", "err": {"text": "must be a valid VAT number"} }
 func VAT(v string) bool {
 	// TODO
+
+	// https://en.wikipedia.org/wiki/VAT_identification_number
+
 	return false
 }
 
