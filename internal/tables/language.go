@@ -588,7 +588,7 @@ var languages = []language{
 	{c3: "tha", c2: "th", name: "Thai",
 		abc: `ก ข ฃ ค ฅ ฆ ง จ ฉ ช ซ ฌ ญ ฎ ฏ ฐ ฑ ฒ ณ ด ต ถ ท ธ น บ ป ผ ฝ พ ฟ ภ
 		ม ย ร ฤ ล ฦ ว ศ ษ ส ห ฬ อ ฮ ฯ ะ ั า ำ  ิ  ี  ึ  ื  ุ  ู  ฺ เ แ โ ใ ๅ ไ  ็ ่ ้ ๊ ๋ ์ ํ ๎`,
-		num: `๐	๑ ๒ ๓ ๔ ๕ ๖ ๗ ๘ ๙`},
+		num: `๐ ๑ ๒ ๓ ๔ ๕ ๖ ๗ ๘ ๙`},
 	{c3: "tig", c2: "--", name: "Tigre", abc: ``, num: ""},
 	{c3: "tir", c2: "ti", name: "Tigrinya", abc: ``, num: ""},
 	{c3: "tiv", c2: "--", name: "Tiv", abc: ``, num: ""},

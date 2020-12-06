@@ -7,6 +7,7 @@ package isvalid
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net"
 	"net/mail"
@@ -14,11 +15,13 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/frk/isvalid/internal/tables"
 )
 
 var _ = log.Println
+var _ = fmt.Println
 
 // convenience func for removing characters from a string
 func rmchar(v string, f func(r rune) bool) string {
@@ -224,19 +227,154 @@ func CVV(v string) bool {
 	return rxCVV.MatchString(v)
 }
 
-// Currency reports whether or not v is a valid Currency amount.
+type CurrencyOpts struct {
+	NeedSym bool
+}
+
+var DefaultCurrencyOpts = CurrencyOpts{
+	NeedSym: false,
+}
+
+// Currency reports whether or not v represents a valid Currency amount.
 //
 //	isvalid:rule
 //	{
 //		"name": "ccy",
 //		"opts": [[
 //			{ "key": null, "value": "usd" }
+//		], [
+//			{ "key": null, "value": "nil" }
 //		]],
 //		"err": { "text": "must be a valid currency amount" }
 // 	}
-func Currency(v string, code string) bool {
-	// TODO
-	return false
+func Currency(v string, code string, opts *CurrencyOpts) bool {
+	if len(v) == 0 || len(code) != 3 {
+		return false
+	}
+
+	if opts == nil {
+		opts = &DefaultCurrencyOpts
+	}
+
+	code = strings.ToUpper(code)
+	ccy, ok := tables.ISO4217[code]
+	if !ok {
+		return false
+	}
+
+	// check for leading currency symbol
+	if ccy.Left && len(ccy.Sym) > 0 {
+		hasSym := false
+		for _, sym := range ccy.Sym {
+			if len(v) >= len(sym) && v[:len(sym)] == sym {
+				v = v[len(sym):]
+				hasSym = true
+				break
+			}
+		}
+		if !hasSym && opts.NeedSym {
+			return false
+		}
+		if hasSym {
+			for _, sep := range ccy.Sep {
+				if len(v) >= len(sep) && v[:len(sep)] == sep {
+					v = v[len(sep):]
+					break
+				}
+			}
+		}
+	}
+
+	// check for traling currency symbol
+	if ccy.Right && len(ccy.Sym) > 0 {
+		hasSym := false
+		for _, sym := range ccy.Sym {
+			if len(v) >= len(sym) && v[len(v)-len(sym):] == sym {
+				v = v[:len(v)-len(sym)]
+				hasSym = true
+				break
+			}
+		}
+		if !hasSym && opts.NeedSym {
+			return false
+		}
+		if hasSym {
+			for _, sep := range ccy.Sep {
+				if len(v) >= len(sep) && v[len(v)-len(sep):] == sep {
+					v = v[:len(v)-len(sep)]
+					break
+				}
+			}
+		}
+	}
+
+	// split into number groups
+	ngs, last := []string{}, 0
+	var thoSep rune
+
+numLoop:
+	for i, r := range v {
+		if r >= '0' && r <= '9' {
+			continue numLoop
+		}
+		for _, sep := range ccy.ThoSep {
+			if r == sep {
+				// mixed thousands separators; fail
+				if thoSep > 0 && sep != thoSep {
+					return false
+				}
+
+				ngs = append(ngs, v[last:i])
+				last = i + utf8.RuneLen(r)
+				thoSep = sep
+				continue numLoop
+			}
+		}
+		for _, sep := range ccy.DecSep {
+			if r == sep {
+				ngs = append(ngs, v[last:i])
+				last = i + utf8.RuneLen(r)
+
+				decimal := v[last:]
+				// incorrect number of decimal digits; fail
+				if len(decimal) != ccy.DecNum {
+					return false
+				}
+				// make sure the rest is all digit
+				for _, d := range decimal {
+					if d < '0' || d > '9' {
+						return false
+					}
+				}
+				last = len(v) // no need to add decimal to ngs
+				break numLoop
+			}
+		}
+
+		// unacceptable rune; fail
+		return false
+	}
+	if last < len(v)-1 {
+		ngs = append(ngs, v[last:])
+	}
+
+	for i, ng := range ngs {
+		if len(ng) == 0 {
+			return false
+		}
+		if i > 0 && len(ng) != 3 {
+			return false
+		}
+		if i == 0 {
+			if len(ng) > 3 && thoSep != 0 {
+				return false
+			}
+			if ng[0] == '0' && (len(ng) > 1 || thoSep != 0) {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 var rxDataURIMediaType = regexp.MustCompile(`^(?i)[a-z]+\/[a-z0-9\-\+]+$`)
@@ -1537,7 +1675,7 @@ func StrongPassword(v string, opts *StrongPasswordOpts) bool {
 //		"err": { "text": "must be a valid URL" }
 //	}
 func URL(v string) bool {
-	// TODO
+	// TODO consider implementing a parser, maybe port https://github.com/servo/rust-url to Go
 	return false
 }
 
