@@ -203,10 +203,6 @@ func (conf RuleConfig) RuleTypeFunc(fn *types.Func, isCustom bool) (RuleTypeFunc
 			rt.check = isValidRuleIP
 		case "mac":
 			rt.check = isValidRuleMAC
-		case "iso":
-			rt.check = isValidRuleISO
-		case "rfc":
-			rt.check = isValidRuleRFC
 		case "re":
 			rt.UseRawString = true
 			rt.check = isValidRuleRegexp
@@ -422,7 +418,6 @@ var rxUUIDVer = regexp.MustCompile(`^(?:v?[1-5])$`)
 
 // check that the RuleOptions are valid UUID versions.
 func isValidRuleUUID(a *analysis, r *Rule, t Type, f *StructField) error {
-	versions := map[string]struct{}{} // track encountered versions
 	for _, opt := range r.Options {
 		if opt.Type == OptionTypeString || opt.IsUInt() {
 			if !rxUUIDVer.MatchString(opt.Value) {
@@ -432,11 +427,6 @@ func isValidRuleUUID(a *analysis, r *Rule, t Type, f *StructField) error {
 			if len(opt.Value) > 1 && (opt.Value[0] == 'v' || opt.Value[0] == 'V') {
 				opt.Value = opt.Value[1:]
 				opt.Type = OptionTypeInt
-			}
-			if _, exists := versions[opt.Value]; exists {
-				return &anError{Code: errRuleOptionValueConflict, a: a, f: f, r: r, opt: opt}
-			} else {
-				versions[opt.Value] = struct{}{}
 			}
 		} else if opt.Type != OptionTypeField {
 			return &anError{Code: errRuleFuncOptionType, a: a, f: f, r: r, opt: opt}
@@ -465,46 +455,6 @@ func isValidRuleMAC(a *analysis, r *Rule, t Type, f *StructField) error {
 		if opt.IsUInt() {
 			if opt.Value != "0" && opt.Value != "6" && opt.Value != "8" {
 				return &anError{Code: errRuleOptionValueMACVer, a: a, f: f, r: r, opt: opt}
-			}
-		} else if opt.Type != OptionTypeField {
-			return &anError{Code: errRuleFuncOptionType, a: a, f: f, r: r, opt: opt}
-		}
-	}
-	return nil
-}
-
-var rxISO = regexp.MustCompile(`^(?:[1-9][0-9]*)$`) // non-zero unsigned int
-
-// checks that the rule's option value is a supported ISO standard identifier.
-func isValidRuleISO(a *analysis, r *Rule, t Type, f *StructField) error {
-	for _, opt := range r.Options {
-		if opt.IsUInt() {
-			// TODO(mkopriva): Remove the regex and instead check
-			// against a list of supported builtin ISO validators.
-			if !rxISO.MatchString(opt.Value) {
-				// TODO(mkopriva): once the above TODO item is
-				// taken care of, this needs a test cases added.
-				return &anError{Code: errRuleOptionValueISONum, a: a, f: f, r: r, opt: opt}
-			}
-		} else if opt.Type != OptionTypeField {
-			return &anError{Code: errRuleFuncOptionType, a: a, f: f, r: r, opt: opt}
-		}
-	}
-	return nil
-}
-
-var rxRFC = regexp.MustCompile(`^(?:[1-9][0-9]*)$`) // non-zero unsigned int
-
-// checks that the rule's option value is a supported RFC standard identifier.
-func isValidRuleRFC(a *analysis, r *Rule, t Type, f *StructField) error {
-	for _, opt := range r.Options {
-		if opt.IsUInt() {
-			// TODO(mkopriva): Remove the regex and instead check
-			// against a list of supported builtin RFC validators.
-			if !rxRFC.MatchString(opt.Value) {
-				// TODO(mkopriva): once the above TODO item is
-				// taken care of, this needs a test cases added.
-				return &anError{Code: errRuleOptionValueRFCNum, a: a, f: f, r: r, opt: opt}
 			}
 		} else if opt.Type != OptionTypeField {
 			return &anError{Code: errRuleFuncOptionType, a: a, f: f, r: r, opt: opt}

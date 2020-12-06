@@ -85,14 +85,6 @@ type AnalysisTestBAD_TypeKindStringURLValidator struct {
 	F int `is:"url"`
 }
 
-type AnalysisTestBAD_RuleOptionNumURIValidator struct {
-	F string `is:"uri:foo"`
-}
-
-type AnalysisTestBAD_TypeKindStringURIValidator struct {
-	F int `is:"uri"`
-}
-
 type AnalysisTestBAD_RuleOptionNumPANValidator struct {
 	F string `is:"pan:foo"`
 }
@@ -248,14 +240,8 @@ type AnalysisTestBAD_RuleOptionValueUUIDVer2UUIDValidator struct {
 }
 
 type AnalysisTestBAD_RuleOptionTypeReferenceKindUUIDValidator struct {
-	F string `is:"uuid:&x:&y:&z"`
-	x int32
-	y uint16
+	F string `is:"uuid:&z"`
 	z []byte
-}
-
-type AnalysisTestBAD_RuleOptionValueConflictUUIDValidator struct {
-	F string `is:"uuid:v4:5:4"`
 }
 
 type AnalysisTestBAD_RuleOptionNumUUIDValidator struct {
@@ -331,64 +317,6 @@ type AnalysisTestBAD_RuleOptionValueConflictMACValidator struct {
 
 type AnalysisTestBAD_RuleOptionNumMACValidator struct {
 	F string `is:"mac:6:8:10"`
-}
-
-type AnalysisTestBAD_TypeKindStringISOValidator struct {
-	F complex128 `is:"iso:1234"`
-}
-
-type AnalysisTestBAD_RuleOptionTypeISOValidator struct {
-	F string `is:"iso:foo"`
-}
-
-type AnalysisTestBAD_RuleOptionType2ISOValidator struct {
-	F string `is:"iso:true"`
-}
-
-type AnalysisTestBAD_RuleOptionType3ISOValidator struct {
-	F string `is:"iso:0.2"`
-}
-
-type AnalysisTestBAD_RuleOptionTypeReferenceKindISOValidator struct {
-	F string `is:"iso:&x"`
-	x bool
-}
-
-type AnalysisTestBAD_RuleOptionNumISOValidator struct {
-	F string `is:"iso"`
-}
-
-type AnalysisTestBAD_RuleOptionNum2ISOValidator struct {
-	F string `is:"iso:6:8"`
-}
-
-type AnalysisTestBAD_TypeKindStringRFCValidator struct {
-	F uint64 `is:"rfc:1234"`
-}
-
-type AnalysisTestBAD_RuleOptionTypeRFCValidator struct {
-	F string `is:"rfc:foo"`
-}
-
-type AnalysisTestBAD_RuleOptionType2RFCValidator struct {
-	F string `is:"rfc:true"`
-}
-
-type AnalysisTestBAD_RuleOptionType3RFCValidator struct {
-	F string `is:"rfc:0.2"`
-}
-
-type AnalysisTestBAD_RuleOptionTypeReferenceKindRFCValidator struct {
-	F string `is:"rfc:&x"`
-	x bool
-}
-
-type AnalysisTestBAD_RuleOptionNumRFCValidator struct {
-	F string `is:"rfc"`
-}
-
-type AnalysisTestBAD_RuleOptionNum2RFCValidator struct {
-	F string `is:"rfc:6:8"`
 }
 
 type AnalysisTestBAD_TypeKindStringRegexpValidator struct {

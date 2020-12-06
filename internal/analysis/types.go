@@ -611,7 +611,7 @@ func (t Type) NeedsConversion(u Type) bool {
 	return true
 }
 
-// Reports whether or not a value of type t represents a pointer type of u.
+// Reports whether or not the type t represents a pointer type of u.
 func (t Type) PtrOf(u Type) bool {
 	return t.Kind == TypeKindPtr && t.Elem.Equals(u)
 }

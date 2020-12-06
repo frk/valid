@@ -42,7 +42,10 @@ var rxASCII = regexp.MustCompile(`^[[:ascii:]]*$`)
 // ASCII reports whether or not v is an ASCII string.
 //
 // isvalid:rule
-//	{ "name": "ascii", "err": { "text": "must contain only ASCII characters" } }
+//	{
+//		"name": "ascii",
+//		"err": { "text": "must contain only ASCII characters" }
+//	}
 func ASCII(v string) bool {
 	return rxASCII.MatchString(v)
 }
@@ -92,7 +95,10 @@ var rxBIC = regexp.MustCompile(`^[A-z]{4}[A-z]{2}\w{2}(\w{3})?$`)
 // BIC reports whether or not v represents a valid Bank Identification Code or SWIFT code.
 //
 // isvalid:rule
-//	{ "name": "bic", "err": { "text": "must be a valid BIC or SWIFT code" } }
+//	{
+//		"name": "bic",
+//		"err": { "text": "must be a valid BIC or SWIFT code" }
+//	}
 func BIC(v string) bool {
 	return rxBIC.MatchString(v)
 }
@@ -102,7 +108,10 @@ var rxBTC = regexp.MustCompile(`^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,39}$`)
 // BTC reports whether or not v represents a valid BTC address.
 //
 // isvalid:rule
-//	{ "name": "btc", "err": { "text": "must be a valid BTC address" } }
+//	{
+//		"name": "btc",
+//		"err": { "text": "must be a valid BTC address" }
+//	}
 func BTC(v string) bool {
 	return rxBTC.MatchString(v)
 }
@@ -112,7 +121,10 @@ var rxBase32 = regexp.MustCompile(`^[A-Z2-7]+=*$`)
 // Base32 reports whether or not v is a valid base32 string.
 //
 // isvalid:rule
-//	{ "name": "base32", "err": { "text": "must be a valid base32 string" } }
+//	{
+//		"name": "base32",
+//		"err": { "text": "must be a valid base32 string" }
+//	}
 func Base32(v string) bool {
 	return (len(v)%8 == 0) && rxBase32.MatchString(v)
 }
@@ -122,7 +134,10 @@ var rxBase58 = regexp.MustCompile(`^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghij
 // Base58 reports whether or not v is a valid base58 string.
 //
 // isvalid:rule
-//	{ "name": "base58", "err": { "text": "must be a valid base58 string" } }
+//	{
+//		"name": "base58",
+//		"err": { "text": "must be a valid base58 string" }
+//	}
 func Base58(v string) bool {
 	return rxBase58.MatchString(v)
 }
@@ -157,7 +172,10 @@ var rxBinary = regexp.MustCompile(`^(?:0[bB])?[0-1]+$`)
 // Binary reports whether or not v represents a valid binary integer.
 //
 // isvalid:rule
-//	{ "name": "binary", "err": { "text": "string content must match a binary number" } }
+//	{
+//		"name": "binary",
+//		"err": { "text": "string content must match a binary number" }
+//	}
 func Binary(v string) bool {
 	return rxBinary.MatchString(v)
 }
@@ -166,7 +184,10 @@ func Binary(v string) bool {
 // are considered valid boolean values: "true", "false", "TRUE", and "FALSE".
 //
 // isvalid:rule
-//	{ "name": "bool", "err": { "text": "string content must match a boolean value" } }
+//	{
+//		"name": "bool",
+//		"err": { "text": "string content must match a boolean value" }
+//	}
 func Bool(v string) bool {
 	if len(v) == 4 && (v == "true" || v == "TRUE") {
 		return true
@@ -181,7 +202,10 @@ func Bool(v string) bool {
 // NOTE: CIDR uses "net".ParseCIDR to determine the validity of v.
 //
 // isvalid:rule
-//	{ "name": "cidr", "err": { "text": "must be a valid CIDR notation" } }
+//	{
+//		"name": "cidr",
+//		"err": { "text": "must be a valid CIDR notation" }
+//	}
 func CIDR(v string) bool {
 	_, _, err := net.ParseCIDR(v)
 	return err == nil
@@ -192,7 +216,10 @@ var rxCVV = regexp.MustCompile(`^[0-9]{3,4}$`)
 // CVV reports whether or not v is a valid Card Verification Value.
 //
 // isvalid:rule
-//	{ "name": "cvv", "err": { "text": "must be a valid CVV" } }
+//	{
+//		"name": "cvv",
+//		"err": { "text": "must be a valid CVV" }
+//	}
 func CVV(v string) bool {
 	return rxCVV.MatchString(v)
 }
@@ -219,7 +246,10 @@ var rxDataURIData = regexp.MustCompile(`^(?i)[a-z0-9!\$&'\(\)\*\+,;=\-\._~:@\/\?
 // DataURI reports whether or not v is a valid data URI.
 //
 // isvalid:rule
-//	{ "name": "datauri", "err": { "text": "must be a valid data URI" } }
+//	{
+//		"name": "datauri",
+//		"err": { "text": "must be a valid data URI" }
+//	}
 func DataURI(v string) bool {
 	vv := strings.Split(v, ",")
 	if len(vv) < 2 {
@@ -258,7 +288,10 @@ func DataURI(v string) bool {
 // Decimal reports whether or not v represents a valid decimal number.
 //
 // isvalid:rule
-//	{ "name": "decimal", "err": { "text": "string content must match a decimal number" } }
+//	{
+//		"name": "decimal",
+//		"err": { "text": "string content must match a decimal number" }
+//	}
 func Decimal(v string) bool {
 	// TODO
 	return false
@@ -269,7 +302,10 @@ var rxDigits = regexp.MustCompile(`^[0-9]+$`)
 // Digits reports whether or not v is a string of digits.
 //
 // isvalid:rule
-//	{ "name": "digits", "err": {"text": "must contain only digits"} }
+//	{
+//		"name": "digits",
+//		"err": { "text": "must contain only digits" }
+//	}
 func Digits(v string) bool {
 	return rxDigits.MatchString(v)
 }
@@ -277,7 +313,10 @@ func Digits(v string) bool {
 // EAN reports whether or not v is a valid European Article Number.
 //
 // isvalid:rule
-//	{ "name": "ean", "err": { "text": "must be a valid EAN" } }
+//	{
+//		"name": "ean",
+//		"err": { "text": "must be a valid EAN" }
+//	}
 func EAN(v string) bool {
 	length := len(v)
 	if length != 8 && length != 13 {
@@ -313,7 +352,10 @@ func EAN(v string) bool {
 // EIN reports whether or not v is a valid Employer Identification Number.
 //
 // isvalid:rule
-//	{ "name": "ein", "err": { "text": "must be a valid EIN" } }
+//	{
+//		"name": "ein",
+//		"err": { "text": "must be a valid EIN" }
+//	}
 func EIN(v string) bool {
 	// TODO
 	return false
@@ -324,7 +366,10 @@ var rxETH = regexp.MustCompile(`^0x[0-9a-fA-F]{40}$`)
 // ETH reports whether or not v is a valid ethereum address.
 //
 // isvalid:rule
-//	{ "name": "eth", "err": { "text": "must be a valid ethereum address" } }
+//	{
+//		"name": "eth",
+//		"err": { "text": "must be a valid ethereum address" }
+//	}
 func ETH(v string) bool {
 	return rxETH.MatchString(v)
 }
@@ -333,7 +378,10 @@ func ETH(v string) bool {
 // "net/mail".ParseAddress to determine the validity of v.
 //
 // isvalid:rule
-//	{ "name": "email", "err": { "text": "must be a valid email address" } }
+//	{
+//		"name": "email",
+//		"err": { "text": "must be a valid email address" }
+//	}
 func Email(v string) bool {
 	_, err := mail.ParseAddress(v)
 	return err == nil
@@ -386,7 +434,10 @@ var rxFloat = regexp.MustCompile(`^[+-]?(?:[0-9]*)?(?:\.[0-9]*)?(?:[eE][+-]?[0-9
 // Float reports whether or not v represents a valid float.
 //
 // isvalid:rule
-//	{ "name": "float", "err": {"text": "string content must match a floating point number"} }
+//	{
+//		"name": "float",
+//		"err": { "text": "string content must match a floating point number" }
+//	}
 func Float(v string) bool {
 	if v == "" || v == "." || v == "+" || v == "-" {
 		return false
@@ -400,7 +451,10 @@ var rxHSLSpace = regexp.MustCompile(`^(?i)(?:hsl)a?\(\s*(?:(?:\+|\-)?(?:[0-9]+(?
 // HSL reports whether or not v represents an HSL color value.
 //
 // isvalid:rule
-//	{ "name": "hsl", "err": {"text": "must be a valid HSL color"} }
+//	{
+//		"name": "hsl",
+//		"err": { "text": "must be a valid HSL color" }
+//	}
 func HSL(v string) bool {
 	return rxHSLComma.MatchString(v) || rxHSLSpace.MatchString(v)
 }
@@ -410,7 +464,10 @@ var rxHash = regexp.MustCompile(`^[0-9A-Fa-f]+$`)
 // Hash reports whether or not v is a hash of the specified algorithm.
 //
 // isvalid:rule
-//	{ "name": "hash", "err": {"text": "must be a valid hash"} }
+//	{
+//		"name": "hash",
+//		"err": { "text": "must be a valid hash" }
+//	}
 func Hash(v string, algo string) bool {
 	if hlen := tables.HashAlgoLen[algo]; hlen > 0 && hlen == len(v) {
 		return rxHash.MatchString(v)
@@ -423,7 +480,10 @@ var rxHex = regexp.MustCompile(`^(?:0[xXhH])?[0-9A-Fa-f]+$`)
 // Hex reports whether or not v is a valid hexadecimal string.
 //
 // isvalid:rule
-//	{ "name": "hex", "err": { "text": "must be a valid hexadecimal string" } }
+//	{
+//		"name": "hex",
+//		"err": { "text": "must be a valid hexadecimal string" }
+//	}
 func Hex(v string) bool {
 	return rxHex.MatchString(v)
 }
@@ -433,7 +493,10 @@ var rxHexColor = regexp.MustCompile(`^#?(?i:[0-9A-F]{3}|[0-9A-F]{4}|[0-9A-F]{6}|
 // HexColor reports whether or not v is a valid hexadecimal color code.
 //
 // isvalid:rule
-//	{ "name": "hexcolor", "err": { "text": "must represent a valid hexadecimal color code" } }
+//	{
+//		"name": "hexcolor",
+//		"err": { "text": "must represent a valid hexadecimal color code" }
+//	}
 func HexColor(v string) bool {
 	return rxHexColor.MatchString(v)
 }
@@ -441,7 +504,10 @@ func HexColor(v string) bool {
 // IBAN reports whether or not v is an International Bank Account Number.
 //
 // isvalid:rule
-//	{ "name": "iban", "err": { "text": "must be a valid IBAN" } }
+//	{
+//		"name": "iban",
+//		"err": { "text": "must be a valid IBAN" }
+//	}
 func IBAN(v string) bool {
 	v = rmchar(v, func(r rune) bool { return r == ' ' || r == '-' })
 	if len(v) < 2 {
@@ -496,7 +562,10 @@ func IBAN(v string) bool {
 // IC reports whether or not v is an Identity Card number.
 //
 // isvalid:rule
-//	{ "name": "ic", "err": { "text": "must be a valid identity card number" } }
+//	{
+//		"name": "ic",
+//		"err": { "text": "must be a valid identity card number" }
+//	}
 func IC(v string) bool {
 	// TODO
 	return false
@@ -508,7 +577,10 @@ var rxIMEIHyphenated = regexp.MustCompile(`^\d{2}-\d{6}-\d{6}-\d{1}$`)
 // IMEI reports whether or not v is an IMEI number.
 //
 // isvalid:rule
-//	{ "name": "imei", "err": { "text": "must be a valid IMEI number" } }
+//	{
+//		"name": "imei",
+//		"err": { "text": "must be a valid IMEI number" }
+//	}
 func IMEI(v string) bool {
 	if !rxIMEI.MatchString(v) && !rxIMEIHyphenated.MatchString(v) {
 		return false
@@ -658,7 +730,10 @@ func IP(v string, ver int) bool {
 // IPRange reports whether or not v is a valid IP range (IPv4 only).
 //
 // isvalid:rule
-//	{ "name": "iprange", "err": { "text": "must be a valid IP range" } }
+//	{
+//		"name": "iprange",
+//		"err": { "text": "must be a valid IP range" }
+//	}
 func IPRange(v string) bool {
 	parts := strings.Split(v, "/")
 	if len(parts) != 2 {
@@ -748,7 +823,10 @@ var rxISIN = regexp.MustCompile(`^[A-Z]{2}[0-9A-Z]{9}[0-9]$`)
 // ISIN reports whether or not v is a valid International Securities Identification Number.
 //
 // isvalid:rule
-//	{ "name": "isin", "err": { "text": "must be a valid ISIN" } }
+//	{
+//		"name": "isin",
+//		"err": { "text": "must be a valid ISIN" }
+//	}
 func ISIN(v string) bool {
 	if !rxISIN.MatchString(v) {
 		return false
@@ -792,15 +870,6 @@ func ISIN(v string) bool {
 	}
 
 	return (10000-sum)%10 == ints[len(ints)-1]
-}
-
-// ISO reports whether or not v is a valid representation of the specified ISO standard.
-//
-// isvalid:rule
-//	{ "name": "iso", "err": { "text": "must be a valid ISO", "with_opts": true } }
-func ISO(v string, num int) bool {
-	// TODO
-	return false
 }
 
 // ISO639 reports whether or not v is a valid language code as defined by the
@@ -888,7 +957,10 @@ func ISO31661A(v string, num int) bool {
 // ISO4217 reports whether or not v is a valid currency code as defined by the ISO 4217 standard.
 //
 // isvalid:rule
-//	{ "name": "iso4217", "err": { "text": "must be a valid ISO 4217 value" } }
+//	{
+//		"name": "iso4217",
+//		"err": { "text": "must be a valid ISO 4217 value" }
+//	}
 func ISO4217(v string) bool {
 	if len(v) == 3 {
 		v = strings.ToUpper(v)
@@ -904,7 +976,10 @@ var rxISRC = regexp.MustCompile(`^[A-Z]{2}[0-9A-Z]{3}\d{2}\d{5}$`)
 // ISRC reports whether or not v is a valid International Standard Recording Code.
 //
 // isvalid:rule
-//	{ "name": "isrc", "err": { "text": "must be a valid ISRC" } }
+//	{
+//		"name": "isrc",
+//		"err": { "text": "must be a valid ISRC" }
+//	}
 func ISRC(v string) bool {
 	return rxISRC.MatchString(v)
 }
@@ -946,7 +1021,10 @@ func ISSN(v string, requireHyphen, caseSensitive bool) bool {
 // In reports whether or not v is in the provided list.
 //
 // isvalid:rule
-//	{ "name": "in", "err": { "text": "must be in the list" } }
+//	{
+//		"name": "in",
+//		"err": { "text": "must be in the list" }
+//	}
 func In(v interface{}, list ...interface{}) bool {
 	for _, item := range list {
 		if v == item {
@@ -961,7 +1039,10 @@ var rxInt = regexp.MustCompile(`^[+-]?[0-9]+$`)
 // Int reports whether or not v represents a valid integer.
 //
 // isvalid:rule
-//	{ "name": "int", "err": { "text": "string content must match an integer" } }
+//	{
+//		"name": "int",
+//		"err": { "text": "string content must match an integer" }
+//	}
 func Int(v string) bool {
 	return rxInt.MatchString(v)
 }
@@ -970,7 +1051,10 @@ func Int(v string) bool {
 // using json.Unmarshal which accepts primitive values as long as they are JSON values.
 //
 // isvalid:rule
-//	{ "name": "json", "err": { "text": "must be a valid JSON" } }
+//	{
+//		"name": "json",
+//		"err": { "text": "must be a valid JSON" }
+//	}
 func JSON(v []byte) bool {
 	var x interface{}
 	return json.Unmarshal(v, &x) == nil
@@ -979,7 +1063,10 @@ func JSON(v []byte) bool {
 // JWT reports whether or not v is a valid JSON Web Token.
 //
 // isvalid:rule
-//	{ "name": "jwt", "err": { "text": "must be a valid JWT" } }
+//	{
+//		"name": "jwt",
+//		"err": { "text": "must be a valid JWT" }
+//	}
 func JWT(v string) bool {
 	parts := strings.Split(v, ".")
 	if len(parts) < 2 || len(parts) > 3 {
@@ -1285,15 +1372,6 @@ func Port(v string) bool {
 	return err == nil
 }
 
-// RFC reports whether or not v is a valid representation of the specified RFC standard.
-//
-// isvalid:rule
-//	{ "name": "rfc", "err": { "text": "must be a valid RFC", "with_opts": true } }
-func RFC(v string, num int) bool {
-	// TODO
-	return false
-}
-
 var rxRGB = regexp.MustCompile(`^rgb\((?:(?:[0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5]),){2}(?:[0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\)$`)
 var rxRGBA = regexp.MustCompile(`^rgba\((?:(?:[0-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5]),){3}(?:0?\.\d|1(?:\.0)?|0(?:\.0)?)\)$`)
 var rxRGBPercent = regexp.MustCompile(`^rgb\((?:(?:[0-9]%|[1-9][0-9]%|100%),){2}(?:[0-9]%|[1-9][0-9]%|100%)\)`)
@@ -1322,7 +1400,7 @@ func RGB(v string) bool {
 	}
 
 	// MAYBE-TODO this seems like it could be handled by a simple parser rather
-	// than the complex regexp (https://en.wikipedia.org/wiki/Web_colors#CSS_colors)
+	// than the excessive regexp (https://en.wikipedia.org/wiki/Web_colors#CSS_colors)
 	return false
 }
 
@@ -1372,7 +1450,10 @@ var rxSemVer = regexp.MustCompile(`^(?i)(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-
 // For reference: https://semver.org/
 //
 // isvalid:rule
-//	{ "name": "semver", "err": { "text": "must be a valid semver number" } }
+//	{
+//		"name": "semver",
+//		"err": { "text": "must be a valid semver number" }
+//	}
 func SemVer(v string) bool {
 	return rxSemVer.MatchString(v)
 }
@@ -1382,7 +1463,10 @@ var rxSlug = regexp.MustCompile(`^(?:(?:[a-z0-9]+)(?:-[a-z0-9]+)?)+$`)
 // Slug reports whether or not v is a valid slug.
 //
 // isvalid:rule
-//	{ "name": "slug", "err": { "text": "must be a valid slug" } }
+//	{
+//		"name": "slug",
+//		"err": { "text": "must be a valid slug" }
+//	}
 func Slug(v string) bool {
 	return rxSlug.MatchString(v)
 }
@@ -1439,33 +1523,40 @@ func StrongPassword(v string, opts *StrongPasswordOpts) bool {
 		num >= opts.MinNumbers && sym >= opts.MinSymbols
 }
 
-// URI reports whether or not v is a valid Uniform Resource Identifier.
-//
-// isvalid:rule
-//	{
-//		"name": "uri",
-//		"err": { "text": "must be a valid URI" }
-//	}
-func URI(v string) bool {
-	// TODO
-	return false
-}
-
 // URL reports whether or not v is a valid Uniform Resource Locator.
 //
 // isvalid:rule
-//	{ "name": "url", "err": {"text": "must be a valid URL"} }
+//	{
+//		"name": "url",
+//		"err": { "text": "must be a valid URL" }
+//	}
 func URL(v string) bool {
 	// TODO
 	return false
 }
 
+var rxUUIDv3 = regexp.MustCompile(`^(?i)[0-9A-F]{8}-[0-9A-F]{4}-3[0-9A-F]{3}-[0-9A-F]{4}-[0-9A-F]{12}$`)
+var rxUUIDv4 = regexp.MustCompile(`^(?i)[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$`)
+var rxUUIDv5 = regexp.MustCompile(`^(?i)[0-9A-F]{8}-[0-9A-F]{4}-5[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$`)
+
 // UUID reports whether or not v is a valid Universally Unique IDentifier.
+// NOTE: only versions 3, 4, and 5 are currently supported.
 //
 // isvalid:rule
-//	{ "name": "uuid", "opt_min": 0, "opt_max": 5, "err": {"text": "must be a valid UUID"} }
-func UUID(v string, ver ...int) bool {
-	// TODO
+//	{
+//		"name": "uuid",
+//		"opts": [[ { "key": null, "value": "4" } ]],
+//		"err": { "text": "must be a valid UUID" }
+//	}
+func UUID(v string, ver int) bool {
+	switch ver {
+	case 3:
+		return rxUUIDv3.MatchString(v)
+	case 4:
+		return rxUUIDv4.MatchString(v)
+	case 5:
+		return rxUUIDv5.MatchString(v)
+	}
 	return false
 }
 
@@ -1474,7 +1565,10 @@ var rxUint = regexp.MustCompile(`^\+?[0-9]+$`)
 // Uint reports whether or not v represents a valid unsigned integer.
 //
 // isvalid:rule
-//	{ "name": "uint", "err": {"text": "string content must match an unsigned integer"} }
+//	{
+//		"name": "uint",
+//		"err": { "text": "string content must match an unsigned integer" }
+//	}
 func Uint(v string) bool {
 	return rxUint.MatchString(v)
 }
@@ -1482,7 +1576,10 @@ func Uint(v string) bool {
 // UpperCase reports whether or not v is an all upper-case string.
 //
 // isvalid:rule
-//	{ "name": "upper", "err": { "text": "must contain only upper-case characters" } }
+//	{
+//		"name": "upper",
+//		"err": { "text": "must contain only upper-case characters" }
+//	}
 func UpperCase(v string) bool {
 	return v == strings.ToUpper(v)
 }
@@ -1490,19 +1587,22 @@ func UpperCase(v string) bool {
 // VAT reports whether or not v is a valid Value Added Tax number.
 //
 // isvalid:rule
-//	{ "name": "vat", "err": {"text": "must be a valid VAT number"} }
+//	{
+//		"name": "vat",
+//		"err": { "text": "must be a valid VAT number" }
+//	}
 func VAT(v string) bool {
-	// TODO
-
-	// https://en.wikipedia.org/wiki/VAT_identification_number
-
+	// TODO https://en.wikipedia.org/wiki/VAT_identification_number
 	return false
 }
 
 // Zip reports whether or not v is a valid zip code.
 //
 // isvalid:rule
-//	{ "name": "zip", "err": {"text": "must be a valid zip code"} }
+//	{
+//		"name": "zip",
+//		"err": { "text": "must be a valid zip code" }
+//	}
 func Zip(v string, cc ...string) bool {
 	// TODO
 	return false

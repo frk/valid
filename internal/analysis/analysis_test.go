@@ -212,14 +212,6 @@ func TestAnalysisRun(t *testing.T) {
 		name: "AnalysisTestBAD_TypeKindStringURLValidator",
 		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
 	}, {
-		name: "AnalysisTestBAD_RuleOptionNumURIValidator",
-		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Options: []*RuleOption{{Value: "foo", Type: OptionTypeString}}},
-		},
-	}, {
-		name: "AnalysisTestBAD_TypeKindStringURIValidator",
-		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
-	}, {
 		name: "AnalysisTestBAD_RuleOptionNumPANValidator",
 		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
 			r: &Rule{Options: []*RuleOption{{Value: "foo", Type: OptionTypeString}}},
@@ -392,11 +384,6 @@ func TestAnalysisRun(t *testing.T) {
 			opt: &RuleOption{Value: "z", Type: OptionTypeField},
 		},
 	}, {
-		name: "AnalysisTestBAD_RuleOptionValueConflictUUIDValidator",
-		err: &anError{Code: errRuleOptionValueConflict, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			opt: &RuleOption{Value: "4", Type: OptionTypeInt},
-		},
-	}, {
 		name: "AnalysisTestBAD_RuleOptionNumUUIDValidator",
 		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
 			r: &Rule{Options: []*RuleOption{
@@ -492,68 +479,6 @@ func TestAnalysisRun(t *testing.T) {
 				{Value: "8", Type: OptionTypeInt},
 				{Value: "10", Type: OptionTypeInt},
 			}},
-		},
-	}, {
-		name: "AnalysisTestBAD_TypeKindStringISOValidator",
-		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
-	}, {
-		name: "AnalysisTestBAD_RuleOptionTypeISOValidator",
-		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			opt: &RuleOption{Value: "foo", Type: OptionTypeString},
-		},
-	}, {
-		name: "AnalysisTestBAD_RuleOptionType2ISOValidator",
-		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			opt: &RuleOption{Value: "true", Type: OptionTypeBool},
-		},
-	}, {
-		name: "AnalysisTestBAD_RuleOptionType3ISOValidator",
-		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			opt: &RuleOption{Value: "0.2", Type: OptionTypeFloat},
-		},
-	}, {
-		name: "AnalysisTestBAD_RuleOptionTypeReferenceKindISOValidator",
-		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			opt: &RuleOption{Value: "x", Type: OptionTypeField},
-		},
-	}, {
-		name: "AnalysisTestBAD_RuleOptionNumISOValidator",
-		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
-	}, {
-		name: "AnalysisTestBAD_RuleOptionNum2ISOValidator",
-		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Options: []*RuleOption{{Value: "6", Type: OptionTypeInt}, {Value: "8", Type: OptionTypeInt}}},
-		},
-	}, {
-		name: "AnalysisTestBAD_TypeKindStringRFCValidator",
-		err:  &anError{Code: errRuleFuncFieldType, a: &analysis{}, f: &StructField{}, r: &Rule{}},
-	}, {
-		name: "AnalysisTestBAD_RuleOptionTypeRFCValidator",
-		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			opt: &RuleOption{Value: "foo", Type: OptionTypeString},
-		},
-	}, {
-		name: "AnalysisTestBAD_RuleOptionType2RFCValidator",
-		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			opt: &RuleOption{Value: "true", Type: OptionTypeBool},
-		},
-	}, {
-		name: "AnalysisTestBAD_RuleOptionType3RFCValidator",
-		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			opt: &RuleOption{Value: "0.2", Type: OptionTypeFloat},
-		},
-	}, {
-		name: "AnalysisTestBAD_RuleOptionTypeReferenceKindRFCValidator",
-		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			opt: &RuleOption{Value: "x", Type: OptionTypeField},
-		},
-	}, {
-		name: "AnalysisTestBAD_RuleOptionNumRFCValidator",
-		err:  &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{}, r: &Rule{}},
-	}, {
-		name: "AnalysisTestBAD_RuleOptionNum2RFCValidator",
-		err: &anError{Code: errRuleOptionCount, a: &analysis{}, f: &StructField{},
-			r: &Rule{Options: []*RuleOption{{Value: "6", Type: OptionTypeInt}, {Value: "8", Type: OptionTypeInt}}},
 		},
 	}, {
 		name: "AnalysisTestBAD_TypeKindStringRegexpValidator",
@@ -1128,17 +1053,6 @@ func TestAnalysisRun(t *testing.T) {
 							Tag:     tagutil.Tag{"is": []string{"required:@create"}},
 							Type:    Type{Kind: TypeKindString},
 							RuleTag: &TagNode{Rules: []*Rule{{Name: "required", Context: "create"}}},
-							// NOTE the #key is dropped for now ...
-							// }, {
-							// 	Name: "F3", Key: "F3", IsExported: true,
-							// 	Tag:     tagutil.Tag{"is": []string{"required:#key"}},
-							// 	Type:    Type{Kind: TypeKindString},
-							// 	RuleTag: &TagNode{Rules: []*Rule{{Name: "required"}, {Name: "#key"}}},
-							// }, {
-							// 	Name: "F4", Key: "F4", IsExported: true,
-							// 	Tag:     tagutil.Tag{"is": []string{"required:@create:#key"}},
-							// 	Type:    Type{Kind: TypeKindString},
-							// 	RuleTag: &TagNode{Rules: []*Rule{{Name: "required", Context: "create"}, {Name: "#key"}}},
 						}, {
 							Name: "F5", Key: "F5", IsExported: true,
 							Tag:     tagutil.Tag{"is": []string{"email"}},
@@ -1149,11 +1063,6 @@ func TestAnalysisRun(t *testing.T) {
 							Tag:     tagutil.Tag{"is": []string{"url"}},
 							Type:    Type{Kind: TypeKindString},
 							RuleTag: &TagNode{Rules: []*Rule{{Name: "url"}}},
-						}, {
-							Name: "F7", Key: "F7", IsExported: true,
-							Tag:     tagutil.Tag{"is": []string{"uri"}},
-							Type:    Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "uri"}}},
 						}, {
 							Name: "F8", Key: "F8", IsExported: true,
 							Tag:     tagutil.Tag{"is": []string{"pan"}},
@@ -1243,9 +1152,11 @@ func TestAnalysisRun(t *testing.T) {
 							}}}},
 						}, {
 							Name: "F23", Key: "F23", IsExported: true,
-							Tag:     tagutil.Tag{"is": []string{"uuid"}},
-							Type:    Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "uuid"}}},
+							Tag:  tagutil.Tag{"is": []string{"uuid"}},
+							Type: Type{Kind: TypeKindString},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "uuid", Options: []*RuleOption{
+								{Value: "4", Type: OptionTypeInt},
+							}}}},
 						}, {
 							Name: "F24", Key: "F24", IsExported: true,
 							Tag:  tagutil.Tag{"is": []string{"uuid:3"}},
@@ -1322,20 +1233,6 @@ func TestAnalysisRun(t *testing.T) {
 							Type: Type{Kind: TypeKindString},
 							RuleTag: &TagNode{Rules: []*Rule{{Name: "mac", Options: []*RuleOption{
 								{Value: "SomeVersion", Type: OptionTypeField},
-							}}}},
-						}, {
-							Name: "F35", Key: "F35", IsExported: true,
-							Tag:  tagutil.Tag{"is": []string{"iso:1234"}},
-							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "iso", Options: []*RuleOption{
-								{Value: "1234", Type: OptionTypeInt},
-							}}}},
-						}, {
-							Name: "F36", Key: "F36", IsExported: true,
-							Tag:  tagutil.Tag{"is": []string{"rfc:1234"}},
-							Type: Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "rfc", Options: []*RuleOption{
-								{Value: "1234", Type: OptionTypeInt},
 							}}}},
 						}, {
 							Name: "F37", Key: "F37", IsExported: true,

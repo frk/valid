@@ -11,17 +11,14 @@ type UserInput struct {
 	SomeVersion int
 	SomeValue   string
 
-	F0 string `is:"-"`
-	F1 string `is:"required"`
-	F2 string `is:"required:@create"`
-
-	// NOTE the #key is dropped for now ...
-	// F3  string `is:"required:#key"`
-	// F4  string `is:"required:@create:#key"`
-
+	F0  string `is:"-"`
+	F1  string `is:"required"`
+	F2  string `is:"required:@create"`
+	F3  string `is:"-"`
+	F4  string `is:"-"`
 	F5  string `is:"email"`
 	F6  string `is:"url"`
-	F7  string `is:"uri"`
+	F7  string `is:"-"`
 	F8  string `is:"pan"`
 	F9  string `is:"cvv"`
 	F10 string `is:"ssn"`
@@ -55,8 +52,8 @@ type UserInput struct {
 	F33 string `is:"mac:8"`
 	F34 string `is:"mac:&SomeVersion"`
 
-	F35 string `is:"iso:1234"`
-	F36 string `is:"rfc:1234"`
+	F35 string `is:"-"`
+	F36 string `is:"-"`
 
 	F37 string `is:"re:\"^[a-z]+\\[[0-9]+\\]$\""`
 	F38 string `is:"re:\"\\w+\""`
