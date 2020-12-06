@@ -17,7 +17,7 @@ func (v AlnumValidator) Validate() error {
 	}
 	if v.F3 == nil || *v.F3 == nil || len(**v.F3) == 0 {
 		return errors.New("F3 is required")
-	} else if !isvalid.Alnum(**v.F3, "sk", "cs") {
+	} else if !isvalid.Alnum(**v.F3, "sk") {
 		return errors.New("F3 must be an alphanumeric string")
 	}
 	if !isvalid.Alpha(v.F4, "en") {
@@ -28,7 +28,7 @@ func (v AlnumValidator) Validate() error {
 	}
 	if v.F6 == nil || *v.F6 == nil || len(**v.F6) == 0 {
 		return errors.New("F6 is required")
-	} else if !isvalid.Alpha(**v.F6, "sk", "cs") {
+	} else if !isvalid.Alpha(**v.F6, "cs") {
 		return errors.New("F6 must be an alphabetic string")
 	}
 	return nil

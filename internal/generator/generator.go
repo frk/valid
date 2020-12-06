@@ -799,7 +799,9 @@ func newOptionFieldSelectorExpr(g *generator, r *analysis.Rule, o *analysis.Rule
 		last = f
 	}
 
-	if t.NeedsConversion(last.Type) {
+	if t.PtrOf(last.Type) {
+		x = GO.UnaryExpr{Op: GO.UnaryAmp, X: x}
+	} else if t.NeedsConversion(last.Type) {
 		cx := GO.CallExpr{}
 		cx.Fun = GO.Ident{last.Type.String()}
 		cx.Args = GO.ArgsList{List: x}

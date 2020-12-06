@@ -6,12 +6,14 @@ package isvalid
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"log"
 	"net"
 	"net/mail"
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/frk/isvalid/internal/tables"
 )
@@ -946,7 +948,11 @@ func ISSN(v string, requireHyphen, caseSensitive bool) bool {
 // isvalid:rule
 //	{ "name": "in", "err": { "text": "must be in the list" } }
 func In(v interface{}, list ...interface{}) bool {
-	// TODO
+	for _, item := range list {
+		if v == item {
+			return true
+		}
+	}
 	return false
 }
 
@@ -960,13 +966,14 @@ func Int(v string) bool {
 	return rxInt.MatchString(v)
 }
 
-// JSON reports whether or not v is valid JSON.
+// JSON reports whether or not v is a valid JSON value. NOTE: the input is validated
+// using json.Unmarshal which accepts primitive values as long as they are JSON values.
 //
 // isvalid:rule
 //	{ "name": "json", "err": { "text": "must be a valid JSON" } }
-func JSON(v string) bool {
-	// TODO
-	return false
+func JSON(v []byte) bool {
+	var x interface{}
+	return json.Unmarshal(v, &x) == nil
 }
 
 // JWT reports whether or not v is a valid JSON Web Token.
@@ -974,32 +981,74 @@ func JSON(v string) bool {
 // isvalid:rule
 //	{ "name": "jwt", "err": { "text": "must be a valid JWT" } }
 func JWT(v string) bool {
-	// TODO
-	return false
+	parts := strings.Split(v, ".")
+	if len(parts) < 2 || len(parts) > 3 {
+		return false
+	}
+
+	for _, part := range parts {
+		if !Base64(part, true) {
+			return false
+		}
+	}
+	return true
 }
+
+var rxLat = regexp.MustCompile(`^\(?[+-]?(?:90(?:\.0+)?|[1-8]?\d(?:\.\d+)?)$`)
+var rxLong = regexp.MustCompile(`^\s?[+-]?(?:180(?:\.0+)?|1[0-7]\d(?:\.\d+)?|\d{1,2}(?:\.\d+)?)\)?$`)
+
+var rxLatDMS = regexp.MustCompile(`^(?:(?:[1-8]?\d)\D+(?:[1-5]?\d|60)\D+(?:[1-5]?\d|60)(?:\.\d+)?|90\D+0\D+0)\D+[NSns]?$`)
+var rxLongDMS = regexp.MustCompile(`^\s*(?:[1-7]?\d{1,2}\D+(?:[1-5]?\d|60)\D+(?:[1-5]?\d|60)(?:\.\d+)?|180\D+0\D+0)\D+[EWew]?$`)
 
 // LatLong reports whether or not v is a valid latitude-longitude coordinate string.
 //
 // isvalid:rule
-//	{ "name": "latlong", "err": {"text": "must be a valid latitude-longitude coordinate"} }
-func LatLong(v string) bool {
-	// TODO
-	return false
+//	{
+//		"name": "latlong",
+//		"opts": [[
+//			{ "key": null, "value": "false" },
+//			{ "key": "dms", "value": "true" }
+//		]],
+//		"err": { "text": "must be a valid latitude-longitude coordinate" }
+//	}
+func LatLong(v string, dms bool) bool {
+	pair := strings.Split(v, ",")
+	if len(pair) != 2 || len(pair[0]) == 0 || len(pair[1]) == 0 {
+		return false
+	}
+	if (pair[0][0] == '(' && pair[1][len(pair[1])-1] != ')') ||
+		(pair[0][0] != '(' && pair[1][len(pair[1])-1] == ')') {
+		return false
+	}
+	if dms {
+		return rxLatDMS.MatchString(pair[0]) && rxLongDMS.MatchString(pair[1])
+	}
+	return rxLat.MatchString(pair[0]) && rxLong.MatchString(pair[1])
 }
+
+var rxLocale = regexp.MustCompile(`^[A-z]{2,4}(?:[_-](?:[A-z]{4}|[\d]{3}))?(?:[_-](?:[A-z]{2}|[\d]{3}))?$`)
 
 // Locale reports whether or not v is a valid locale.
 //
 // isvalid:rule
-//	{ "name": "locale", "err": {"text": "must be a valid locale"} }
+//	{
+//		"name": "locale",
+//		"err": { "text": "must be a valid locale" }
+//	}
 func Locale(v string) bool {
-	// TODO
-	return false
+	if v == "en_US_POSIX" || v == "ca_ES_VALENCIA" {
+		return true
+	}
+	return rxLocale.MatchString(v)
 }
 
 // LowerCase reports whether or not v is an all lower-case string.
 //
 // isvalid:rule
-//	{ "name": "lower", "err": {"text": "must contain only lower-case characters"} }
+//	{
+//		"name": "lower",
+//		"err": { "text": "must contain only lower-case characters" }
+//	}
 func LowerCase(v string) bool {
 	return v == strings.ToLower(v)
 }
@@ -1061,7 +1110,10 @@ func MAC(v string, space int) bool {
 // MD5 reports whether or not v is a valid MD5 hash.
 //
 // isvalid:rule
-//	{ "name": "md5", "err": {"text": "must be a valid MD5 hash"} }
+//	{
+//		"name": "md5",
+//		"err": { "text": "must be a valid MD5 hash" }
+//	}
 func MD5(v string) bool {
 	return len(v) == 32 && rxHash.MatchString(v)
 }
@@ -1070,10 +1122,26 @@ var rxMIMESimple = regexp.MustCompile(`^(?i)(?:application|audio|font|image|mess
 var rxMIMEText = regexp.MustCompile(`^(?i)text\/[a-zA-Z0-9\.\-\+]{1,100};\s?charset=(?:"[a-zA-Z0-9\.\-\+\s]{0,70}"|[a-zA-Z0-9\.\-\+]{0,70})(?:\s?\([a-zA-Z0-9\.\-\+\s]{1,20}\))?$`)
 var rxMIMEMultipart = regexp.MustCompile(`^(?i)multipart\/[a-zA-Z0-9\.\-\+]{1,100}(?:;\s?(?:boundary|charset)=(?:"[a-zA-Z0-9\.\-\+\s]{0,70}"|[a-zA-Z0-9\.\-\+]{0,70})(?:\s?\([a-zA-Z0-9\.\-\+\s]{1,20}\))?){0,2}$`)
 
-// MIME reports whether or not v is a valid Media type (or MIME type).
+// MIME reports whether or not v is of a valid MIME type format.
+//
+// NOTE: This function only checks is the string format follows the etablished
+// rules by the according RFC specifications. This function supports 'charset'
+// in textual media types (https://tools.ietf.org/html/rfc6657).
+//
+// This function does not check against all the media types listed by the IANA
+// (https://www.iana.org/assignments/media-types/media-types.xhtml)
+//
+// More informations in the RFC specifications:
+//	- https://tools.ietf.org/html/rfc2045
+// 	- https://tools.ietf.org/html/rfc2046
+// 	- https://tools.ietf.org/html/rfc7231#section-3.1.1.1
+// 	- https://tools.ietf.org/html/rfc7231#section-3.1.1.5
 //
 // isvalid:rule
-//	{ "name": "mime", "err": {"text": "must be a valid media type"} }
+//	{
+//		"name": "mime",
+//		"err": { "text": "must be a valid media type" }
+//	}
 func MIME(v string) bool {
 	return rxMIMESimple.MatchString(v) || rxMIMEText.MatchString(v) || rxMIMEMultipart.MatchString(v)
 }
@@ -1083,24 +1151,40 @@ var rxMagnetURI = regexp.MustCompile(`^(?i)magnet:\?xt=urn:[a-z0-9]+:[a-z0-9]{32
 // MagnetURI reports whether or not v is a valid magned URI.
 //
 // isvalid:rule
-//	{ "name": "magneturi", "err": {"text": "must be a valid magnet URI"} }
+//	{
+//		"name": "magneturi",
+//		"err": { "text": "must be a valid magnet URI" }
+//	}
 func MagnetURI(v string) bool {
 	return rxMagnetURI.MatchString(v)
 }
 
-// Match reports whether or not the v contains any match of the regular expression re.
-// NOTE: Match will panic if re has not been registered upfront with RegisterRegexp.
+// Match reports whether or not v contains any match of the *registered* regular
+// expression re. NOTE: re MUST be registered upfront with RegisterRegexp otherwise
+// Match will return false even if v matches the regular expression.
 //
 // isvalid:rule
-//	{ "name": "re", "err": {"text": "must match the regular expression", "with_opts": true} }
+//	{
+//		"name": "re",
+//		"err": {
+//			"text": "must match the regular expression",
+//			"with_opts": true
+//		}
+//	}
 func Match(v string, re string) bool {
-	return regexpCache.m[re].MatchString(v)
+	if rx, ok := rxcache.m[re]; ok {
+		return rx.MatchString(v)
+	}
+	return false
 }
 
 // MongoId reports whether or not v is a valid hex-encoded representation of a MongoDB ObjectId.
 //
 // isvalid:rule
-//	{ "name": "mongoid", "err": {"text": "must be a valid Mongo Object Id"} }
+//	{
+//		"name": "mongoid",
+//		"err": { "text": "must be a valid Mongo Object Id" }
+//	}
 func MongoId(v string) bool {
 	return len(v) == 24 && rxHex.MatchString(v)
 }
@@ -1110,7 +1194,10 @@ var rxNumeric = regexp.MustCompile(`^[+-]?[0-9]*\.?[0-9]+$`)
 // Numeric reports whether or not v is a valid numeric string.
 //
 // isvalid:rule
-//	{ "name": "numeric", "err": {"text": "string content must match a numeric value"} }
+//	{
+//		"name": "numeric",
+//		"err": { "text": "string content must match a numeric value" }
+//	}
 func Numeric(v string) bool {
 	return rxNumeric.MatchString(v)
 }
@@ -1120,7 +1207,10 @@ var rxOctal = regexp.MustCompile(`^(?:0[oO])?[0-7]+$`)
 // Octal reports whether or not v represents a valid octal integer.
 //
 // isvalid:rule
-//	{ "name": "octal", "err": {"text": "string content must match an octal number"} }
+//	{
+//		"name": "octal",
+//		"err": { "text": "string content must match an octal number" }
+//	}
 func Octal(v string) bool {
 	return rxOctal.MatchString(v)
 }
@@ -1130,7 +1220,10 @@ var rxPAN = regexp.MustCompile(`^(?:4[0-9]{12}(?:[0-9]{3,6})?|5[1-5][0-9]{14}|(?
 // PAN reports whether or not v is a valid Primary Account Number or Credit Card number.
 //
 // isvalid:rule
-//	{ "name": "pan", "err": { "text": "must be a valid PAN" } }
+//	{
+//		"name": "pan",
+//		"err": { "text": "must be a valid PAN" }
+//	}
 func PAN(v string) bool {
 	v = rmchar(v, func(r rune) bool { return r == ' ' || r == '-' })
 	if !rxPAN.MatchString(v) {
@@ -1159,7 +1252,10 @@ func PAN(v string) bool {
 // PassportNumber reports whether or not v is a valid passport number.
 //
 // isvalid:rule
-//	{ "name": "passport", "err": { "text": "must be a valid passport number" } }
+//	{
+//		"name": "passport",
+//		"err": { "text": "must be a valid passport number" }
+//	}
 func PassportNumber(v string) bool {
 	// TODO
 	return false
@@ -1168,7 +1264,10 @@ func PassportNumber(v string) bool {
 // Phone reports whether or not v is a valid phone number.
 //
 // isvalid:rule
-//	{ "name": "phone", "err": { "text": "must be a valid phone number" } }
+//	{
+//		"name": "phone",
+//		"err": { "text": "must be a valid phone number" }
+//	}
 func Phone(v string, cc ...string) bool {
 	// TODO
 	return false
@@ -1177,7 +1276,10 @@ func Phone(v string, cc ...string) bool {
 // Port reports whether or not v is a valid port number.
 //
 // isvalid:rule
-//	{ "name": "port", "err": { "text": "must be a valid port number" } }
+//	{
+//		"name": "port",
+//		"err": { "text": "must be a valid port number" }
+//	}
 func Port(v string) bool {
 	_, err := strconv.ParseUint(v, 10, 16)
 	return err == nil
@@ -1200,12 +1302,12 @@ var rxRGBAPercent = regexp.MustCompile(`^rgba\((?:(?:[0-9]%|[1-9][0-9]%|100%),){
 // RGB reports whether or not v is a valid RGB color.
 //
 // isvalid:rule
-//	{ "name": "rgb", "err": { "text": "must be a valid RGB color" } }
+//	{
+//		"name": "rgb",
+//		"err": { "text": "must be a valid RGB color" }
+//	}
 func RGB(v string) bool {
-
-	// TODO https://en.wikipedia.org/wiki/Web_colors#CSS_colors
-
-	if strings.HasPrefix(v, "rgba") {
+	if len(v) >= 4 && v[:4] == "rgba" {
 		if strings.Contains(v, "%") {
 			return rxRGBAPercent.MatchString(v)
 		} else {
@@ -1218,16 +1320,48 @@ func RGB(v string) bool {
 			return rxRGB.MatchString(v)
 		}
 	}
+
+	// MAYBE-TODO this seems like it could be handled by a simple parser rather
+	// than the complex regexp (https://en.wikipedia.org/wiki/Web_colors#CSS_colors)
 	return false
 }
 
-// SSN reports whether or not v is a valid Social Security Number.
+// SSN reports whether or not v has a valid Social Security Number format.
 //
 // isvalid:rule
-//	{ "name": "ssn", "err": { "text": "must be a valid SSN" } }
+//	{
+//		"name": "ssn",
+//		"err": { "text": "must be a valid SSN" }
+//	}
 func SSN(v string) bool {
-	// TODO
-	return false
+	if len(v) == 11 {
+		if v[3] != '-' || v[6] != '-' {
+			return false
+		}
+		v = v[:3] + v[4:6] + v[7:]
+	}
+	if len(v) != 9 {
+		return false
+	}
+
+	// must be digits only
+	for _, r := range v {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+
+	area, group, serial := v[:3], v[3:5], v[5:]
+	// no digit group can have all zeroes
+	if area == "000" || group == "00" || serial == "0000" {
+		return false
+	}
+	// area cannot be 666 or 900 and above
+	if area == "666" || area[0] == '9' {
+		return false
+	}
+
+	return true
 }
 
 var rxSemVer = regexp.MustCompile(`^(?i)(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)` +
@@ -1253,19 +1387,65 @@ func Slug(v string) bool {
 	return rxSlug.MatchString(v)
 }
 
+type StrongPasswordOpts struct {
+	MinLen     int
+	MinLower   int
+	MinUpper   int
+	MinNumbers int
+	MinSymbols int
+}
+
+var DefaultStrongPasswordOpts = StrongPasswordOpts{
+	MinLen:     8,
+	MinLower:   1,
+	MinUpper:   1,
+	MinNumbers: 1,
+	MinSymbols: 1,
+}
+
 // StrongPassword reports whether or not v is a strong password.
 //
 // isvalid:rule
-//	{ "name": "strongpass", "err": { "text": "must be a strong password" } }
-func StrongPassword(v string) bool {
-	// TODO
-	return false
+//	{
+//		"name": "strongpass",
+//		"opts": [[ { "key": null, "value": "nil" } ]],
+//		"err": { "text": "must be a strong password" }
+//	}
+func StrongPassword(v string, opts *StrongPasswordOpts) bool {
+	if opts == nil {
+		opts = &DefaultStrongPasswordOpts
+	}
+
+	if len(v) < opts.MinLen {
+		return false
+	}
+
+	var lo, up, num, sym int
+	for _, r := range v {
+		if unicode.IsLetter(r) {
+			if unicode.IsUpper(r) {
+				up += 1
+			} else {
+				lo += 1
+			}
+		} else if unicode.IsNumber(r) {
+			num += 1
+		} else {
+			sym += 1
+		}
+	}
+
+	return lo >= opts.MinLower && up >= opts.MinUpper &&
+		num >= opts.MinNumbers && sym >= opts.MinSymbols
 }
 
 // URI reports whether or not v is a valid Uniform Resource Identifier.
 //
 // isvalid:rule
-//	{ "name": "uri", "err": { "text": "must be a valid URI" } }
+//	{
+//		"name": "uri",
+//		"err": { "text": "must be a valid URI" }
+//	}
 func URI(v string) bool {
 	// TODO
 	return false

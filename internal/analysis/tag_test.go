@@ -109,20 +109,20 @@ func TestParseRuleTag(t *testing.T) {
 		tag: `is:"ra:a:b:c,re:foo::321:,ri:1:2:3"`,
 		want: &TagNode{Rules: []*Rule{
 			{Name: "ra", Options: []*RuleOption{
-				{"a", OptionTypeString},
-				{"b", OptionTypeString},
-				{"c", OptionTypeString},
+				{Value: "a", Type: OptionTypeString},
+				{Value: "b", Type: OptionTypeString},
+				{Value: "c", Type: OptionTypeString},
 			}},
 			{Name: "re", Options: []*RuleOption{
-				{"foo", OptionTypeString},
-				{"", OptionTypeUnknown},
-				{"321", OptionTypeInt},
-				{"", OptionTypeUnknown},
+				{Value: "foo", Type: OptionTypeString},
+				{Value: "", Type: OptionTypeUnknown},
+				{Value: "321", Type: OptionTypeInt},
+				{Value: "", Type: OptionTypeUnknown},
 			}},
 			{Name: "ri", Options: []*RuleOption{
-				{"1", OptionTypeInt},
-				{"2", OptionTypeInt},
-				{"3", OptionTypeInt},
+				{Value: "1", Type: OptionTypeInt},
+				{Value: "2", Type: OptionTypeInt},
+				{Value: "3", Type: OptionTypeInt},
 			}},
 		}},
 	}, {

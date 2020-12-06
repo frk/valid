@@ -7,14 +7,19 @@ import (
 )
 
 func Test(t *testing.T) {
-	type Cases []struct {
-		args [][]interface{}
-		pass []string
-		fail []string
-	}
 
-	// convenience type, shorter to type
+	// for testing the Match validator
+	RegisterRegexp(`^(?i)testing$`)
+
+	// convenience types (shorter to type)
 	type args [][]interface{}
+	type vals []interface{}
+
+	type Cases []struct {
+		args args
+		pass vals
+		fail vals
+	}
 
 	testtable := []struct {
 		Name  string
@@ -22,13 +27,13 @@ func Test(t *testing.T) {
 		Cases Cases
 	}{{
 		Name: "ASCII", Func: ASCII, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"foobar",
 				"0987654321",
 				"test@example.com",
 				"1234abcDEF",
 			},
-			fail: []string{
+			fail: vals{
 				"ｆｏｏbar",
 				"ｘｙｚ０９８",
 				"１２３456",
@@ -38,12 +43,12 @@ func Test(t *testing.T) {
 	}, {
 		Name: "Alpha", Func: Alpha, Cases: Cases{{
 			args: args{{""}},
-			pass: []string{
+			pass: vals{
 				"abc",
 				"ABC",
 				"FoObar",
 			},
-			fail: []string{
+			fail: vals{
 				"abc1",
 				"  foo  ",
 				"",
@@ -54,7 +59,7 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"aze"}, {"az"}},
-			pass: []string{
+			pass: vals{
 				"Azərbaycan",
 				"Bakı",
 				"üöğıəçş",
@@ -62,7 +67,7 @@ func Test(t *testing.T) {
 				"dahaBirDüzgünString",
 				"abcçdeəfgğhxıijkqlmnoöprsştuüvyz",
 			},
-			fail: []string{
+			fail: vals{
 				"rəqəm1",
 				"  foo  ",
 				"",
@@ -72,13 +77,13 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"bul"}, {"bg"}},
-			pass: []string{
+			pass: vals{
 				"абв",
 				"АБВ",
 				"жаба",
 				"яГоДа",
 			},
-			fail: []string{
+			fail: vals{
 				"abc1",
 				"  foo  ",
 				"",
@@ -88,21 +93,21 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"ces"}, {"cs"}},
-			pass: []string{
+			pass: vals{
 				"žluťoučký",
 				"KŮŇ",
 				"Pěl",
 				"Ďábelské",
 				"ódy",
 			},
-			fail: []string{
+			fail: vals{
 				"ábc1",
 				"  fůj  ",
 				"",
 			},
 		}, {
 			args: args{{"slk"}, {"sk"}},
-			pass: []string{
+			pass: vals{
 				"môj",
 				"ľúbím",
 				"mäkčeň",
@@ -114,7 +119,7 @@ func Test(t *testing.T) {
 				"Ďábelské",
 				"ódy",
 			},
-			fail: []string{
+			fail: vals{
 				"1moj",
 				"你好世界",
 				"  Привет мир  ",
@@ -122,51 +127,51 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"dan"}, {"da"}},
-			pass: []string{
+			pass: vals{
 				"aøå",
 				"Ære",
 				"Øre",
 				"Åre",
 			},
-			fail: []string{
+			fail: vals{
 				"äbc123",
 				"ÄBC11",
 				"",
 			},
 		}, {
 			args: args{{"nld"}, {"nl"}},
-			pass: []string{
+			pass: vals{
 				"Kán",
 				"één",
 				"vóór",
 				"nú",
 				"héél",
 			},
-			fail: []string{
+			fail: vals{
 				"äca ",
 				"abcß",
 				"Øre",
 			},
 		}, {
 			args: args{{"deu"}, {"de"}},
-			pass: []string{
+			pass: vals{
 				"äbc",
 				"ÄBC",
 				"FöÖbär",
 				"Heiß",
 			},
-			fail: []string{
+			fail: vals{
 				"äbc1",
 				"  föö  ",
 				"",
 			},
 		}, {
 			args: args{{"hun"}, {"hu"}},
-			pass: []string{
+			pass: vals{
 				"árvíztűrőtükörfúrógép",
 				"ÁRVÍZTŰRŐTÜKÖRFÚRÓGÉP",
 			},
-			fail: []string{
+			fail: vals{
 				"äbc1",
 				"  fäö  ",
 				"Heiß",
@@ -174,13 +179,13 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"por"}, {"pt"}},
-			pass: []string{
+			pass: vals{
 				"palíndromo",
 				"órgão",
 				"qwértyúão",
 				"àäãcëüïÄÏÜ",
 			},
-			fail: []string{
+			fail: vals{
 				"12abc",
 				"Heiß",
 				"Øre",
@@ -189,7 +194,7 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"ita"}, {"it"}},
-			pass: []string{
+			pass: vals{
 				"àéèìîóòù",
 				"correnti",
 				"DEFINIZIONE",
@@ -199,7 +204,7 @@ func Test(t *testing.T) {
 				"PÉSCA",
 				"genî",
 			},
-			fail: []string{
+			fail: vals{
 				"äbc123",
 				"ÄBC11",
 				"æøå",
@@ -207,7 +212,7 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"vie"}, {"vi"}},
-			pass: []string{
+			pass: vals{
 				"thiến",
 				"nghiêng",
 				"xin",
@@ -215,18 +220,18 @@ func Test(t *testing.T) {
 				"thế",
 				"giới",
 			},
-			fail: []string{
+			fail: vals{
 				"thầy3",
 				"Ba gà",
 				"",
 			},
 		}, {
 			args: args{{"ara"}, {"ar"}},
-			pass: []string{
+			pass: vals{
 				"أبت",
 				"اَبِتَثّجً",
 			},
-			fail: []string{
+			fail: vals{
 				"١٢٣أبت",
 				"١٢٣",
 				"abc1",
@@ -239,13 +244,13 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"fas"}, {"fa"}},
-			pass: []string{
+			pass: vals{
 				"پدر",
 				"مادر",
 				"برادر",
 				"خواهر",
 			},
-			fail: []string{
+			fail: vals{
 				"فارسی۱۲۳",
 				"۱۶۴",
 				"abc1",
@@ -258,11 +263,11 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"kur"}, {"ku"}},
-			pass: []string{
+			pass: vals{
 				"ئؤڤگێ",
 				"کوردستان",
 			},
-			fail: []string{
+			fail: vals{
 				"ئؤڤگێ١٢٣",
 				"١٢٣",
 				"abc1",
@@ -275,20 +280,20 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"nob"}, {"nb"}},
-			pass: []string{
+			pass: vals{
 				"aøå",
 				"Ære",
 				"Øre",
 				"Åre",
 			},
-			fail: []string{
+			fail: vals{
 				"äbc123",
 				"ÄBC11",
 				"",
 			},
 		}, {
 			args: args{{"pol"}, {"pl"}},
-			pass: []string{
+			pass: vals{
 				"kreską",
 				"zamknięte",
 				"zwykłe",
@@ -297,55 +302,55 @@ func Test(t *testing.T) {
 				"święty",
 				"Pozwól",
 			},
-			fail: []string{
+			fail: vals{
 				"12řiď ",
 				"blé!!",
 				"föö!2!",
 			},
 		}, {
 			args: args{{"srp"}, {"sr"}},
-			pass: []string{
+			pass: vals{
 				"ШћжЂљЕ",
 				"ЧПСТЋЏ",
 			},
-			fail: []string{
+			fail: vals{
 				"řiď ",
 				"blé33!!",
 				"föö!!",
 			},
 		}, {
 			args: args{{"spa"}, {"es"}},
-			pass: []string{
+			pass: vals{
 				"ábcó",
 				"ÁBCÓ",
 				"dormís",
 				"volvés",
 				"español",
 			},
-			fail: []string{
+			fail: vals{
 				"äca ",
 				"abcß",
 				"föö!!",
 			},
 		}, {
 			args: args{{"swe"}, {"sv"}},
-			pass: []string{
+			pass: vals{
 				"religiös",
 				"stjäla",
 				"västgöte",
 				"Åre",
 			},
-			fail: []string{
+			fail: vals{
 				"AİıÖöÇçŞşĞğÜüZ",
 				"religiös23",
 				"",
 			},
 		}, {
 			args: args{{"tur"}, {"tr"}},
-			pass: []string{
+			pass: vals{
 				"AİıÖöÇçŞşĞğÜüZ",
 			},
-			fail: []string{
+			fail: vals{
 				"0AİıÖöÇçŞşĞğÜüZ1",
 				"  AİıÖöÇçŞşĞğÜüZ  ",
 				"abc1",
@@ -356,10 +361,10 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"ukr"}, {"uk"}},
-			pass: []string{
+			pass: vals{
 				"АБВГҐДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦШЩЬЮЯ",
 			},
-			fail: []string{
+			fail: vals{
 				"0AİıÖöÇçŞşĞğÜüZ1",
 				"  AİıÖöÇçŞşĞğÜüZ  ",
 				"abc1",
@@ -371,13 +376,13 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"ell"}, {"el"}},
-			pass: []string{
+			pass: vals{
 				"αβγδεζηθικλμνξοπρςστυφχψω",
 				"ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ",
 				"άέήίΰϊϋόύώ",
 				"ΆΈΉΊΪΫΎΏ",
 			},
-			fail: []string{
+			fail: vals{
 				"0AİıÖöÇçŞşĞğÜüZ1",
 				"  AİıÖöÇçŞşĞğÜüZ  ",
 				"ÄBC",
@@ -388,11 +393,11 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"heb"}, {"he"}},
-			pass: []string{
+			pass: vals{
 				"בדיקה",
 				"שלום",
 			},
-			fail: []string{
+			fail: vals{
 				"בדיקה123",
 				"  foo  ",
 				"abc1",
@@ -400,23 +405,23 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"fas"}, {"fa"}},
-			pass: []string{
+			pass: vals{
 				"تست",
 				"عزیزم",
 				"ح",
 			},
-			fail: []string{
+			fail: vals{
 				"تست 1",
 				"  عزیزم  ",
 				"",
 			},
 		}, {
 			args: args{{"tha"}, {"th"}},
-			pass: []string{
+			pass: vals{
 				"สวัสดี",
 				"ยินดีต้อนรับเทสเคส",
 			},
-			fail: []string{
+			fail: vals{
 				"สวัสดีHi",
 				"123 ยินดีต้อนรับ",
 				"ยินดีต้อนรับ-๑๒๓",
@@ -425,11 +430,11 @@ func Test(t *testing.T) {
 	}, {
 		Name: "Alnum", Func: Alnum, Cases: Cases{{
 			args: args{{""}, {"eng"}, {"en"}},
-			pass: []string{
+			pass: vals{
 				"abc123",
 				"ABC11",
 			},
-			fail: []string{
+			fail: vals{
 				"abc ",
 				"foo!!",
 				"ÄBC",
@@ -438,14 +443,14 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"aze"}, {"az"}},
-			pass: []string{
+			pass: vals{
 				"Azərbaycan",
 				"Bakı",
 				"abc1",
 				"abcç2",
 				"3kərə4kərə",
 			},
-			fail: []string{
+			fail: vals{
 				"  foo1  ",
 				"",
 				"ab(cd)",
@@ -454,7 +459,7 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"bul"}, {"bg"}},
-			pass: []string{
+			pass: vals{
 				"абв1",
 				"4АБ5В6",
 				"жаба",
@@ -462,24 +467,24 @@ func Test(t *testing.T) {
 				"йЮя",
 				"123",
 			},
-			fail: []string{
+			fail: vals{
 				" ",
 				"789  ",
 				"hello000",
 			},
 		}, {
 			args: args{{"ces"}, {"cs"}},
-			pass: []string{
+			pass: vals{
 				"řiť123",
 				"KŮŇ11",
 			},
-			fail: []string{
+			fail: vals{
 				"řiď ",
 				"blé!!",
 			},
 		}, {
 			args: args{{"slk"}, {"sk"}},
-			pass: []string{
+			pass: vals{
 				"1môj",
 				"2ľúbím",
 				"3mäkčeň",
@@ -491,55 +496,55 @@ func Test(t *testing.T) {
 				"9Ďábelské",
 				"10ódy",
 			},
-			fail: []string{
+			fail: vals{
 				"1moj!",
 				"你好世界",
 				"  Привет мир  ",
 			},
 		}, {
 			args: args{{"dan"}, {"da"}},
-			pass: []string{
+			pass: vals{
 				"ÆØÅ123",
 				"Ære321",
 				"321Øre",
 				"123Åre",
 			},
-			fail: []string{
+			fail: vals{
 				"äbc123",
 				"ÄBC11",
 				"",
 			},
 		}, {
 			args: args{{"nld"}, {"nl"}},
-			pass: []string{
+			pass: vals{
 				"Kán123",
 				"één354",
 				"v4óór",
 				"nú234",
 				"hé54él",
 			},
-			fail: []string{
+			fail: vals{
 				"1äca ",
 				"ab3cß",
 				"Øre",
 			},
 		}, {
 			args: args{{"deu"}, {"de"}},
-			pass: []string{
+			pass: vals{
 				"äbc123",
 				"ÄBC11",
 			},
-			fail: []string{
+			fail: vals{
 				"äca ",
 				"föö!!",
 			},
 		}, {
 			args: args{{"hun"}, {"hu"}},
-			pass: []string{
+			pass: vals{
 				"0árvíztűrőtükörfúrógép123",
 				"0ÁRVÍZTŰRŐTÜKÖRFÚRÓGÉP123",
 			},
-			fail: []string{
+			fail: vals{
 				"1időúr!",
 				"äbc1",
 				"  fäö  ",
@@ -548,13 +553,13 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"por"}, {"pt"}},
-			pass: []string{
+			pass: vals{
 				"palíndromo",
 				"2órgão",
 				"qwértyúão9",
 				"àäãcë4üïÄÏÜ",
 			},
-			fail: []string{
+			fail: vals{
 				"!abc",
 				"Heiß",
 				"Øre",
@@ -563,7 +568,7 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"ita"}, {"it"}},
-			pass: []string{
+			pass: vals{
 				"123àéèìîóòù",
 				"123correnti",
 				"DEFINIZIONE321",
@@ -573,7 +578,7 @@ func Test(t *testing.T) {
 				"PÉS45CA",
 				"gen45î",
 			},
-			fail: []string{
+			fail: vals{
 				"äbc123",
 				"ÄBC11",
 				"æøå",
@@ -581,43 +586,43 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"spa"}, {"es"}},
-			pass: []string{
+			pass: vals{
 				"ábcó123",
 				"ÁBCÓ11",
 			},
-			fail: []string{
+			fail: vals{
 				"äca ",
 				"abcß",
 				"föö!!",
 			},
 		}, {
 			args: args{{"vie"}, {"vi"}},
-			pass: []string{
+			pass: vals{
 				"Thầy3",
 				"3Gà",
 			},
-			fail: []string{
+			fail: vals{
 				"toang!",
 				"Cậu Vàng",
 			},
 		}, {
 			args: args{{"ara"}, {"ar"}},
-			pass: []string{
+			pass: vals{
 				"أبت123",
 				"أبتَُِ١٢٣",
 			},
-			fail: []string{
+			fail: vals{
 				"äca ",
 				"abcß",
 				"föö!!",
 			},
 		}, {
 			args: args{{"fas"}, {"fa"}},
-			pass: []string{
+			pass: vals{
 				"پارسی۱۲۳",
 				"۱۴۵۶",
 			},
-			fail: []string{
+			fail: vals{
 				"äca ",
 				"abcßة",
 				"föö!!",
@@ -626,30 +631,30 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"kur"}, {"ku"}},
-			pass: []string{
+			pass: vals{
 				"ئؤڤگێ١٢٣",
 			},
-			fail: []string{
+			fail: vals{
 				"äca ",
 				"abcß",
 				"föö!!",
 			},
 		}, {
 			args: args{{"nob"}, {"nb"}},
-			pass: []string{
+			pass: vals{
 				"ÆØÅ123",
 				"Ære321",
 				"321Øre",
 				"123Åre",
 			},
-			fail: []string{
+			fail: vals{
 				"äbc123",
 				"ÄBC11",
 				"",
 			},
 		}, {
 			args: args{{"pol"}, {"pl"}},
-			pass: []string{
+			pass: vals{
 				"kre123ską",
 				"zam21knięte",
 				"zw23ykłe",
@@ -658,51 +663,51 @@ func Test(t *testing.T) {
 				"świ23ęty",
 				"Poz1322wól",
 			},
-			fail: []string{
+			fail: vals{
 				"12řiď ",
 				"blé!!",
 				"föö!2!",
 			},
 		}, {
 			args: args{{"srp"}, {"sr"}},
-			pass: []string{
+			pass: vals{
 				"ШћжЂљЕ123",
 				"ЧПСТ132ЋЏ",
 			},
-			fail: []string{
+			fail: vals{
 				"řiď ",
 				"blé!!",
 				"föö!!",
 			},
 		}, {
 			args: args{{"swe"}, {"sv"}},
-			pass: []string{
+			pass: vals{
 				"religiös13",
 				"st23jäla",
 				"västgöte123",
 				"123Åre",
 			},
-			fail: []string{
+			fail: vals{
 				"AİıÖöÇçŞşĞğÜüZ",
 				"foo!!",
 				"",
 			},
 		}, {
 			args: args{{"tur"}, {"tr"}},
-			pass: []string{
+			pass: vals{
 				"AİıÖöÇçŞşĞğÜüZ123",
 			},
-			fail: []string{
+			fail: vals{
 				"AİıÖöÇçŞşĞğÜüZ ",
 				"foo!!",
 				"ÄBC",
 			},
 		}, {
 			args: args{{"ukr"}, {"uk"}},
-			pass: []string{
+			pass: vals{
 				"АБВГҐДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦШЩЬЮЯ123",
 			},
-			fail: []string{
+			fail: vals{
 				"éeoc ",
 				"foo!!",
 				"ÄBC",
@@ -710,13 +715,13 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"ell"}, {"el"}},
-			pass: []string{
+			pass: vals{
 				"αβγδεζηθικλμνξοπρςστυφχψω",
 				"ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ",
 				"20θ",
 				"1234568960",
 			},
-			fail: []string{
+			fail: vals{
 				"0AİıÖöÇçŞşĞğÜüZ1",
 				"  AİıÖöÇçŞşĞğÜüZ  ",
 				"ÄBC",
@@ -726,11 +731,11 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"heb"}, {"he"}},
-			pass: []string{
+			pass: vals{
 				"אבג123",
 				"שלום11",
 			},
-			fail: []string{
+			fail: vals{
 				"אבג ",
 				"לא!!",
 				"abc",
@@ -738,25 +743,25 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"tha"}, {"th"}},
-			pass: []string{
+			pass: vals{
 				"สวัสดี๑๒๓",
 				"ยินดีต้อนรับทั้ง๒คน",
 			},
-			fail: []string{
+			fail: vals{
 				"1.สวัสดี",
 				"ยินดีต้อนรับทั้ง 2 คน",
 			},
 		}},
 	}, {
 		Name: "BIC", Func: BIC, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"SBICKEN1345",
 				"SBICKEN1",
 				"SBICKENY",
 				"SBICKEN1YYP",
 			},
 
-			fail: []string{
+			fail: vals{
 				"SBIC23NXXX",
 				"S23CKENXXXX",
 				"SBICKENXX",
@@ -767,13 +772,13 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "BTC", Func: BTC, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"1MUz4VMYui5qY1mxUiG8BQ1Luv6tqkvaiL",
 				"3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy",
 				"bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq",
 			},
 
-			fail: []string{
+			fail: vals{
 				"4J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy",
 				"0x56F0B8A998425c53c75C4A303D4eF987533c5597",
 				"pp8skudq3x5hzw8ew7vzsw8tn4k8wxsqsv0lt0mf3g",
@@ -781,7 +786,7 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "Base32", Func: Base32, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"ZG======",
 				"JBSQ====",
 				"JBSWY===",
@@ -791,7 +796,7 @@ func Test(t *testing.T) {
 				"K5SWYY3PNVSSA5DPEBXG6ZA=",
 				"K5SWYY3PNVSSA5DPEBXG6===",
 			},
-			fail: []string{
+			fail: vals{
 				"12345",
 				"",
 				"JBSWY3DPtesting123",
@@ -804,7 +809,7 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "Base58", Func: Base58, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"BukQL",
 				"3KMUV89zab",
 				"91GHkLMNtyo98",
@@ -814,7 +819,7 @@ func Test(t *testing.T) {
 				"abcodpq",
 				"AAVHJKLPY",
 			},
-			fail: []string{
+			fail: vals{
 				"0OPLJH",
 				"IMKLP23",
 				"KLMOmk986",
@@ -827,7 +832,7 @@ func Test(t *testing.T) {
 	}, {
 		Name: "Base64", Func: Base64, Cases: Cases{{
 			args: args{{false}},
-			pass: []string{
+			pass: vals{
 				"",
 				"Zg==",
 				"Zm8=",
@@ -846,7 +851,7 @@ func Test(t *testing.T) {
 					"Fwrd1mnfnDbYohX2zRptLy2ZUn06Qo9pkG5ntvFEPo9bfZeULtjYzIl6K8gJ2uGZ" +
 					"HQIDAQAB",
 			},
-			fail: []string{
+			fail: vals{
 				"12345",
 				"Vml2YW11cyBmZXJtZtesting123",
 				"Zg=",
@@ -857,7 +862,7 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{true}},
-			pass: []string{
+			pass: vals{
 				"",
 				"bGFkaWVzIGFuZCBnZW50bGVtZW4sIHdlIGFyZSBmbG9hdGluZyBpbiBzcGFjZQ",
 				"1234",
@@ -865,7 +870,7 @@ func Test(t *testing.T) {
 				"PDw_Pz8-Pg",
 				"VGhpcyBpcyBhbiBlbmNvZGVkIHN0cmluZw",
 			},
-			fail: []string{
+			fail: vals{
 				" AA",
 				"\tAA",
 				"\rAA",
@@ -876,7 +881,7 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "Binary", Func: Binary, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"0",
 				"1",
 				"0001",
@@ -885,7 +890,7 @@ func Test(t *testing.T) {
 				"0b010",
 				"0B010",
 			},
-			fail: []string{
+			fail: vals{
 				"",
 				"0b",
 				"0B",
@@ -898,13 +903,13 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "Bool", Func: Bool, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"true",
 				"false",
 				"TRUE",
 				"FALSE",
 			},
-			fail: []string{
+			fail: vals{
 				"",
 				"True",
 				"False",
@@ -916,7 +921,7 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "CIDR", Func: CIDR, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"135.104.0.0/32",
 				"0.0.0.0/24",
 				"135.104.0.0/24",
@@ -935,7 +940,7 @@ func Test(t *testing.T) {
 				"2001:DB8::/48",
 				"2001:DB8::1/48",
 			},
-			fail: []string{
+			fail: vals{
 				"192.168.1.1/255.255.255.0",
 				"192.168.1.1/35",
 				"2001:db8::1/-1",
@@ -950,11 +955,11 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "CVV", Func: CVV, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"123",
 				"1234",
 			},
-			fail: []string{
+			fail: vals{
 				"",
 				"12",
 				"12345",
@@ -964,16 +969,16 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "Currency", Func: Currency, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				// TODO
 			},
-			fail: []string{
+			fail: vals{
 				// TODO
 			},
 		}},
 	}, {
 		Name: "DataURI", Func: DataURI, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAQMAAAAlPW0iAAAABlBMVEUAAAD///+l2Z/dAAAAM0lEQVR4nGP4/5/h/1+G/58ZDrAz3D/McH8yw83NDDeNGe4Ug9C9zwz3gVLMDA/A6P9/AFGGFyjOXZtQAAAAAElFTkSuQmCC",
 				"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIBAMAAAA2IaO4AAAAFVBMVEXk5OTn5+ft7e319fX29vb5+fn///++GUmVAAAALUlEQVQIHWNICnYLZnALTgpmMGYIFWYIZTA2ZFAzTTFlSDFVMwVyQhmAwsYMAKDaBy0axX/iAAAAAElFTkSuQmCC",
 				"   data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIBAMAAAA2IaO4AAAAFVBMVEXk5OTn5+ft7e319fX29vb5+fn///++GUmVAAAALUlEQVQIHWNICnYLZnALTgpmMGYIFWYIZTA2ZFAzTTFlSDFVMwVyQhmAwsYMAKDaBy0axX/iAAAAAElFTkSuQmCC   ",
@@ -986,7 +991,7 @@ func Test(t *testing.T) {
 				"data:,A%20brief%20note",
 				"data:text/html;charset=US-ASCII,%3Ch1%3EHello!%3C%2Fh1%3E",
 			},
-			fail: []string{
+			fail: vals{
 				"dataxbase64",
 				"data:HelloWorld",
 				"data:,A%20brief%20invalid%20[note",
@@ -1001,22 +1006,22 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "Decimal", Func: Decimal, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				// TODO
 			},
-			fail: []string{
+			fail: vals{
 				// TODO
 			},
 		}},
 	}, {
 		Name: "Digits", Func: Digits, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"123",
 				"00123",
 				"0",
 				"0987654321",
 			},
-			fail: []string{
+			fail: vals{
 				"12.3",
 				"12e3",
 				"-123",
@@ -1029,7 +1034,7 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "EAN", Func: EAN, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"9421023610112",
 				"1234567890128",
 				"4012345678901",
@@ -1037,7 +1042,7 @@ func Test(t *testing.T) {
 				"9783161484100",
 				"73513537",
 			},
-			fail: []string{
+			fail: vals{
 				"5901234123451",
 				"079777681629",
 				"0705632085948",
@@ -1045,23 +1050,23 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "EIN", Func: EIN, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				// TODO
 			},
-			fail: []string{
+			fail: vals{
 				// TODO
 			},
 		}},
 	}, {
 		Name: "ETH", Func: ETH, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"0x0000000000000000000000000000000000000001",
 				"0x683E07492fBDfDA84457C16546ac3f433BFaa128",
 				"0x88dA6B6a8D3590e88E0FcadD5CEC56A7C9478319",
 				"0x8a718a84ee7B1621E63E680371e0C03C417cCaF6",
 				"0xFCb5AFB808b5679b4911230Aa41FfCD0cd335b42",
 			},
-			fail: []string{
+			fail: vals{
 				"0xGHIJK05pwm37asdf5555QWERZCXV2345AoEuIdHt",
 				"0xFCb5AFB808b5679b4911230Aa41FfCD0cd335b422222",
 				"0xFCb5AFB808b5679b4911230Aa41FfCD0cd33",
@@ -1072,7 +1077,7 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "Email", Func: Email, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"foo@bar.com",
 				"x@x.au",
 				"foo@bar.com.au",
@@ -1088,7 +1093,7 @@ func Test(t *testing.T) {
 				"test@gmail.com",
 				"test.1@gmail.com",
 			},
-			fail: []string{
+			fail: vals{
 				`invalidemail@`,
 				`invalid.com`,
 				`@invalid.com`,
@@ -1105,7 +1110,7 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "FQDN", Func: FQDN, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"domain.com",
 				"dom.plato",
 				"a.domain.co",
@@ -1113,7 +1118,7 @@ func Test(t *testing.T) {
 				"xn--froschgrn-x9a.com",
 				"rebecca.blackfriday",
 			},
-			fail: []string{
+			fail: vals{
 				"abc",
 				"256.0.0.0",
 				"_.com",
@@ -1130,7 +1135,7 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "Float", Func: Float, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"123",
 				"123.",
 				"123.123",
@@ -1144,7 +1149,7 @@ func Test(t *testing.T) {
 				"01.123",
 				"-0.22250738585072011e-307",
 			},
-			fail: []string{
+			fail: vals{
 				"+",
 				"-",
 				"  ",
@@ -1157,7 +1162,7 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "HSL", Func: HSL, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"hsl(360,0000000000100%,000000100%)",
 				"hsl(000010, 00000000001%, 00000040%)",
 				"HSL(00000,0000000000100%,000000100%)",
@@ -1187,7 +1192,7 @@ func Test(t *testing.T) {
 				"hsl(270 60% 50% / .15)",
 				"hsl(270 60% 50% / 15%)",
 			},
-			fail: []string{
+			fail: vals{
 				"hsl (360,0000000000100%,000000100%)",
 				"hsl(0260, 100 %, 100%)",
 				"hsl(0160, 100%, 100%, 100 %)",
@@ -1203,7 +1208,7 @@ func Test(t *testing.T) {
 	}, {
 		Name: "Hash", Func: Hash, Cases: Cases{{
 			args: args{{"md5"}, {"md4"}, {"ripemd128"}, {"tiger128"}},
-			pass: []string{
+			pass: vals{
 				"d94f3f016ae679c3008de268209132f2",
 				"751adbc511ccbe8edf23d486fa4581cd",
 				"88dae00e614d8f24cfd5a8b3f8002e93",
@@ -1211,7 +1216,7 @@ func Test(t *testing.T) {
 				"d94f3F016Ae679C3008de268209132F2",
 				"88DAE00e614d8f24cfd5a8b3f8002E93",
 			},
-			fail: []string{
+			fail: vals{
 				"q94375dj93458w34",
 				"39485729348",
 				"%&FHKJFvk",
@@ -1219,7 +1224,7 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"crc32"}, {"crc32b"}},
-			pass: []string{
+			pass: vals{
 				"d94f3f01",
 				"751adbc5",
 				"88dae00e",
@@ -1227,7 +1232,7 @@ func Test(t *testing.T) {
 				"88DAE00e",
 				"751aDBc5",
 			},
-			fail: []string{
+			fail: vals{
 				"KYT0bf1c35032a71a14c2f719e5a14c1",
 				"q94375dj93458w34",
 				"q943",
@@ -1236,7 +1241,7 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"sha1"}, {"tiger160"}, {"ripemd160"}},
-			pass: []string{
+			pass: vals{
 				"3ca25ae354e192b26879f651a51d92aa8a34d8d3",
 				"aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d",
 				"beb8c3f30da46be179b8df5f5ecb5e4b10508230",
@@ -1244,7 +1249,7 @@ func Test(t *testing.T) {
 				"AAF4c61ddCC5e8a2dabede0f3b482cd9AEA9434D",
 				"3ca25AE354e192b26879f651A51d92aa8a34d8D3",
 			},
-			fail: []string{
+			fail: vals{
 				"KYT0bf1c35032a71a14c2f719e5a14c1",
 				"KYT0bf1c35032a71a14c2f719e5a14c1dsjkjkjkjkkjk",
 				"q94375dj93458w34",
@@ -1253,7 +1258,7 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"sha256"}},
-			pass: []string{
+			pass: vals{
 				"2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824",
 				"1d996e033d612d9af2b44b70061ee0e868bfd14c2dd90b129e1edeb7953e7985",
 				"80f70bfeaed5886e33536bcfa8c05c60afef5a0e48f699a7912d5e399cdcc441",
@@ -1261,7 +1266,7 @@ func Test(t *testing.T) {
 				"2CF24dba5FB0a30e26E83b2AC5b9E29E1b161e5C1fa7425E73043362938b9824",
 				"80F70bFEAed5886e33536bcfa8c05c60aFEF5a0e48f699a7912d5e399cdCC441",
 			},
-			fail: []string{
+			fail: vals{
 				"KYT0bf1c35032a71a14c2f719e5a14c1",
 				"KYT0bf1c35032a71a14c2f719e5a14c1dsjkjkjkjkkjk",
 				"q94375dj93458w34",
@@ -1270,7 +1275,7 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"sha384"}},
-			pass: []string{
+			pass: vals{
 				"3fed1f814d28dc5d63e313f8a601ecc4836d1662a19365cbdcf6870f6b56388850b58043f7ebf2418abb8f39c3a42e31",
 				"b330f4e575db6e73500bd3b805db1a84b5a034e5d21f0041d91eec85af1dfcb13e40bb1c4d36a72487e048ac6af74b58",
 				"bf547c3fc5841a377eb1519c2890344dbab15c40ae4150b4b34443d2212e5b04aa9d58865bf03d8ae27840fef430b891",
@@ -1278,7 +1283,7 @@ func Test(t *testing.T) {
 				"3fed1f814d28dc5d63e313f8A601ecc4836d1662a19365CBDCf6870f6b56388850b58043f7ebf2418abb8f39c3a42e31",
 				"b330f4E575db6e73500bd3b805db1a84b5a034e5d21f0041d91EEC85af1dfcb13e40bb1c4d36a72487e048ac6af74b58",
 			},
-			fail: []string{
+			fail: vals{
 				"KYT0bf1c35032a71a14c2f719e5a14c1",
 				"KYT0bf1c35032a71a14c2f719e5a14c1dsjkjkjkjkkjk",
 				"q94375dj93458w34",
@@ -1287,7 +1292,7 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"sha512"}},
-			pass: []string{
+			pass: vals{
 				"9b71d224bd62f3785d96d46ad3ea3d73319bfbc2890caadae2dff72519673ca72323c3d99ba5c11d7c7acc6e14b8c5da0c4663475c2e5c3adef46f73bcdec043",
 				"83c586381bf5ba94c8d9ba8b6b92beb0997d76c257708742a6c26d1b7cbb9269af92d527419d5b8475f2bb6686d2f92a6649b7f174c1d8306eb335e585ab5049",
 				"45bc5fa8cb45ee408c04b6269e9f1e1c17090c5ce26ffeeda2af097735b29953ce547e40ff3ad0d120e5361cc5f9cee35ea91ecd4077f3f589b4d439168f91b9",
@@ -1295,7 +1300,7 @@ func Test(t *testing.T) {
 				"9B71D224bd62f3785D96d46ad3ea3d73319bFBC2890CAAdae2dff72519673CA72323C3d99ba5c11d7c7ACC6e14b8c5DA0c4663475c2E5c3adef46f73bcDEC043",
 				"432AC3d29E4f18c7F604f7c3c96369A6C5c61fC09Bf77880548239baffd61636d42ed374f41c261e424d20d98e320e812a6d52865be059745fdb2cb20acff0ab",
 			},
-			fail: []string{
+			fail: vals{
 				"KYT0bf1c35032a71a14c2f719e5a14c1",
 				"KYT0bf1c35032a71a14c2f719e5a14c1dsjkjkjkjkkjk",
 				"q94375dj93458w34",
@@ -1304,7 +1309,7 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{"tiger192"}},
-			pass: []string{
+			pass: vals{
 				"6281a1f098c5e7290927ed09150d43ff3990a0fe1a48267c",
 				"56268f7bc269cf1bc83d3ce42e07a85632394737918f4760",
 				"46fc0125a148788a3ac1d649566fc04eb84a746f1a6e4fa7",
@@ -1312,7 +1317,7 @@ func Test(t *testing.T) {
 				"6281A1f098c5e7290927ed09150d43ff3990a0fe1a48267C",
 				"46FC0125a148788a3AC1d649566fc04eb84A746f1a6E4fa7",
 			},
-			fail: []string{
+			fail: vals{
 				"KYT0bf1c35032a71a14c2f719e5a14c1",
 				"KYT0bf1c35032a71a14c2f719e5a14c1dsjkjkjkjkkjk",
 				"q94375dj93458w34",
@@ -1322,7 +1327,7 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "Hex", Func: Hex, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"deadBEEF",
 				"ff0044",
 				"0xff0044",
@@ -1333,7 +1338,7 @@ func Test(t *testing.T) {
 				"0HfedCBA9876543210",
 				"0123456789abcDEF",
 			},
-			fail: []string{
+			fail: vals{
 				"abcdefg",
 				"",
 				"..",
@@ -1346,7 +1351,7 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "HexColor", Func: HexColor, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"#ff0000ff",
 				"#ff0034",
 				"#CCCCCC",
@@ -1354,7 +1359,7 @@ func Test(t *testing.T) {
 				"fff",
 				"#f00",
 			},
-			fail: []string{
+			fail: vals{
 				"#ff",
 				"fff0a",
 				"#ff12FG",
@@ -1362,7 +1367,7 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "IBAN", Func: IBAN, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"SC52BAHL01031234567890123456USD",
 				"LC14BOSL123456789012345678901234",
 				"MT31MALT01100000000000000000123",
@@ -1385,7 +1390,7 @@ func Test(t *testing.T) {
 				"LB92000700000000123123456123",
 				"IR200170000000339545727003",
 			},
-			fail: []string{
+			fail: vals{
 				"XX22YYY1234567890123",
 				"FR14 2004 1010 0505 0001 3",
 				"FR7630006000011234567890189@",
@@ -1395,7 +1400,7 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "IMEI", Func: IMEI, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"352099001761481",
 				"868932036356090",
 				"490154203237518",
@@ -1409,7 +1414,7 @@ func Test(t *testing.T) {
 				"99-822766-714473-0",
 				"53-272976-680599-9",
 			},
-			fail: []string{
+			fail: vals{
 				"490154203237517",
 				"3568680000414120",
 				"3520990017614823",
@@ -1421,7 +1426,7 @@ func Test(t *testing.T) {
 	}, {
 		Name: "IP", Func: IP, Cases: Cases{{
 			args: args{{0}},
-			pass: []string{
+			pass: vals{
 				"127.0.0.1",
 				"0.0.0.0",
 				"255.255.255.255",
@@ -1439,7 +1444,7 @@ func Test(t *testing.T) {
 				"::ffff:127.0.0.1",
 				"0:0:0:0:0:ffff:127.0.0.1",
 			},
-			fail: []string{
+			fail: vals{
 				"abc",
 				"256.0.0.0",
 				"0.0.0.256",
@@ -1464,7 +1469,7 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{4}},
-			pass: []string{
+			pass: vals{
 				"127.0.0.1",
 				"0.0.0.0",
 				"255.255.255.255",
@@ -1472,7 +1477,7 @@ func Test(t *testing.T) {
 				"255.0.0.1",
 				"0.0.1.1",
 			},
-			fail: []string{
+			fail: vals{
 				"::1",
 				"2001:db8:0000:1:1:1:1:1",
 				"::ffff:127.0.0.1",
@@ -1482,7 +1487,7 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{6}},
-			pass: []string{
+			pass: vals{
 				"::1",
 				"2001:db8:0000:1:1:1:1:1",
 				"::ffff:127.0.0.1",
@@ -1491,7 +1496,7 @@ func Test(t *testing.T) {
 				"ff08::9abc%interface10",
 				"ff02::5678%pvc1.3",
 			},
-			fail: []string{
+			fail: vals{
 				"127.0.0.1",
 				"0.0.0.0",
 				"fe80:::a6db:30ff:fe98:e946",
@@ -1507,12 +1512,12 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "IPRange", Func: IPRange, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"127.0.0.1/24",
 				"0.0.0.0/0",
 				"255.255.255.0/32",
 			},
-			fail: []string{
+			fail: vals{
 				"127.200.230.1/35",
 				"127.200.230.1/-1",
 				"1.1.1.1/011",
@@ -1528,44 +1533,44 @@ func Test(t *testing.T) {
 	}, {
 		Name: "ISBN", Func: ISBN, Cases: Cases{{
 			args: args{{10}},
-			pass: []string{
+			pass: vals{
 				"3836221195", "3-8362-2119-5", "3 8362 2119 5",
 				"1617290858", "1-61729-085-8", "1 61729 085-8",
 				"0007269706", "0-00-726970-6", "0 00 726970 6",
 				"3423214120", "3-423-21412-0", "3 423 21412 0",
 				"340101319X", "3-401-01319-X", "3 401 01319 X",
 			},
-			fail: []string{
+			fail: vals{
 				"3423214121", "3-423-21412-1", "3 423 21412 1",
 				"978-3836221191", "9783836221191",
 				"123456789a", "foo", "",
 			},
 		}, {
 			args: args{{13}},
-			pass: []string{
+			pass: vals{
 				"9783836221191", "978-3-8362-2119-1", "978 3 8362 2119 1",
 				"9783401013190", "978-3401013190", "978 3401013190",
 				"9784873113685", "978-4-87311-368-5", "978 4 87311 368 5",
 			},
-			fail: []string{
+			fail: vals{
 				"9783836221190", "978-3-8362-2119-0", "978 3 8362 2119 0",
 				"3836221195", "3-8362-2119-5", "3 8362 2119 5",
 				"01234567890ab", "foo", "",
 			},
 		}, {
 			args: args{{0}},
-			pass: []string{
+			pass: vals{
 				"340101319X",
 				"9784873113685",
 			},
-			fail: []string{
+			fail: vals{
 				"3423214121",
 				"9783836221190",
 			},
 		}},
 	}, {
 		Name: "ISIN", Func: ISIN, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"AU0000XVGZA3",
 				"DE000BAY0017",
 				"BE0003796134",
@@ -1574,7 +1579,7 @@ func Test(t *testing.T) {
 				"DE000WCH8881",
 				"PLLWBGD00016",
 			},
-			fail: []string{
+			fail: vals{
 				"DE000BAY0018",
 				"PLLWBGD00019",
 				"foo",
@@ -1584,7 +1589,7 @@ func Test(t *testing.T) {
 	}, {
 		Name: "ISO31661A", Func: ISO31661A, Cases: Cases{{
 			args: args{{0}},
-			pass: []string{
+			pass: vals{
 				"FR",
 				"fR",
 				"GB",
@@ -1601,7 +1606,7 @@ func Test(t *testing.T) {
 				"cc",
 				"GG",
 			},
-			fail: []string{
+			fail: vals{
 				"",
 				"AA",
 				"PI",
@@ -1613,7 +1618,7 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{2}},
-			pass: []string{
+			pass: vals{
 				"FR",
 				"fR",
 				"GB",
@@ -1626,7 +1631,7 @@ func Test(t *testing.T) {
 				"cc",
 				"GG",
 			},
-			fail: []string{
+			fail: vals{
 				"",
 				"FRA",
 				"AA",
@@ -1639,13 +1644,13 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{3}},
-			pass: []string{
+			pass: vals{
 				"ABW",
 				"HND",
 				"KHM",
 				"RWA",
 			},
-			fail: []string{
+			fail: vals{
 				"",
 				"FR",
 				"fR",
@@ -1659,13 +1664,13 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "ISRC", Func: ISRC, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"USAT29900609",
 				"GBAYE6800011",
 				"USRC15705223",
 				"USCA29500702",
 			},
-			fail: []string{
+			fail: vals{
 				"USAT2990060",
 				"SRC15705223",
 				"US-CA29500702",
@@ -1675,7 +1680,7 @@ func Test(t *testing.T) {
 	}, {
 		Name: "ISSN", Func: ISSN, Cases: Cases{{
 			args: args{{false, false}},
-			pass: []string{
+			pass: vals{
 				"0378-5955",
 				"0000-0000",
 				"2434-561X",
@@ -1683,7 +1688,7 @@ func Test(t *testing.T) {
 				"01896016",
 				"20905076",
 			},
-			fail: []string{
+			fail: vals{
 				"0378-5954",
 				"0000-0001",
 				"0378-123",
@@ -1696,35 +1701,35 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{false, true}},
-			pass: []string{
+			pass: vals{
 				"2434-561X",
 				"2434561X",
 				"0378-5955",
 				"03785955",
 			},
-			fail: []string{
+			fail: vals{
 				"2434-561x",
 				"2434561x",
 			},
 		}, {
 			args: args{{true, false}},
-			pass: []string{
+			pass: vals{
 				"2434-561X",
 				"2434-561x",
 				"0378-5955",
 			},
-			fail: []string{
+			fail: vals{
 				"2434561X",
 				"2434561x",
 				"03785955",
 			},
 		}, {
 			args: args{{true, true}},
-			pass: []string{
+			pass: vals{
 				"2434-561X",
 				"0378-5955",
 			},
-			fail: []string{
+			fail: vals{
 				"2434-561x",
 				"2434561X",
 				"2434561x",
@@ -1733,12 +1738,23 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "In", Func: In, Cases: Cases{{
-			pass: []string{},
-			fail: []string{},
+			args: args{},
+			pass: vals{},
+			fail: vals{"foo"},
+		}, {
+			args: args{{true, 123, "bar", 23.0, "foo"}},
+			pass: vals{
+				"foo",
+				"bar",
+			},
+			fail: vals{
+				"baz",
+				"123",
+			},
 		}},
 	}, {
 		Name: "Int", Func: Int, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"0",
 				"1",
 				"-0",
@@ -1753,7 +1769,7 @@ func Test(t *testing.T) {
 				"000",
 				"1234567890",
 			},
-			fail: []string{
+			fail: vals{
 				"",
 				"0.1",
 				".01",
@@ -1764,33 +1780,153 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "JSON", Func: JSON, Cases: Cases{{
-			pass: []string{},
-			fail: []string{},
+			pass: vals{
+				[]byte(`{ "key": "value" }`),
+				[]byte(`{}`),
+				[]byte(`[123, "hey"]`),
+				[]byte(`[]`),
+				[]byte(`null`),
+				[]byte(`1234`),
+				[]byte(`"yes"`),
+				[]byte(`true`),
+				[]byte(`false`),
+			},
+			fail: vals{
+				[]byte(`{ key: "value" }`),
+				[]byte(`{ \'key\': \'value\' }`),
+				[]byte(`nope`),
+				[]byte(`nil`),
+				[]byte(`{ "key": nil }`),
+			},
 		}},
 	}, {
 		Name: "JWT", Func: JWT, Cases: Cases{{
-			pass: []string{},
-			fail: []string{},
+			pass: vals{
+				"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb2dnZWRJbkFzIjoiYWRtaW4iLCJpYXQiOjE0MjI3Nzk2Mzh9.gzSraSYS8EXBxLN_oWnFSRgCzcmJmMjLiuyu5CSpyHI",
+				"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJsb3JlbSI6Imlwc3VtIn0.ymiJSsMJXR6tMSr8G9usjQ15_8hKPDv_CArLhxw28MI",
+				"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkb2xvciI6InNpdCIsImFtZXQiOlsibG9yZW0iLCJpcHN1bSJdfQ.rRpe04zbWbbJjwM43VnHzAboDzszJtGrNsUxaqQ-GQ8",
+				"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqb2huIjp7ImFnZSI6MjUsImhlaWdodCI6MTg1fSwiamFrZSI6eyJhZ2UiOjMwLCJoZWlnaHQiOjI3MH19.YRLPARDmhGMC3BBk_OhtwwK21PIkVCqQe8ncIRPKo-E",
+				"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ", // No signature
+
+			},
+			fail: vals{
+				"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
+				"$Zs.ewu.su84",
+				"ks64$S/9.dy$§kz.3sd73b",
+			},
 		}},
 	}, {
 		Name: "LatLong", Func: LatLong, Cases: Cases{{
-			pass: []string{},
-			fail: []string{},
+			args: args{{false}},
+			pass: vals{
+				"(-17.738223, 85.605469)",
+				"(-12.3456789, +12.3456789)",
+				"(-60.978437, -0.175781)",
+				"(77.719772, -37.529297)",
+				"(7.264394, 165.058594)",
+				"0.955766, -19.863281",
+				"(31.269161,164.355469)",
+				"+12.3456789, -12.3456789",
+				"-15.379543, -137.285156",
+				"(11.770570, -162.949219)",
+				"-55.034319, 113.027344",
+				"58.025555, 36.738281",
+				"55.720923,-28.652344",
+				"-90.00000,-180.00000",
+				"(-71, -146)",
+				"(-71.616864, -146.616864)",
+				"-0.55, +0.22",
+				"90, 180",
+				"+90, -180",
+				"-90,+180",
+				"90,180",
+				"0, 0",
+			},
+			fail: vals{
+				"(020.000000, 010.000000000)",
+				"89.9999999989, 360.0000000",
+				"90.1000000, 180.000000",
+				"+90.000000, -180.00001",
+				"090.0000, 0180.0000",
+				"126, -158",
+				"(-126.400010, -158.400010)",
+				"-95, -96",
+				"-95.738043, -96.738043",
+				"137, -148",
+				"(-137.5942, -148.5942)",
+				"(-120, -203)",
+				"(-119, -196)",
+				"+119.821728, -196.821728",
+				"(-110, -223)",
+				"-110.369532, 223.369532",
+				"(-120.969949, +203.969949)",
+				"-116, -126",
+				"-116.894222, -126.894222",
+				"-112, -160",
+				"-112.96381, -160.96381",
+				"-90., -180.",
+				"+90.1, -180.1",
+				"(-17.738223, 85.605469",
+				"0.955766, -19.863281)",
+				"+,-",
+				"(,)",
+				",",
+				" ",
+			},
+		}, {
+			args: args{{true}},
+			pass: vals{
+				"40° 26′ 46″ N, 79° 58′ 56″ W",
+				"40° 26′ 46″ S, 79° 58′ 56″ E",
+				"90° 0′ 0″ S, 180° 0′ 0″ E",
+				"40° 26′ 45.9996″ N, 79° 58′ 55.2″ E",
+				"40° 26′ 46″ n, 79° 58′ 56″ w",
+				"40°26′46″s, 79°58′56″e",
+				"11° 0′ 0.005″ S, 180° 0′ 0″ E",
+				"40°26′45.9996″N, 79°58′55.2″E",
+			},
+			fail: vals{
+				"100° 26′ 46″ N, 79° 70′ 56″ W",
+				"40° 89′ 46″ S, 79° 58′ 100″ E",
+				"40° 26.445′ 45″ N, 79° 58′ 55.2″ E",
+				"40° 46″ N, 79° 58′ 56″ W",
+			},
 		}},
 	}, {
 		Name: "Locale", Func: Locale, Cases: Cases{{
-			pass: []string{},
-			fail: []string{},
+			pass: vals{
+				"uz_Latn_UZ",
+				"en",
+				"gsw",
+				"es_ES",
+				"sw_KE",
+				"am_ET",
+				"ca_ES_VALENCIA",
+				"en_US_POSIX",
+			},
+			fail: vals{
+				"lo_POP",
+				"12",
+				"12_DD",
+			},
 		}},
 	}, {
 		Name: "LowerCase", Func: LowerCase, Cases: Cases{{
-			pass: []string{},
-			fail: []string{},
+			pass: vals{
+				"abc",
+				"abc123",
+				"this is lowercase.",
+				"tr竪s 端ber",
+			},
+			fail: vals{
+				"fooBar",
+				"123A",
+			},
 		}},
 	}, {
 		Name: "MAC", Func: MAC, Cases: Cases{{
 			args: args{{0}},
-			pass: []string{
+			pass: vals{
 				"08:00:2b:01:02:03",
 				"08-00-2b-01-02-03",
 				"01:AB:03:04:05:06",
@@ -1800,7 +1936,7 @@ func Test(t *testing.T) {
 				"08-00-2b-01-02-03-04-05",
 				"08002b0102030405",
 			},
-			fail: []string{
+			fail: vals{
 				"A9 C5 D4 9F EB D3",
 				"01 02 03 04 05 ab",
 				"0102.0304.05ab",
@@ -1819,14 +1955,14 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{6}},
-			pass: []string{
+			pass: vals{
 				"08:00:2b:01:02:03",
 				"08-00-2b-01-02-03",
 				"01:AB:03:04:05:06",
 				"01-02-03-04-05-ab",
 				"08002b010203",
 			},
-			fail: []string{
+			fail: vals{
 				"08:00:2b:01:02:03:04:05",
 				"08-00-2b-01-02-03-04-05",
 				"08002b0102030405",
@@ -1848,12 +1984,12 @@ func Test(t *testing.T) {
 			},
 		}, {
 			args: args{{8}},
-			pass: []string{
+			pass: vals{
 				"08:00:2b:01:02:03:04:05",
 				"08-00-2b-01-02-03-04-05",
 				"08002b0102030405",
 			},
-			fail: []string{
+			fail: vals{
 				"08:00:2b:01:02:03",
 				"08-00-2b-01-02-03",
 				"01:AB:03:04:05:06",
@@ -1878,7 +2014,7 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "MIME", Func: MIME, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"application/json",
 				"application/xhtml+xml",
 				"audio/mp4",
@@ -1903,7 +2039,7 @@ func Test(t *testing.T) {
 				"text/html; charset=\"us-ascii\"",
 				"video/mp4",
 			},
-			fail: []string{
+			fail: vals{
 				"",
 				" ",
 				"/",
@@ -1922,13 +2058,13 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "MD5", Func: MD5, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"d94f3f016ae679c3008de268209132f2",
 				"751adbc511ccbe8edf23d486fa4581cd",
 				"88dae00e614d8f24cfd5a8b3f8002e93",
 				"0bf1c35032a71a14c2f719e5a14c1e96",
 			},
-			fail: []string{
+			fail: vals{
 				"KYT0bf1c35032a71a14c2f719e5a14c1",
 				"q94375dj93458w34",
 				"39485729348",
@@ -1937,7 +2073,7 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "MagnetURI", Func: MagnetURI, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"magnet:?xt=urn:btih:06E2A9683BF4DA92C73A661AC56F0ECC9C63C5B4&dn=helloword2000&tr=udp://helloworld:1337/announce",
 				"magnet:?xt=urn:btih:3E30322D5BFC7444B7B1D8DD42404B75D0531DFB&dn=world&tr=udp://world.com:1337",
 				"magnet:?xt=urn:btih:4ODKSDJBVMSDSNJVBCBFYFBKNRU875DW8D97DWC6&dn=helloworld&tr=udp://helloworld.com:1337",
@@ -1948,7 +2084,7 @@ func Test(t *testing.T) {
 				"magnet:?xt=urn:btih:UHWY2892JNEJ2GTEYOMDNU67E8ICGICYE92JDUGH&dn=baz&tr=udp://baz.com:1337",
 				"magnet:?xt=urn:btih:HS263FG8U3GFIDHWD7829BYFCIXB78XIHG7CWCUG&dn=foz&tr=udp://foz.com:1337",
 			},
-			fail: []string{
+			fail: vals{
 				"",
 				":?xt=urn:btih:06E2A9683BF4DA92C73A661AC56F0ECC9C63C5B4&dn=helloword2000&tr=udp://helloworld:1337/announce",
 				"magnett:?xt=urn:btih:3E30322D5BFC7444B7B1D8DD42404B75D0531DFB&dn=world&tr=udp://world.com:1337",
@@ -1963,15 +2099,33 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "Match", Func: Match, Cases: Cases{{
-			pass: []string{},
-			fail: []string{},
+			args: args{{`^(?i)testing$`}},
+			pass: vals{
+				"TESTING",
+				"TeSTiNG",
+				"testing",
+			},
+			fail: vals{
+				"T3ST1NG",
+				"bad testing",
+				"foo bar",
+				"",
+			},
+		}, {
+			args: args{{`(?i)testing`}}, // unregistered
+			fail: vals{
+				"testing",
+				"TESTING",
+				"foo bar",
+				"",
+			},
 		}},
 	}, {
 		Name: "MongoId", Func: MongoId, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"507f1f77bcf86cd799439011",
 			},
-			fail: []string{
+			fail: vals{
 				"507f1f77bcf86cd7994390",
 				"507f1f77bcf86cd79943901z",
 				"",
@@ -1980,7 +2134,7 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "Numeric", Func: Numeric, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"123",
 				"00123",
 				"-00123",
@@ -1990,7 +2144,7 @@ func Test(t *testing.T) {
 				"123.123",
 				"+000000",
 			},
-			fail: []string{
+			fail: vals{
 				" ",
 				"",
 				".",
@@ -1998,11 +2152,11 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "Octal", Func: Octal, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"076543210",
 				"0o01234567",
 			},
-			fail: []string{
+			fail: vals{
 				"abcdefg",
 				"012345678",
 				"012345670c",
@@ -2013,7 +2167,7 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "PAN", Func: PAN, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"375556917985515",
 				"36050234196908",
 				"4716461583322103",
@@ -2033,7 +2187,7 @@ func Test(t *testing.T) {
 				"6765780016990268",
 				"4716989580001715211",
 			},
-			fail: []string{
+			fail: vals{
 				"foo",
 				"foo",
 				"5398228707871528",
@@ -2050,17 +2204,17 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "PassportNumber", Func: PassportNumber, Cases: Cases{{
-			pass: []string{},
-			fail: []string{},
+			pass: vals{},
+			fail: vals{},
 		}},
 	}, {
 		Name: "Phone", Func: Phone, Cases: Cases{{
-			pass: []string{},
-			fail: []string{},
+			pass: vals{},
+			fail: vals{},
 		}},
 	}, {
 		Name: "Port", Func: Port, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"0",
 				"22",
 				"80",
@@ -2069,7 +2223,7 @@ func Test(t *testing.T) {
 				"8080",
 				"65535",
 			},
-			fail: []string{
+			fail: vals{
 				"",
 				"-1",
 				"65536",
@@ -2077,12 +2231,12 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "RFC", Func: RFC, Cases: Cases{{
-			pass: []string{},
-			fail: []string{},
+			pass: vals{},
+			fail: vals{},
 		}},
 	}, {
 		Name: "RGB", Func: RGB, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"rgb(0,0,0)",
 				"rgb(255,255,255)",
 				"rgba(0,0,0,0)",
@@ -2092,7 +2246,7 @@ func Test(t *testing.T) {
 				"rgb(5%,5%,5%)",
 				"rgba(5%,5%,5%,.3)",
 			},
-			fail: []string{
+			fail: vals{
 				"rgb(0,0,0,)",
 				"rgb(0,0,)",
 				"rgb(0,0,256)",
@@ -2110,12 +2264,26 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "SSN", Func: SSN, Cases: Cases{{
-			pass: []string{},
-			fail: []string{},
+			pass: vals{
+				"001-01-0001",
+				"012345678",
+				"123-45-6789",
+			},
+			fail: vals{
+				"000-01-0001",
+				"001-00-0001",
+				"001-01-0000",
+				"0123456789",
+				"12a-45-6789",
+				"123-4b-6789",
+				"123-45-678c",
+				"123-45-67-89",
+				"12345-6789",
+			},
 		}},
 	}, {
 		Name: "SemVer", Func: SemVer, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"0.0.4",
 				"1.2.3",
 				"10.20.30",
@@ -2148,7 +2316,7 @@ func Test(t *testing.T) {
 				"99999999999999999999999.999999999999999999.99999999999999999",
 				"1.0.0-0A.is.legal",
 			},
-			fail: []string{
+			fail: vals{
 				"-invalid+invalid",
 				"-invalid.01",
 				"alpha",
@@ -2187,11 +2355,11 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "Slug", Func: Slug, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"cs-cz",
 				"cscz",
 			},
-			fail: []string{
+			fail: vals{
 				"not-----------slug",
 				"@#_$@",
 				"-not-slug",
@@ -2203,27 +2371,66 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "StrongPassword", Func: StrongPassword, Cases: Cases{{
-			pass: []string{},
-			fail: []string{},
+			args: args{{(*StrongPasswordOpts)(nil)}},
+			pass: vals{
+				`%2%k{7BsL"M%Kd6e`,
+				`EXAMPLE of very long_password123!`,
+				`mxH_+2vs&54_+H3P`,
+				`+&DxJ=X7-4L8jRCD`,
+				`etV*p%Nr6w&H%FeF`,
+			},
+			fail: vals{
+				``,
+				`password`,
+				`hunter2`,
+				`hello world`,
+				`passw0rd`,
+				`password!`,
+				`PASSWORD!`,
+			},
+		}, {
+			args: args{{&StrongPasswordOpts{
+				MinLen:     12,
+				MinLower:   3,
+				MinUpper:   3,
+				MinNumbers: 3,
+				MinSymbols: 3,
+			}}},
+			pass: vals{
+				`%2%k{7BsL"M%Kd6e`,
+				`EXAMPLE of very long_password123!`,
+				`mxH_+2vs&54_+H3P`,
+			},
+			fail: vals{
+				``,
+				`password`,
+				`hunter2`,
+				`hello world`,
+				`passw0rd`,
+				`password!`,
+				`PASSWORD!`,
+				`+&DxJ=X7-4L8jRCD`,
+				`etV*p%Nr6w&H%FeF`,
+			},
 		}},
 	}, {
 		Name: "URI", Func: URI, Cases: Cases{{
-			pass: []string{},
-			fail: []string{},
+			pass: vals{},
+			fail: vals{},
 		}},
 	}, {
 		Name: "URI", Func: URI, Cases: Cases{{
-			pass: []string{},
-			fail: []string{},
+			pass: vals{},
+			fail: vals{},
 		}},
 	}, {
 		Name: "UUID", Func: UUID, Cases: Cases{{
-			pass: []string{},
-			fail: []string{},
+			pass: vals{},
+			fail: vals{},
 		}},
 	}, {
 		Name: "Uint", Func: Uint, Cases: Cases{{
-			pass: []string{
+			pass: vals{
 				"0",
 				"1",
 				"+0",
@@ -2237,7 +2444,7 @@ func Test(t *testing.T) {
 				"000",
 				"1234567890",
 			},
-			fail: []string{
+			fail: vals{
 				"",
 				"-0",
 				".01",
@@ -2250,18 +2457,18 @@ func Test(t *testing.T) {
 		}},
 	}, {
 		Name: "UpperCase", Func: UpperCase, Cases: Cases{{
-			pass: []string{},
-			fail: []string{},
+			pass: vals{},
+			fail: vals{},
 		}},
 	}, {
 		Name: "VAT", Func: VAT, Cases: Cases{{
-			pass: []string{},
-			fail: []string{},
+			pass: vals{},
+			fail: vals{},
 		}},
 	}, {
 		Name: "Zip", Func: Zip, Cases: Cases{{
-			pass: []string{},
-			fail: []string{},
+			pass: vals{},
+			fail: vals{},
 		}},
 	}}
 
@@ -2295,7 +2502,8 @@ func Test(t *testing.T) {
 				for _, args := range argvals {
 					for _, val := range cases.pass {
 						want := true
-						t.Run(`"`+val+`"`, func(t *testing.T) {
+						name := fmt.Sprintf("\"%v\"", val)
+						t.Run(name, func(t *testing.T) {
 							rv := reflect.ValueOf(val)
 							vv := append([]reflect.Value{rv}, args...)
 
@@ -2308,7 +2516,8 @@ func Test(t *testing.T) {
 
 					for _, val := range cases.fail {
 						want := false
-						t.Run(`"`+val+`"`, func(t *testing.T) {
+						name := fmt.Sprintf("\"%v\"", val)
+						t.Run(name, func(t *testing.T) {
 							rv := reflect.ValueOf(val)
 							vv := append([]reflect.Value{rv}, args...)
 

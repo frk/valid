@@ -977,12 +977,12 @@ func TestAnalysisRun(t *testing.T) {
 	}, {
 		name: "AnalysisTestBAD_RuleFuncRuleOptionTypeValidator",
 		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			opt: &RuleOption{"foo", OptionTypeString},
+			opt: &RuleOption{Value: "foo", Type: OptionTypeString},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleFuncRuleOptionType2Validator",
 		err: &anError{Code: errRuleFuncOptionType, a: &analysis{}, f: &StructField{}, r: &Rule{},
-			opt: &RuleOption{"abc", OptionTypeString},
+			opt: &RuleOption{Value: "abc", Type: OptionTypeString},
 		},
 	}, {
 		name: "AnalysisTestBAD_RuleEnumTypeUnnamedValidator",

@@ -611,7 +611,16 @@ func canConvert(dst, src Type) bool {
 func canConvertRuleOption(a *analysis, dst Type, src *RuleOption) bool {
 	if src.Type == OptionTypeField {
 		field := a.info.SelectorMap[src.Value].Last()
-		return canConvert(dst, field.Type)
+		if canConvert(dst, field.Type) {
+			return true
+		}
+
+		// can use the addr, accept
+		if dst.Kind == TypeKindPtr && dst.Elem.Equals(field.Type) {
+			return true // TODO add test
+		}
+
+		return false
 	}
 
 	// dst is interface{} or string, accept

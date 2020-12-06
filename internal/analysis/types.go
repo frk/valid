@@ -611,6 +611,11 @@ func (t Type) NeedsConversion(u Type) bool {
 	return true
 }
 
+// Reports whether or not a value of type t represents a pointer type of u.
+func (t Type) PtrOf(u Type) bool {
+	return t.Kind == TypeKindPtr && t.Elem.Equals(u)
+}
+
 // Last returns the last element of s, if s has 0 elements Last will panic.
 func (s StructFieldSelector) Last() *StructField {
 	return s[len(s)-1]

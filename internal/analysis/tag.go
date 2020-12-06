@@ -265,7 +265,7 @@ func parseRuleTagOption(val string) (opt *RuleOption) {
 				opt.Type = OptionTypeFloat
 			case rxBool.MatchString(val):
 				opt.Type = OptionTypeBool
-			default:
+			case val != `nil`:
 				opt.Type = OptionTypeString
 			}
 		}

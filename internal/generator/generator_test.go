@@ -76,6 +76,8 @@ func TestGenerator(t *testing.T) {
 		"isvalider",
 		"enum",
 		"slice",
+
+		"strongpass",
 	}
 
 	anConf := analysis.Config{FieldKeyJoin: true, FieldKeySeparator: "."}
