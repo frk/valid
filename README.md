@@ -10,4 +10,16 @@ be used, together with the [`cmd/isvalid`](cmd/isvalid) tool, to generate static
 
 --------
 
-Some validators, including their tests, were ported from https://github.com/validatorjs/validator.js
+Some (most) validators, including their tests & comments, were ported from https://github.com/validatorjs/validator.js
+
+#### TODO:
+
+- [ ] Currency
+- [ ] Decimal
+- [ ] EIN
+- [ ] IC
+- [ ] PassportNumber
+- [ ] Phone
+- [ ] URL
+- [ ] VAT
+- [ ] ZIP
