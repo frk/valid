@@ -19,7 +19,7 @@ Some (most) validators, including their tests & comments, were ported from https
 - [ ] EIN
 - [ ] IC
 - [ ] PassportNumber
-- [ ] Phone
+- [x] Phone
 - [ ] URL
 - [ ] VAT
 - [x] ZIP

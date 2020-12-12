@@ -1567,15 +1567,27 @@ func PassportNumber(v string) bool {
 	return false
 }
 
-// Phone reports whether or not v is a valid phone number.
+// Phone reports whether or not v is a valid phone number in the country
+// identified by the given country code cc.
 //
 //	isvalid:rule
 //	{
 //		"name": "phone",
+//		"opts": [[ { "key": null, "value": "us" } ]],
 //		"err": { "text": "must be a valid phone number" }
 //	}
-func Phone(v string, cc ...string) bool {
-	// TODO
+func Phone(v string, cc string) bool {
+	if len(cc) == 2 {
+		cc = strings.ToUpper(cc)
+		if c, ok := tables.ISO31661A_2[cc]; ok && c.Phone != nil {
+			return c.Phone.MatchString(v)
+		}
+	} else if len(cc) == 3 {
+		cc = strings.ToUpper(cc)
+		if c, ok := tables.ISO31661A_3[cc]; ok && c.Phone != nil {
+			return c.Phone.MatchString(v)
+		}
+	}
 	return false
 }
 
