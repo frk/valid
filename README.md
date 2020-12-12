@@ -15,11 +15,11 @@ Some (most) validators, including their tests & comments, were ported from https
 #### TODO:
 
 - [ ] Currency
-- [ ] Decimal
+- [x] Decimal
 - [ ] EIN
 - [ ] IC
 - [ ] PassportNumber
 - [ ] Phone
 - [ ] URL
 - [ ] VAT
-- [ ] ZIP
+- [x] ZIP

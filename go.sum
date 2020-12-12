@@ -1,5 +1,9 @@
 github.com/frk/ast v0.0.4 h1:o4mfVqgDQSwyMRAumOUuWBJz53kRTbMblT4wXSTLRxI=
 github.com/frk/ast v0.0.4/go.mod h1:PZvafXe37J/Yhe6jbYQgbmlRfVEjeVej6ruZhrSrgdQ=
+github.com/frk/ast v0.0.5-0.20201210043751-d3e3ccab7a7e h1:1uXbPbvXITz5LHZBVYRBbaZJBBbvCsnwXhzb7idOWdo=
+github.com/frk/ast v0.0.5-0.20201210043751-d3e3ccab7a7e/go.mod h1:PZvafXe37J/Yhe6jbYQgbmlRfVEjeVej6ruZhrSrgdQ=
+github.com/frk/ast v0.0.5-0.20201210051705-327961897a90 h1:4BMgwXLANNhM8WtfnNFYW75CzcqKSr9skkWJ3q7Pk7Q=
+github.com/frk/ast v0.0.5-0.20201210051705-327961897a90/go.mod h1:PZvafXe37J/Yhe6jbYQgbmlRfVEjeVej6ruZhrSrgdQ=
 github.com/frk/compare v0.0.6 h1:iltAyhxsNb2lAl5666vr+mZGyIkVV0S/wx0qVlkNklM=
 github.com/frk/compare v0.0.6/go.mod h1:5bwv6/gZd3HD/UngMXbki5nvp6aJBTiWmXozSqE1uPc=
 github.com/frk/tagutil v0.0.1 h1:wv/RrK2pIp8DXQEJ4C+0CO+q0mMJmM3whygoEEi/JsE=
@@ -18,6 +22,7 @@ golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208/go.mod h1:RxMgew5VJxzue5/jJ
 golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20190412213103-97732733099d/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/text v0.3.0 h1:g61tztE5qeGQ89tm6NTjjM9VPIm088od1l6aSorWRWg=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/tools v0.0.0-20191119224855-298f0cb1881e/go.mod h1:b+2E5dAYhXwXZwtnZ6UAqBI28+e2cm9otk0dWdXHAEo=
 golang.org/x/tools v0.0.0-20200921181913-ccabf82fa1ae h1:iNsgnQMzc+DzfYCTsDkDcDnHNaOO89eTgnTb/ldeQKs=

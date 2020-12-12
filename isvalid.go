@@ -17,6 +17,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/frk/isvalid/internal/cldr"
 	"github.com/frk/isvalid/internal/tables"
 )
 
@@ -231,7 +232,7 @@ type CurrencyOpts struct {
 	NeedSym bool
 }
 
-var DefaultCurrencyOpts = CurrencyOpts{
+var CurrencyOptsDefault = CurrencyOpts{
 	NeedSym: false,
 }
 
@@ -251,15 +252,14 @@ func Currency(v string, code string, opts *CurrencyOpts) bool {
 	if len(v) == 0 || len(code) != 3 {
 		return false
 	}
-
-	if opts == nil {
-		opts = &DefaultCurrencyOpts
-	}
-
 	code = strings.ToUpper(code)
 	ccy, ok := tables.ISO4217[code]
 	if !ok {
 		return false
+	}
+
+	if opts == nil {
+		opts = &CurrencyOptsDefault
 	}
 
 	// check for leading currency symbol
@@ -428,11 +428,86 @@ func DataURI(v string) bool {
 //	isvalid:rule
 //	{
 //		"name": "decimal",
+//		"opts": [[
+//			{ "key": null, "value": "en" }
+//		]]
 //		"err": { "text": "string content must match a decimal number" }
 //	}
-func Decimal(v string) bool {
-	// TODO
-	return false
+func Decimal(v string, locale string) bool {
+	if len(v) > 1 && (v[0] == '+' || v[0] == '-') {
+		v = v[1:]
+	}
+	if len(v) == 0 {
+		return false
+	}
+
+	loc, ok := cldr.Locale(locale)
+	if !ok {
+		return false
+	}
+
+	var last int
+	var groups []string
+	for i, r := range v {
+		if r >= loc.DigitZero && r <= loc.DigitNine {
+			continue
+		}
+		if loc.SepGroup > 0 && r == loc.SepGroup {
+			groups = append(groups, v[last:i])
+			last = i + utf8.RuneLen(r)
+			continue
+		}
+
+		if loc.SepDecimal > 0 && r == loc.SepDecimal {
+			groups = append(groups, v[last:i])
+			last = i + utf8.RuneLen(r)
+
+			// trailing decimal; fail
+			if last == len(v) {
+				return false
+			}
+
+			fraction := v[last:]
+
+			// make sure the rest is all digit
+			for _, d := range fraction {
+				if d < loc.DigitZero || d > loc.DigitNine {
+					return false
+				}
+			}
+
+			last = len(v)
+			break
+		}
+
+		// unacceptable rune; fail
+		return false
+	}
+	if last < len(v) {
+		groups = append(groups, v[last:])
+	}
+
+	if len(groups) == 1 && len(groups[0]) == 0 {
+		return true
+	}
+
+	for i, g := range groups {
+		if len(g) == 0 {
+			return false
+		}
+		if i > 0 && len(g) != 3 {
+			return false
+		}
+		if i == 0 {
+			if len(g) > 3 && len(groups) > 1 {
+				return false
+			}
+			if g[0] == '0' && len(groups) > 1 {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 var rxDigits = regexp.MustCompile(`^[0-9]+$`)
@@ -1623,7 +1698,7 @@ type StrongPasswordOpts struct {
 	MinSymbols int
 }
 
-var DefaultStrongPasswordOpts = StrongPasswordOpts{
+var StrongPasswordOptsDefault = StrongPasswordOpts{
 	MinLen:     8,
 	MinLower:   1,
 	MinUpper:   1,
@@ -1641,7 +1716,7 @@ var DefaultStrongPasswordOpts = StrongPasswordOpts{
 //	}
 func StrongPassword(v string, opts *StrongPasswordOpts) bool {
 	if opts == nil {
-		opts = &DefaultStrongPasswordOpts
+		opts = &StrongPasswordOptsDefault
 	}
 
 	if len(v) < opts.MinLen {
@@ -1741,14 +1816,26 @@ func VAT(v string) bool {
 	return false
 }
 
-// Zip reports whether or not v is a valid zip code.
+// Zip reports whether or not v is a valid zip / postal code for the country
+// identified by the given country code cc.
 //
 //	isvalid:rule
 //	{
 //		"name": "zip",
+//		"opts": [[ { "key": null, "value": "us" } ]],
 //		"err": { "text": "must be a valid zip code" }
 //	}
-func Zip(v string, cc ...string) bool {
-	// TODO
+func Zip(v string, cc string) bool {
+	if len(cc) == 2 {
+		cc = strings.ToUpper(cc)
+		if c, ok := tables.ISO31661A_2[cc]; ok && c.Zip != nil {
+			return c.Zip.MatchString(v)
+		}
+	} else if len(cc) == 3 {
+		cc = strings.ToUpper(cc)
+		if c, ok := tables.ISO31661A_3[cc]; ok && c.Zip != nil {
+			return c.Zip.MatchString(v)
+		}
+	}
 	return false
 }
