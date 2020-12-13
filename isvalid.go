@@ -19,6 +19,7 @@ import (
 
 	"github.com/frk/isvalid/internal/cldr"
 	"github.com/frk/isvalid/internal/tables"
+	"github.com/frk/isvalid/l10n/country"
 )
 
 var _ = log.Println
@@ -1158,13 +1159,13 @@ func ISO31661A(v string, num int) bool {
 
 	if num == 2 && len(v) == 2 {
 		v = strings.ToUpper(v)
-		_, ok := tables.ISO31661A_2[v]
+		_, ok := country.ISO31661A_2[v]
 		return ok
 	}
 
 	if num == 3 && len(v) == 3 {
 		v = strings.ToUpper(v)
-		_, ok := tables.ISO31661A_3[v]
+		_, ok := country.ISO31661A_3[v]
 		return ok
 	}
 
@@ -1577,16 +1578,8 @@ func PassportNumber(v string) bool {
 //		"err": { "text": "must be a valid phone number" }
 //	}
 func Phone(v string, cc string) bool {
-	if len(cc) == 2 {
-		cc = strings.ToUpper(cc)
-		if c, ok := tables.ISO31661A_2[cc]; ok && c.Phone != nil {
-			return c.Phone.MatchString(v)
-		}
-	} else if len(cc) == 3 {
-		cc = strings.ToUpper(cc)
-		if c, ok := tables.ISO31661A_3[cc]; ok && c.Phone != nil {
-			return c.Phone.MatchString(v)
-		}
+	if c, ok := country.Get(cc); ok && c.Phone != nil {
+		return c.Phone.MatchString(v)
 	}
 	return false
 }
@@ -1838,16 +1831,8 @@ func VAT(v string) bool {
 //		"err": { "text": "must be a valid zip code" }
 //	}
 func Zip(v string, cc string) bool {
-	if len(cc) == 2 {
-		cc = strings.ToUpper(cc)
-		if c, ok := tables.ISO31661A_2[cc]; ok && c.Zip != nil {
-			return c.Zip.MatchString(v)
-		}
-	} else if len(cc) == 3 {
-		cc = strings.ToUpper(cc)
-		if c, ok := tables.ISO31661A_3[cc]; ok && c.Zip != nil {
-			return c.Zip.MatchString(v)
-		}
+	if c, ok := country.Get(cc); ok && c.Zip != nil {
+		return c.Zip.MatchString(v)
 	}
 	return false
 }
