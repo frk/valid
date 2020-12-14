@@ -51,10 +51,13 @@ func Test(t *testing.T) {
 	}, {
 		Name: "Zip", Func: isvalid.Zip,
 		Pass: []string{
-			//
+			"150237",
+			"100000",
 		},
 		Fail: []string{
-			//
+			"141234",
+			"386789",
+			"ab1234",
 		},
 	}})
 }

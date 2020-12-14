@@ -10,6 +10,7 @@ import (
 // - https://en.wikipedia.org/wiki/List_of_postal_codes
 // - https://en.youbianku.com
 // - https://en.wikipedia.org/wiki/VAT_identification_number
+// ...
 
 var ISO31661A_2 = make(map[string]Country)
 var ISO31661A_3 = make(map[string]Country)
