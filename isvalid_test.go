@@ -1857,6 +1857,15 @@ func Test(t *testing.T) {
 			},
 		}},
 	}, {
+		Name: "ISO4217", Func: ISO4217, Cases: Cases{{
+			pass: vals{
+				// TODO
+			},
+			fail: vals{
+				// TODO
+			},
+		}},
+	}, {
 		Name: "ISRC", Func: ISRC, Cases: Cases{{
 			pass: vals{
 				"USAT29900609",

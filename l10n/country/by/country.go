@@ -11,5 +11,7 @@ func init() {
 		A2: "BY", A3: "BLR", Num: "112",
 		Zip:   regexp.MustCompile(`^2[1-4]{1}[0-9]{4}$`),
 		Phone: regexp.MustCompile(`^(?:\+?375)?(?:24|25|29|33|44)[0-9]{7}$`),
+		// 9 digit number
+		VAT: regexp.MustCompile(`^(?:УНП[ ]?)?[0-9]{9}$`),
 	})
 }

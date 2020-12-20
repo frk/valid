@@ -10,5 +10,6 @@ func init() {
 	country.Add(country.Country{
 		A2: "LV", A3: "LVA", Num: "428",
 		Zip: regexp.MustCompile(`^LV\-[0-9]{4}$`),
+		VAT: regexp.MustCompile(`^LV[0-9]{11}$`),
 	})
 }

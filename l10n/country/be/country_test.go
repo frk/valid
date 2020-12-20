@@ -37,5 +37,15 @@ func Test(t *testing.T) {
 		Fail: []string{
 			//
 		},
+	}, {
+		Name: "VAT", Func: isvalid.VAT,
+		Pass: []string{
+			"BE0202239951",
+			"BE0428759497",
+		},
+		Fail: []string{
+			"BE0102239951",
+			"BE0431150351",
+		},
 	}})
 }

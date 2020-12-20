@@ -15,7 +15,7 @@ func init() {
 		// References:
 		// - https://en.wikipedia.org/wiki/Postal_Index_Number
 		// - https://en.youbianku.com/India
-		Zip: country.MatchStringFunc(func(v string) bool {
+		Zip: country.StringMatcherFunc(func(v string) bool {
 			return rxzip.MatchString(v) && !rxzipneg.MatchString(v)
 		}),
 		Phone: regexp.MustCompile(`^(?:\+?91|0)?[6789][0-9]{9}$`),

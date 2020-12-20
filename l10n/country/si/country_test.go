@@ -8,7 +8,7 @@ import (
 )
 
 func Test(t *testing.T) {
-	testutil.Run(t, []string{"SI", ""}, testutil.List{{
+	testutil.Run(t, []string{"SI", "SVN"}, testutil.List{{
 		Name: "Phone", Func: isvalid.Phone,
 		Pass: []string{
 			//
@@ -23,6 +23,16 @@ func Test(t *testing.T) {
 		},
 		Fail: []string{
 			//
+		},
+	}, {
+		Name: "VAT", Func: isvalid.VAT,
+		Pass: []string{
+			"SI99662981",
+			"SI19136234",
+		},
+		Fail: []string{
+			"SI99662982",
+			"SI19136235",
 		},
 	}})
 }

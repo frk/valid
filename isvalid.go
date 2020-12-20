@@ -17,6 +17,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/frk/isvalid/internal/algo"
 	"github.com/frk/isvalid/internal/cldr"
 	"github.com/frk/isvalid/internal/tables"
 	"github.com/frk/isvalid/l10n/country"
@@ -39,6 +40,18 @@ func rmchar(v string, f func(r rune) bool) string {
 // convenience func for strings known to contain digits only
 func atoi(v string) int {
 	i, _ := strconv.Atoi(v)
+	return i
+}
+
+// convenience func for byte known to represent a digit
+func btoi(v byte) int {
+	i, _ := strconv.Atoi(string(v))
+	return i
+}
+
+// convenience func for rune known to represent a digit
+func rtoi(v rune) int {
+	i, _ := strconv.Atoi(string(v))
 	return i
 }
 
@@ -552,7 +565,7 @@ func EAN(v string) bool {
 			weight = 3
 		}
 
-		sum += atoi(string(digit)) * weight
+		sum += rtoi(digit) * weight
 	}
 
 	// the calculated check digit
@@ -560,7 +573,7 @@ func EAN(v string) bool {
 	if remainder := (10 - (sum % 10)); remainder < 10 {
 		check = remainder
 	}
-	return check == atoi(string(v[length-1]))
+	return check == btoi(v[length-1])
 }
 
 // EIN reports whether or not v is a valid Employer Identification Number.
@@ -803,11 +816,11 @@ func IMEI(v string) bool {
 	v = rmchar(v, func(r rune) bool { return r == '-' })
 
 	vlen := len(v)
-	check := atoi(string(v[vlen-1]))
+	check := btoi(v[vlen-1])
 
 	sum, mul := 0, 2
 	for i := vlen - 2; i >= 0; i-- {
-		prod := atoi(v[i:i+1]) * mul
+		prod := btoi(v[i]) * mul
 		if prod >= 10 {
 			sum += (prod % 10) + 1
 		} else {
@@ -999,14 +1012,14 @@ func ISBN(v string, ver int) bool {
 
 		tmp, sum := 0, 0
 		for i := 0; i < 9; i++ {
-			tmp += atoi(string(v[i]))
+			tmp += btoi(v[i])
 			sum += tmp
 		}
 
 		if v[9] == 'X' {
 			tmp += 10
 		} else {
-			tmp += atoi(string(v[9]))
+			tmp += btoi(v[9])
 		}
 		sum += tmp
 
@@ -1021,14 +1034,14 @@ func ISBN(v string, ver int) bool {
 		sum := 0
 		for i := 0; i < 12; i++ {
 			if i%2 == 0 {
-				sum += atoi(string(v[i]))
+				sum += btoi(v[i])
 			} else {
-				sum += 3 * atoi(string(v[i]))
+				sum += 3 * btoi(v[i])
 			}
 		}
 
 		r := 10 - (sum % 10)
-		d := atoi(string(v[12]))
+		d := btoi(v[12])
 		return (r == 10 && d == 0) || (r < 10 && r == d)
 	}
 	return false
@@ -1063,7 +1076,7 @@ func ISIN(v string) bool {
 			d2 := int(i64 % 10)
 			ints = append(ints, d2)
 		} else {
-			ints = append(ints, atoi(string(r)))
+			ints = append(ints, rtoi(r))
 		}
 	}
 
@@ -1230,7 +1243,7 @@ func ISSN(v string, requireHyphen, caseSensitive bool) bool {
 		if v[i] == 'X' {
 			sum += 10 * (8 - i)
 		} else {
-			sum += atoi(string(v[i])) * (8 - i)
+			sum += btoi(v[i]) * (8 - i)
 		}
 	}
 	return sum%11 == 0
@@ -1537,23 +1550,7 @@ func PAN(v string) bool {
 		return false
 	}
 
-	// luhn check
-	var sum int
-	var double bool
-	for i := len(v) - 1; i >= 0; i-- {
-		num := atoi(string(v[i]))
-
-		if double {
-			num *= 2
-			if num > 9 {
-				num = (num % 10) + 1
-			}
-		}
-		double = !double
-
-		sum += num
-	}
-	return sum%10 == 0
+	return algo.Luhn(v)
 }
 
 // PassportNumber reports whether or not v is a valid passport number.
@@ -1816,8 +1813,10 @@ func UpperCase(v string) bool {
 //		"name": "vat",
 //		"err": { "text": "must be a valid VAT number" }
 //	}
-func VAT(v string) bool {
-	// TODO https://en.wikipedia.org/wiki/VAT_identification_number
+func VAT(v string, cc string) bool {
+	if c, ok := country.Get(cc); ok && c.VAT != nil {
+		return c.VAT.MatchString(v)
+	}
 	return false
 }
 

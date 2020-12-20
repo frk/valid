@@ -44,5 +44,24 @@ func Test(t *testing.T) {
 			"A65T F12",
 			"O62 O1O2",
 		},
+	}, {
+		Name: "VAT", Func: isvalid.VAT,
+		Pass: []string{
+			"IE1234567T",
+			"IE1234567TW",
+			"IE1234567FA",
+			"IE1A23456B",
+			"IE1+23456B",
+			"IE1*23456B",
+		},
+		Fail: []string{
+			"IE123456T",
+			"IE12345678",
+			"IE12345678W",
+			"IE1234567FAZ",
+			"IE12345678AZ",
+			"IE1A234567",
+			"IE1-23456B",
+		},
 	}})
 }

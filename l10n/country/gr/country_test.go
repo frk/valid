@@ -36,5 +36,9 @@ func Test(t *testing.T) {
 		Fail: []string{
 			//
 		},
+	}, {
+		Name: "VAT", Func: isvalid.VAT,
+		Pass: []string{},
+		Fail: []string{},
 	}})
 }

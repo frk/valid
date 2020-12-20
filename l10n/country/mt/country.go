@@ -11,5 +11,6 @@ func init() {
 		A2: "MT", A3: "MLT", Num: "470",
 		Zip:   regexp.MustCompile(`^(?i)[a-z]{3}\s{0,1}[0-9]{4}$`),
 		Phone: regexp.MustCompile(`^(?:\+?356|0)?(?:99|79|77|21|27|22|25)[0-9]{6}$`),
+		VAT:   regexp.MustCompile(`^MT[0-9]{8}$`),
 	})
 }
