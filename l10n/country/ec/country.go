@@ -11,5 +11,6 @@ func init() {
 		A2: "EC", A3: "ECU", Num: "218",
 		Zip:   country.RxZip6Digits,
 		Phone: regexp.MustCompile(`^(?:\+?593|0)(?:[2-7]|9[2-9])[0-9]{7}$`),
+		VAT:   regexp.MustCompile(`^[0-9]{13}$`),
 	})
 }

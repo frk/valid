@@ -38,41 +38,41 @@
 - [x] ca
 - [ ] ch
 - [ ] gb
-- [ ] id
-- [ ] il
+- [x] id
+- [x] il
 - [ ] in
-- [ ] is
-- [ ] kz
-- [ ] mc
+- [x] is
+- [x] kz
+- [x] mc
 - [x] mk
-- [ ] ng
+- [x] ng
 - [ ] no
-- [ ] nz
+- [x] nz
 - [ ] ph
-- [ ] rs
+- [x] rs
 - [ ] ru
-- [ ] sm
-- [ ] tr
-- [ ] ua
-- [ ] uz
+- [x] sm
+- [x] tr
+- [x] ua
+- [x] uz (regex only, control digit algorithm is unknown at the moment)
 
 ### VAT numbers of Latin American countries
 
-- [ ] ar
-- [ ] bo
+- [x] ar
+- [x] bo
 - [ ] br
 - [ ] cl
 - [ ] co
 - [ ] cr
-- [ ] do
-- [ ] ec
-- [ ] gt
+- [x] do
+- [x] ec
+- [x] gt
 - [ ] hn
 - [ ] mx
-- [ ] ni
+- [x] ni
 - [ ] pa
-- [ ] pe
+- [x] pe
 - [ ] py
 - [ ] sv
-- [ ] uy
-- [ ] ve
+- [x] uy
+- [x] ve
