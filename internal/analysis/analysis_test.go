@@ -1112,16 +1112,17 @@ func TestAnalysisRun(t *testing.T) {
 							RuleTag: &TagNode{Rules: []*Rule{{Name: "cidr"}}},
 						}, {
 							Name: "F17", Key: "F17", IsExported: true,
-							Tag:     tagutil.Tag{"is": []string{"phone"}},
-							Type:    Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "phone"}}},
-						}, {
-							Name: "F18", Key: "F18", IsExported: true,
-							Tag:  tagutil.Tag{"is": []string{"phone:us:ca"}},
+							Tag:  tagutil.Tag{"is": []string{"phone"}},
 							Type: Type{Kind: TypeKindString},
 							RuleTag: &TagNode{Rules: []*Rule{{Name: "phone", Options: []*RuleOption{
 								{Value: "us", Type: OptionTypeString},
-								{Value: "ca", Type: OptionTypeString},
+							}}}},
+						}, {
+							Name: "F18", Key: "F18", IsExported: true,
+							Tag:  tagutil.Tag{"is": []string{"phone:us"}},
+							Type: Type{Kind: TypeKindString},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "phone", Options: []*RuleOption{
+								{Value: "us", Type: OptionTypeString},
 							}}}},
 						}, {
 							Name: "F19", Key: "F19", IsExported: true,
@@ -1132,16 +1133,17 @@ func TestAnalysisRun(t *testing.T) {
 							}}}},
 						}, {
 							Name: "F20", Key: "F20", IsExported: true,
-							Tag:     tagutil.Tag{"is": []string{"zip"}},
-							Type:    Type{Kind: TypeKindString},
-							RuleTag: &TagNode{Rules: []*Rule{{Name: "zip"}}},
+							Tag:  tagutil.Tag{"is": []string{"zip"}},
+							Type: Type{Kind: TypeKindString},
+							RuleTag: &TagNode{Rules: []*Rule{{Name: "zip", Options: []*RuleOption{
+								{Value: "us", Type: OptionTypeString},
+							}}}},
 						}, {
 							Name: "F21", Key: "F21", IsExported: true,
-							Tag:  tagutil.Tag{"is": []string{"zip:deu:fin"}},
+							Tag:  tagutil.Tag{"is": []string{"zip:deu"}},
 							Type: Type{Kind: TypeKindString},
 							RuleTag: &TagNode{Rules: []*Rule{{Name: "zip", Options: []*RuleOption{
 								{Value: "deu", Type: OptionTypeString},
-								{Value: "fin", Type: OptionTypeString},
 							}}}},
 						}, {
 							Name: "F22", Key: "F22", IsExported: true,
@@ -1711,17 +1713,15 @@ func TestAnalysisRun(t *testing.T) {
 								Key:  &Type{Kind: TypeKindString},
 								Elem: &Type{Kind: TypeKindString},
 							},
-							Tag: tagutil.Tag{"is": []string{`[phone:us:ca]zip:ca:us`}},
+							Tag: tagutil.Tag{"is": []string{`[phone:us]zip:us`}},
 							RuleTag: &TagNode{
 								Key: &TagNode{Rules: []*Rule{
 									{Name: "phone", Options: []*RuleOption{
 										{Value: "us", Type: OptionTypeString},
-										{Value: "ca", Type: OptionTypeString},
 									}},
 								}},
 								Elem: &TagNode{Rules: []*Rule{
 									{Name: "zip", Options: []*RuleOption{
-										{Value: "ca", Type: OptionTypeString},
 										{Value: "us", Type: OptionTypeString},
 									}},
 								}},
@@ -1751,9 +1751,11 @@ func TestAnalysisRun(t *testing.T) {
 										}}}},
 									}, {
 										Name: "F3", Key: "F87.F3", IsExported: true,
-										Type:    Type{Kind: TypeKindString},
-										Tag:     tagutil.Tag{"is": []string{`phone`}},
-										RuleTag: &TagNode{Rules: []*Rule{{Name: "phone"}}},
+										Type: Type{Kind: TypeKindString},
+										Tag:  tagutil.Tag{"is": []string{`phone`}},
+										RuleTag: &TagNode{Rules: []*Rule{{Name: "phone", Options: []*RuleOption{
+											{Value: "us", Type: OptionTypeString},
+										}}}},
 									}},
 								}},
 							},
@@ -1819,7 +1821,7 @@ func TestAnalysisRun(t *testing.T) {
 								},
 							},
 							Tag: tagutil.Tag{"is": []string{
-								`[][[email]phone:us:ca]len::10`,
+								`[][[email]phone:us]len::10`,
 								`[]rng:-54:256`,
 							}},
 							RuleTag: &TagNode{
@@ -1829,7 +1831,7 @@ func TestAnalysisRun(t *testing.T) {
 										Elem: &TagNode{Rules: []*Rule{
 											{Name: "phone", Options: []*RuleOption{
 												{Value: "us", Type: OptionTypeString},
-												{Value: "ca", Type: OptionTypeString},
+												//{Value: "ca", Type: OptionTypeString},
 											}},
 										}},
 									},

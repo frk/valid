@@ -45,7 +45,7 @@ func (v SliceValidator) Validate() error {
 					if !isvalid.Email(k) {
 						return errors.New("F5 must be a valid email address")
 					}
-					if !isvalid.Phone(e, "us", "ca") {
+					if !isvalid.Phone(e, "ca") {
 						return errors.New("F5 must be a valid phone number")
 					}
 				}

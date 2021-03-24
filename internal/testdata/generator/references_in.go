@@ -6,7 +6,7 @@ type ReferencesValidator struct {
 
 	F1 string `is:"len::&Max"`
 	F2 *int   `is:"rng:&Min:&Max"`
-	F3 string `is:"phone:&SomeValue:us:jp"`
+	F3 string `is:"phone:&SomeValue"`
 	F4 string `is:"contains:&SomeValue:bar:baz"`
 }
 
@@ -17,7 +17,7 @@ type References2Validator struct {
 
 	F1 string `is:"len::&Max"`
 	F2 *int   `is:"rng:&Min:&Max"`
-	F3 string `is:"phone:us:jp:&SomeValue"`
+	F3 string `is:"phone:&SomeValue"`
 	F4 string `is:"contains:foo:bar:&SomeValue"`
 }
 
@@ -28,6 +28,6 @@ type References3Validator struct {
 
 	F1 string `is:"len::&Max"`
 	F2 *int   `is:"rng:&Min:&Max"`
-	F3 string `is:"phone:us:&SomeValue:jp"`
+	F3 string `is:"phone:&SomeValue"`
 	F4 string `is:"contains:foo:&SomeValue:baz"`
 }

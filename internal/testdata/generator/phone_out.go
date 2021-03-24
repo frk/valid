@@ -9,7 +9,7 @@ import (
 )
 
 func (v PhoneValidator) Validate() error {
-	if !isvalid.Phone(v.F1) {
+	if !isvalid.Phone(v.F1, "us") {
 		return errors.New("F1 must be a valid phone number")
 	}
 	if v.F2 != nil && *v.F2 != nil && !isvalid.Phone(**v.F2, "us") {
@@ -17,7 +17,7 @@ func (v PhoneValidator) Validate() error {
 	}
 	if v.F3 == nil || *v.F3 == nil || len(**v.F3) == 0 {
 		return errors.New("F3 is required")
-	} else if !isvalid.Phone(**v.F3, "us", "ca", "jp") {
+	} else if !isvalid.Phone(**v.F3, "jp") {
 		return errors.New("F3 must be a valid phone number")
 	}
 	return nil

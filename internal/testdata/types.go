@@ -30,11 +30,11 @@ type UserInput struct {
 	F16 string `is:"cidr"`
 
 	F17 string `is:"phone"`
-	F18 string `is:"phone:us:ca"`
+	F18 string `is:"phone:us"`
 	F19 string `is:"phone:&CountryCode"`
 
 	F20 string `is:"zip"`
-	F21 string `is:"zip:deu:fin"`
+	F21 string `is:"zip:deu"`
 	F22 string `is:"zip:&CountryCode"`
 
 	F23 string `is:"uuid"`
@@ -130,7 +130,7 @@ type UserInput struct {
 	// elements & keys
 	F84 []string          `is:"[]email"`
 	F85 map[string]string `is:"[email]"`
-	F86 map[string]string `is:"[phone:us:ca]zip:ca:us"`
+	F86 map[string]string `is:"[phone:us]zip:us"`
 	F87 map[string]*struct {
 		F1 string `is:"len:2:32"`
 		F2 string `is:"len:2:32"`
@@ -144,7 +144,7 @@ type UserInput struct {
 	F91 *string           `is:"notnil"`
 
 	// more nested elements & keys
-	F92 []map[*map[string]string][]int `is:"[][[email]phone:us:ca]len::10,[]rng:-54:256"`
+	F92 []map[*map[string]string][]int `is:"[][[email]phone:us]len::10,[]rng:-54:256"`
 
 	F93 string   `is:"runecount:28"`
 	F94 string   `is:"runecount:4:28"`

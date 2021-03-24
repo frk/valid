@@ -444,7 +444,7 @@ func DataURI(v string) bool {
 //		"name": "decimal",
 //		"opts": [[
 //			{ "key": null, "value": "en" }
-//		]]
+//		]],
 //		"err": { "text": "string content must match a decimal number" }
 //	}
 func Decimal(v string, locale string) bool {

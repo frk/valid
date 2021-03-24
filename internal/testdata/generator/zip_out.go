@@ -9,7 +9,7 @@ import (
 )
 
 func (v ZipValidator) Validate() error {
-	if !isvalid.Zip(v.F1) {
+	if !isvalid.Zip(v.F1, "us") {
 		return errors.New("F1 must be a valid zip code")
 	}
 	if v.F2 != nil && *v.F2 != nil && !isvalid.Zip(**v.F2, "us") {
@@ -17,7 +17,7 @@ func (v ZipValidator) Validate() error {
 	}
 	if v.F3 == nil || *v.F3 == nil || len(**v.F3) == 0 {
 		return errors.New("F3 is required")
-	} else if !isvalid.Zip(**v.F3, "us", "ca", "jp") {
+	} else if !isvalid.Zip(**v.F3, "jp") {
 		return errors.New("F3 must be a valid zip code")
 	}
 	return nil

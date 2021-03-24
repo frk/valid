@@ -17,7 +17,7 @@ func (v ReferencesValidator) Validate() error {
 	if v.F2 != nil && (*v.F2 < v.Min || *v.F2 > v.Max) {
 		return fmt.Errorf("F2 must be between: %v and %v", v.Min, v.Max)
 	}
-	if !isvalid.Phone(v.F3, v.SomeValue, "us", "jp") {
+	if !isvalid.Phone(v.F3, v.SomeValue) {
 		return errors.New("F3 must be a valid phone number")
 	}
 	if !strings.Contains(v.F4, v.SomeValue) && !strings.Contains(v.F4, "bar") && !strings.Contains(v.F4, "baz") {
@@ -33,8 +33,8 @@ func (v References2Validator) Validate() error {
 	if v.F2 != nil && (*v.F2 < v.Min || *v.F2 > v.Max) {
 		return v.ec.Error("F2", *v.F2, "rng", v.Min, v.Max)
 	}
-	if !isvalid.Phone(v.F3, "us", "jp", v.SomeValue) {
-		return v.ec.Error("F3", v.F3, "phone", "us", "jp", v.SomeValue)
+	if !isvalid.Phone(v.F3, v.SomeValue) {
+		return v.ec.Error("F3", v.F3, "phone", v.SomeValue)
 	}
 	if !strings.Contains(v.F4, "foo") && !strings.Contains(v.F4, "bar") && !strings.Contains(v.F4, v.SomeValue) {
 		return v.ec.Error("F4", v.F4, "contains", "foo", "bar", v.SomeValue)
@@ -49,8 +49,8 @@ func (v References3Validator) Validate() error {
 	if v.F2 != nil && (*v.F2 < v.Min || *v.F2 > v.Max) {
 		v.ea.Error("F2", *v.F2, "rng", v.Min, v.Max)
 	}
-	if !isvalid.Phone(v.F3, "us", v.SomeValue, "jp") {
-		v.ea.Error("F3", v.F3, "phone", "us", v.SomeValue, "jp")
+	if !isvalid.Phone(v.F3, v.SomeValue) {
+		v.ea.Error("F3", v.F3, "phone", v.SomeValue)
 	}
 	if !strings.Contains(v.F4, "foo") && !strings.Contains(v.F4, v.SomeValue) && !strings.Contains(v.F4, "baz") {
 		v.ea.Error("F4", v.F4, "contains", "foo", v.SomeValue, "baz")

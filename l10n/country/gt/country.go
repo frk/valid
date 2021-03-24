@@ -1,6 +1,8 @@
 package gt
 
 import (
+	"regexp"
+
 	"github.com/frk/isvalid/l10n/country"
 )
 
