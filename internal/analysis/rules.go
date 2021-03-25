@@ -145,6 +145,7 @@ func (conf RuleConfig) RuleTypeFunc(fn *types.Func, isCustom bool) (RuleTypeFunc
 	rt := RuleTypeFunc{}
 	rt.FuncName = fn.Name()
 	rt.PkgPath = fn.Pkg().Path()
+	rt.PkgName = fn.Pkg().Name()
 	rt.IsVariadic = sig.Variadic()
 	rt.FieldArgType = analyzeType0(p.At(0).Type())
 	for i := 1; i < p.Len(); i++ {

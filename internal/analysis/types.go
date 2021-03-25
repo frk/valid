@@ -3,7 +3,6 @@ package analysis
 import (
 	"go/types"
 	"strconv"
-	"strings"
 
 	"github.com/frk/isvalid/internal/search"
 	"github.com/frk/tagutil"
@@ -97,6 +96,8 @@ type (
 		Name string
 		// The import path of the package to which the constant belongs.
 		PkgPath string
+		// The name of the package to which the constant belongs.
+		PkgName string
 	}
 
 	// ErrorHandlerField is the result of analyzing a validator struct's field whose
@@ -183,6 +184,8 @@ type (
 		FuncName string
 		// The function's package import path.
 		PkgPath string
+		// The function's package name.
+		PkgName string
 		// The types of the function's 1st argument which will always
 		// be the associate field value or a field's element value.
 		FieldArgType Type
@@ -281,6 +284,7 @@ func (rt RuleTypeEnum) checkRule(a *analysis, r *Rule, t Type, f *StructField) e
 	for _, c := range consts {
 		name := c.Name()
 		pkgpath := c.Pkg().Path()
+		pkgname := c.Pkg().Name()
 		// blank, skip
 		if name == "_" {
 			continue
@@ -289,7 +293,7 @@ func (rt RuleTypeEnum) checkRule(a *analysis, r *Rule, t Type, f *StructField) e
 		if a.pkgPath != pkgpath && !c.Exported() {
 			continue
 		}
-		enums = append(enums, Const{Name: name, PkgPath: pkgpath})
+		enums = append(enums, Const{Name: name, PkgPath: pkgpath, PkgName: pkgname})
 	}
 	if len(enums) == 0 {
 		return &anError{Code: errRuleEnumTypeNoConst, a: a, f: f, r: r}
@@ -428,17 +432,6 @@ func (rt RuleTypeFunc) adjustRule(r *Rule) {
 			*opt = *val
 		}
 	}
-}
-
-// PkgName returns the name of the package to which the function belongs.
-func (rt *RuleTypeFunc) PkgName() string {
-	if len(rt.PkgPath) > 0 {
-		if i := strings.LastIndexByte(rt.PkgPath, '/'); i > -1 {
-			return rt.PkgPath[i+1:]
-		}
-		return rt.PkgPath
-	}
-	return ""
 }
 
 // TypesForOptions returns an adjusted version of the RuleTypeFunc's OptionArgTypes slice.

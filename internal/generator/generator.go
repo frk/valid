@@ -608,7 +608,7 @@ func newRuleTypeEnumIfStmt(g *generator, code *varcode, r *analysis.Rule) (ifs G
 	for _, e := range enums {
 		id := GO.ExprNode(GO.Ident{e.Name})
 		if g.info.PkgPath != e.PkgPath {
-			imp := addimport(g.file, e.PkgPath)
+			imp := addimport(g.file, e.PkgPath, e.PkgName)
 			id = GO.QualifiedIdent{imp.name, e.Name}
 		}
 
@@ -676,7 +676,7 @@ func newRuleTypeBasicLenIfStmt(g *generator, code *varcode, r *analysis.Rule) (i
 
 // newRuleTypeBasicRuneCountIfStmt produces an if-statement that checks the varcode variable's length.
 func newRuleTypeBasicRuneCountIfStmt(g *generator, code *varcode, r *analysis.Rule) (ifs GO.IfStmt) {
-	imp := addimport(g.file, "unicode/utf8")
+	imp := addimport(g.file, "unicode/utf8", "utf8")
 	typ := analysis.Type{Kind: analysis.TypeKindInt} // len(T) returns an int
 
 	call := GO.CallExpr{Args: GO.ArgsList{List: code.vexpr}}
@@ -725,7 +725,7 @@ func newRuleTypeBasicRngIfStmt(g *generator, code *varcode, r *analysis.Rule) (i
 
 // newRuleTypeFuncIfStmt produces an if-statement that checks the varcode's variable using the rule's function.
 func newRuleTypeFuncIfStmt(g *generator, code *varcode, r *analysis.Rule, rt analysis.RuleTypeFunc) (ifs GO.IfStmt) {
-	imp := addimport(g.file, rt.PkgPath)
+	imp := addimport(g.file, rt.PkgPath, rt.PkgName)
 	retStmt := newErrorReturnStmt(g, code, r)
 
 	fn := GO.QualifiedIdent{imp.name, rt.FuncName}
@@ -755,7 +755,7 @@ func newRuleTypeFuncIfStmt(g *generator, code *varcode, r *analysis.Rule, rt ana
 // newRuleTypeFuncChainIfStmt produces an if-statement that checks the varcode's variable
 // using the rule's function invoking it in a chain for each of the rule's options.
 func newRuleTypeFuncChainIfStmt(g *generator, code *varcode, r *analysis.Rule, rt analysis.RuleTypeFunc) (ifs GO.IfStmt) {
-	imp := addimport(g.file, rt.PkgPath)
+	imp := addimport(g.file, rt.PkgPath, rt.PkgName)
 	retStmt := newErrorReturnStmt(g, code, r)
 
 	optypes := rt.TypesForOptions(r.Options)
@@ -1080,10 +1080,12 @@ func newImportDecl(f *file) *GO.ImportDecl {
 }
 
 // addimport adds a new impspec to the file's impset if it is not already a member of the set.
-func addimport(f *file, path string) *impspec {
-	name := path
-	if i := strings.LastIndexByte(name, '/'); i > -1 {
-		name = name[i+1:]
+func addimport(f *file, path, name string) *impspec {
+	if name == "" {
+		name = path
+		if i := strings.LastIndexByte(name, '/'); i > -1 {
+			name = name[i+1:]
+		}
 	}
 
 	var namesake *impspec

@@ -71,6 +71,7 @@ func TestAddRuleFunc(t *testing.T) {
 			"myrule": RuleTypeFunc{
 				FuncName:     "MyRule",
 				PkgPath:      "github.com/frk/isvalid/internal/testdata/mypkg",
+				PkgName:      "mypkg",
 				FieldArgType: Type{Kind: TypeKindString},
 				typ:          &types.Func{},
 			},
@@ -82,6 +83,7 @@ func TestAddRuleFunc(t *testing.T) {
 			"myrule": RuleTypeFunc{
 				FuncName:     "MyRule2",
 				PkgPath:      "github.com/frk/isvalid/internal/testdata/mypkg",
+				PkgName:      "mypkg",
 				FieldArgType: Type{Kind: TypeKindSlice, Elem: &Type{Kind: TypeKindString}},
 				IsVariadic:   true,
 				typ:          &types.Func{},
@@ -94,6 +96,7 @@ func TestAddRuleFunc(t *testing.T) {
 			"myrule": RuleTypeFunc{
 				FuncName:     "MyRule3",
 				PkgPath:      "github.com/frk/isvalid/internal/testdata/mypkg",
+				PkgName:      "mypkg",
 				FieldArgType: Type{Kind: TypeKindInt64},
 				OptionArgTypes: []Type{
 					{Kind: TypeKindInt},
