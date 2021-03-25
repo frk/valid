@@ -227,6 +227,7 @@ func analyzeStructFields(a *analysis, structType *types.Struct, selector []*Stru
 		f.Name = fvar.Name()
 		f.IsEmbedded = fvar.Embedded()
 		f.IsExported = fvar.Exported()
+		f.OmitNilGuard = tag.Contains("isvalid", "omitnilguard")
 		f.RuleTag, _ = parseRuleTag(ftag)
 
 		// map field to fvar for error reporting

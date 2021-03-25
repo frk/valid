@@ -6,7 +6,7 @@ import (
 )
 
 type AnalysisTestOK_Validator struct {
-	UserInput *testdata.UserInput `isvalid:"omitkey"`
+	UserInput *testdata.UserInput `isvalid:"omitkey,omitnilguard"`
 	Context   string
 }
 

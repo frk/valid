@@ -23,6 +23,7 @@ func TestGenerator(t *testing.T) {
 		"base_fields_with_rules_and_notnil",
 		"base_fields_with_rules_and_required",
 		"nested_fields_with_rules_and_nilguard",
+		"nested_fields_with_rules_and_omitnilguard",
 		"nested_fields_with_rules_and_notnil",
 		"nested_fields_with_rules_and_required",
 		/////////////

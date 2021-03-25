@@ -1018,9 +1018,10 @@ func TestAnalysisRun(t *testing.T) {
 			BeforeValidate: &MethodInfo{Name: "beforevalidate"},
 			AfterValidate:  &MethodInfo{Name: "AfterValidate"},
 			Fields: []*StructField{{
-				Name:    "UserInput",
-				Tag:     tagutil.Tag{"isvalid": []string{"omitkey"}},
-				RuleTag: &TagNode{},
+				Name:         "UserInput",
+				Tag:          tagutil.Tag{"isvalid": []string{"omitkey", "omitnilguard"}},
+				RuleTag:      &TagNode{},
+				OmitNilGuard: true,
 				Type: Type{
 					Kind: TypeKindPtr,
 					Elem: &Type{

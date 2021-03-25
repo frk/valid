@@ -226,6 +226,14 @@ func buildVarCode(g *generator, code *varcode, tn *analysis.TagNode) {
 		}
 	}
 
+	// TODO(mkopriva): this is a temporary solution, it needs a better/proper
+	// implementation and more thorough tests, right now it will probably
+	// cause weird code to be generated if the `isvalid:"omitnilguard"` tag
+	// is used in unexpected places.
+	if code.field.OmitNilGuard && code.vtype.Kind == analysis.TypeKindPtr && code.vtype.Elem.Kind == analysis.TypeKindStruct {
+		code.vtype = *code.vtype.Elem
+	}
+
 	buildVarCodeNilGuard(g, code)
 	buildVarCodeRequired(g, code)
 	buildVarCodeNotnil(g, code)
