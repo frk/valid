@@ -325,7 +325,7 @@ func buildVarCodeRequired(g *generator, code *varcode) {
 	}
 
 	code.rqif = &GO.IfStmt{Cond: cond}
-	code.rqif.Body.Add(newErrorReturnStmt(g, code, code.required))
+	code.rqif.Body.Add(newErrorReturnStmt(g, code, code.required, nil))
 }
 
 // buildVarCodeNotnil builds the IfStmt AST node for the varcode's "notnil" rule.
@@ -348,7 +348,7 @@ func buildVarCodeNotnil(g *generator, code *varcode) {
 	}
 
 	code.nnif = &GO.IfStmt{Cond: cond}
-	code.nnif.Body.Add(newErrorReturnStmt(g, code, code.notnil))
+	code.nnif.Body.Add(newErrorReturnStmt(g, code, code.notnil, nil))
 }
 
 // buildVarCodeSubBlock builds the "sub block" AST node for the varcode.
@@ -595,7 +595,7 @@ func newRuleTypeIsValidIfStmt(g *generator, code *varcode, r *analysis.Rule) (if
 	}
 	sel := GO.SelectorExpr{X: x, Sel: GO.Ident{"IsValid"}}
 	ifs.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: GO.CallExpr{Fun: sel}}
-	ifs.Body.Add(newErrorReturnStmt(g, code, r))
+	ifs.Body.Add(newErrorReturnStmt(g, code, r, nil))
 	return ifs
 }
 
@@ -604,13 +604,15 @@ func newRuleTypeEnumIfStmt(g *generator, code *varcode, r *analysis.Rule) (ifs G
 	typ := code.field.Type.PtrBase()
 	ident := typ.PkgPath + "." + typ.Name
 	enums := g.info.EnumMap[ident]
+	enumIds := make([]GO.ExprNode, len(enums))
 
-	for _, e := range enums {
+	for i, e := range enums {
 		id := GO.ExprNode(GO.Ident{e.Name})
 		if g.info.PkgPath != e.PkgPath {
 			imp := addimport(g.file, e.PkgPath, e.PkgName)
 			id = GO.QualifiedIdent{imp.name, e.Name}
 		}
+		enumIds[i] = id
 
 		cond := GO.BinaryExpr{Op: GO.BinaryNeq, X: code.vexpr, Y: id}
 		if ifs.Cond != nil {
@@ -620,7 +622,7 @@ func newRuleTypeEnumIfStmt(g *generator, code *varcode, r *analysis.Rule) (ifs G
 		}
 	}
 
-	ifs.Body.Add(newErrorReturnStmt(g, code, r))
+	ifs.Body.Add(newErrorReturnStmt(g, code, r, enumIds))
 	return ifs
 }
 
@@ -643,7 +645,7 @@ func newRuleTypeBasicIfStmt(g *generator, code *varcode, r *analysis.Rule) (ifs 
 		}
 	}
 
-	ifs.Body.Add(newErrorReturnStmt(g, code, r))
+	ifs.Body.Add(newErrorReturnStmt(g, code, r, nil))
 	return ifs
 }
 
@@ -654,21 +656,21 @@ func newRuleTypeBasicLenIfStmt(g *generator, code *varcode, r *analysis.Rule) (i
 	if len(r.Options) == 1 {
 		o := r.Options[0]
 		ifs.Cond = GO.BinaryExpr{Op: GO.BinaryNeq, X: GO.CallLenExpr{code.vexpr}, Y: newOptionValueExpr(g, r, o, typ)}
-		ifs.Body.Add(newErrorReturnStmt(g, code, r))
+		ifs.Body.Add(newErrorReturnStmt(g, code, r, nil))
 	} else { // len(r.Options) == 2 is assumed
 		o1, o2 := r.Options[0], r.Options[1]
 		if len(o1.Value) > 0 && len(o2.Value) == 0 {
 			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLss, X: GO.CallLenExpr{code.vexpr}, Y: newOptionValueExpr(g, r, o1, typ)}
-			ifs.Body.Add(newErrorReturnStmt(g, code, r))
+			ifs.Body.Add(newErrorReturnStmt(g, code, r, nil))
 		} else if len(o1.Value) == 0 && len(o2.Value) > 0 {
 			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{code.vexpr}, Y: newOptionValueExpr(g, r, o2, typ)}
-			ifs.Body.Add(newErrorReturnStmt(g, code, r))
+			ifs.Body.Add(newErrorReturnStmt(g, code, r, nil))
 		} else {
 			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLOr,
 				X: GO.BinaryExpr{Op: GO.BinaryLss, X: GO.CallLenExpr{code.vexpr}, Y: newOptionValueExpr(g, r, o1, typ)},
 				Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{code.vexpr}, Y: newOptionValueExpr(g, r, o2, typ)}}
 			ifs.Cond = GO.ParenExpr{ifs.Cond}
-			ifs.Body.Add(newErrorReturnStmt(g, code, r))
+			ifs.Body.Add(newErrorReturnStmt(g, code, r, nil))
 		}
 	}
 	return ifs
@@ -691,21 +693,21 @@ func newRuleTypeBasicRuneCountIfStmt(g *generator, code *varcode, r *analysis.Ru
 	if len(r.Options) == 1 {
 		o := r.Options[0]
 		ifs.Cond = GO.BinaryExpr{Op: GO.BinaryNeq, X: call, Y: newOptionValueExpr(g, r, o, typ)}
-		ifs.Body.Add(newErrorReturnStmt(g, code, r))
+		ifs.Body.Add(newErrorReturnStmt(g, code, r, nil))
 	} else { // len(r.Options) == 2 is assumed
 		o1, o2 := r.Options[0], r.Options[1]
 		if len(o1.Value) > 0 && len(o2.Value) == 0 {
 			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLss, X: call, Y: newOptionValueExpr(g, r, o1, typ)}
-			ifs.Body.Add(newErrorReturnStmt(g, code, r))
+			ifs.Body.Add(newErrorReturnStmt(g, code, r, nil))
 		} else if len(o1.Value) == 0 && len(o2.Value) > 0 {
 			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryGtr, X: call, Y: newOptionValueExpr(g, r, o2, typ)}
-			ifs.Body.Add(newErrorReturnStmt(g, code, r))
+			ifs.Body.Add(newErrorReturnStmt(g, code, r, nil))
 		} else {
 			ifs.Cond = GO.BinaryExpr{Op: GO.BinaryLOr,
 				X: GO.BinaryExpr{Op: GO.BinaryLss, X: call, Y: newOptionValueExpr(g, r, o1, typ)},
 				Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: call, Y: newOptionValueExpr(g, r, o2, typ)}}
 			ifs.Cond = GO.ParenExpr{ifs.Cond}
-			ifs.Body.Add(newErrorReturnStmt(g, code, r))
+			ifs.Body.Add(newErrorReturnStmt(g, code, r, nil))
 		}
 	}
 	return ifs
@@ -719,14 +721,14 @@ func newRuleTypeBasicRngIfStmt(g *generator, code *varcode, r *analysis.Rule) (i
 		X: GO.BinaryExpr{Op: GO.BinaryLss, X: code.vexpr, Y: newOptionValueExpr(g, r, o1, code.field.Type.PtrBase())},
 		Y: GO.BinaryExpr{Op: GO.BinaryGtr, X: code.vexpr, Y: newOptionValueExpr(g, r, o2, code.field.Type.PtrBase())}}
 	ifs.Cond = GO.ParenExpr{ifs.Cond}
-	ifs.Body.Add(newErrorReturnStmt(g, code, r))
+	ifs.Body.Add(newErrorReturnStmt(g, code, r, nil))
 	return ifs
 }
 
 // newRuleTypeFuncIfStmt produces an if-statement that checks the varcode's variable using the rule's function.
 func newRuleTypeFuncIfStmt(g *generator, code *varcode, r *analysis.Rule, rt analysis.RuleTypeFunc) (ifs GO.IfStmt) {
 	imp := addimport(g.file, rt.PkgPath, rt.PkgName)
-	retStmt := newErrorReturnStmt(g, code, r)
+	retStmt := newErrorReturnStmt(g, code, r, nil)
 
 	fn := GO.QualifiedIdent{imp.name, rt.FuncName}
 	call := GO.CallExpr{Fun: fn, Args: GO.ArgsList{List: code.vexpr}}
@@ -756,7 +758,7 @@ func newRuleTypeFuncIfStmt(g *generator, code *varcode, r *analysis.Rule, rt ana
 // using the rule's function invoking it in a chain for each of the rule's options.
 func newRuleTypeFuncChainIfStmt(g *generator, code *varcode, r *analysis.Rule, rt analysis.RuleTypeFunc) (ifs GO.IfStmt) {
 	imp := addimport(g.file, rt.PkgPath, rt.PkgName)
-	retStmt := newErrorReturnStmt(g, code, r)
+	retStmt := newErrorReturnStmt(g, code, r, nil)
 
 	optypes := rt.TypesForOptions(r.Options)
 	for i, o := range r.Options {
@@ -899,7 +901,7 @@ func newOptionConstExpr(g *generator, r *analysis.Rule, o *analysis.RuleOption, 
 }
 
 // newErrorReturnStmt produces statement node that returns an error value.
-func newErrorReturnStmt(g *generator, code *varcode, r *analysis.Rule) GO.StmtNode {
+func newErrorReturnStmt(g *generator, code *varcode, r *analysis.Rule, enumIds []GO.ExprNode) GO.StmtNode {
 	// Build code for custom handler, if one exists.
 	if g.vs.ErrorHandler != nil {
 		args := make(GO.ExprList, 3)
@@ -907,20 +909,24 @@ func newErrorReturnStmt(g *generator, code *varcode, r *analysis.Rule) GO.StmtNo
 		args[1] = code.vexpr
 		args[2] = GO.StringLit(r.Name)
 
-		for _, o := range r.Options {
-			switch o.Type {
-			case analysis.OptionTypeField:
-				x := GO.ExprNode(g.recv)
-				for _, f := range g.info.SelectorMap[o.Value] {
-					x = GO.SelectorExpr{X: x, Sel: GO.Ident{f.Name}}
+		if len(enumIds) > 0 {
+			args = append(args, enumIds...)
+		} else {
+			for _, o := range r.Options {
+				switch o.Type {
+				case analysis.OptionTypeField:
+					x := GO.ExprNode(g.recv)
+					for _, f := range g.info.SelectorMap[o.Value] {
+						x = GO.SelectorExpr{X: x, Sel: GO.Ident{f.Name}}
+					}
+					args = append(args, x)
+				case analysis.OptionTypeString:
+					args = append(args, GO.StringLit(o.Value))
+				case analysis.OptionTypeUnknown:
+					args = append(args, GO.StringLit(""))
+				default:
+					args = append(args, GO.ValueLit(o.Value))
 				}
-				args = append(args, x)
-			case analysis.OptionTypeString:
-				args = append(args, GO.StringLit(o.Value))
-			case analysis.OptionTypeUnknown:
-				args = append(args, GO.StringLit(""))
-			default:
-				args = append(args, GO.ValueLit(o.Value))
 			}
 		}
 

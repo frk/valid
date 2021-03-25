@@ -3,24 +3,22 @@
 package testdata
 
 import (
-	"errors"
-
 	"github.com/frk/isvalid/internal/testdata/mypkg"
 )
 
 func (v EnumValidator) Validate() error {
 	if v.F1 != myenum0 && v.F1 != myenum1 && v.F1 != myenum2 && v.F1 != myenum4 && v.F1 != myenum6 {
-		return errors.New("F1 is not valid")
+		v.ea.Error("F1", v.F1, "enum", myenum0, myenum1, myenum2, myenum4, myenum6)
 	}
 	if v.F2 != mypkg.MyFoo && v.F2 != mypkg.MyBar && v.F2 != mypkg.MyBaz {
-		return errors.New("F2 is not valid")
+		v.ea.Error("F2", v.F2, "enum", mypkg.MyFoo, mypkg.MyBar, mypkg.MyBaz)
 	}
 	if v.F3 == nil || *v.F3 == nil || len(**v.F3) == 0 {
-		return errors.New("F3 is required")
+		v.ea.Error("F3", **v.F3, "required")
 	} else if len(**v.F3) != 3 {
-		return errors.New("F3 must be of length: 3")
+		v.ea.Error("F3", **v.F3, "len", 3)
 	} else if **v.F3 != gibfoo && **v.F3 != gibbar && **v.F3 != gibbaz && **v.F3 != gibquux {
-		return errors.New("F3 is not valid")
+		v.ea.Error("F3", **v.F3, "enum", gibfoo, gibbar, gibbaz, gibquux)
 	}
-	return nil
+	return v.ea.Out()
 }
