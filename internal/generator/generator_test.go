@@ -29,6 +29,7 @@ func TestGenerator(t *testing.T) {
 		/////////////
 
 		"required",
+		"required2",
 		"notnil",
 		"alnum",
 		"email",

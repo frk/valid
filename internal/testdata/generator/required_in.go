@@ -16,6 +16,10 @@ type RequiredValidator struct {
 			F1 *string `is:"required"`
 		} `is:"required"`
 		F2 *string `is:"required"`
+		G3 *struct {
+			F1 string
+			F2 int
+		} `is:"required"`
 	}
 
 	// should still work even though...

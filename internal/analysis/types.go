@@ -489,30 +489,56 @@ func (f *StructField) ContainsRules() bool {
 		return true
 	}
 
-	// walk recursively traverses the hierarchy of the given type and
-	// invokes ContainsRules on any struct fields it encounters.
-	var walk func(Type) bool
-	walk = func(typ Type) bool {
-		typ = typ.PtrBase()
-		switch typ.Kind {
-		case TypeKindStruct:
-			for _, f := range typ.Fields {
-				if f.ContainsRules() {
+	if false {
+		// walk recursively traverses the hierarchy of the given type and
+		// invokes ContainsRules on any struct fields it encounters.
+		var walk func(Type) bool
+		walk = func(typ Type) bool {
+			typ = typ.PtrBase()
+			switch typ.Kind {
+			case TypeKindStruct:
+				for _, f := range typ.Fields {
+					if f.ContainsRules() {
+						return true
+					}
+				}
+				return false
+			case TypeKindArray, TypeKindSlice:
+				return walk(*typ.Elem)
+			case TypeKindMap:
+				if walk(*typ.Key) {
 					return true
 				}
+				return walk(*typ.Elem)
 			}
 			return false
-		case TypeKindArray, TypeKindSlice:
-			return walk(*typ.Elem)
-		case TypeKindMap:
-			if walk(*typ.Key) {
+		}
+		return walk(f.Type)
+	}
+	return f.Type.ContainsRules()
+}
+
+// ContainsRules reports whether or not the StructField f, or any of
+// the StructFields in the type hierarchy of f, contain validation rules.
+func (t Type) ContainsRules() bool {
+	t = t.PtrBase()
+	switch t.Kind {
+	case TypeKindStruct:
+		for _, f := range t.Fields {
+			if f.ContainsRules() {
 				return true
 			}
-			return walk(*typ.Elem)
 		}
 		return false
+	case TypeKindArray, TypeKindSlice:
+		return t.Elem.ContainsRules()
+	case TypeKindMap:
+		if t.Key.ContainsRules() {
+			return true
+		}
+		return t.Elem.ContainsRules()
 	}
-	return walk(f.Type)
+	return false
 }
 
 // PtrBase returns the pointer base type of t.

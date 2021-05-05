@@ -361,16 +361,18 @@ func buildVarCodeSubBlock(g *generator, code *varcode) {
 		return // nothing to do
 	}
 
-	// no subfields and there's a "notnil" or "required" rule then we do not
-	// need a sub-block, instead we want to chain the "notnil"/"required" IfStmt
-	// with the IfStmt produced from ruleifs.
-	if len(code.vtype.Fields) == 0 && (code.nnif != nil || code.rqif != nil) {
-		return // nothing to do
-	}
+	if len(code.vtype.Fields) == 0 || !code.vtype.ContainsRules() {
+		// no subfields and there's a "notnil" or "required" rule then we do not
+		// need a sub-block, instead we want to chain the "notnil"/"required" IfStmt
+		// with the IfStmt produced from ruleifs.
+		if code.nnif != nil || code.rqif != nil {
+			return // nothing to do
+		}
 
-	// no subfields and there's at most 1 rule, no sub-block
-	if len(code.vtype.Fields) == 0 && len(code.rules) < 2 {
-		return // nothing to do
+		// no subfields and there's at most 1 rule, no sub-block
+		if len(code.rules) < 2 {
+			return // nothing to do
+		}
 	}
 
 	v := GO.Ident{"f"}

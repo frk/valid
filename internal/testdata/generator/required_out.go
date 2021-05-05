@@ -45,6 +45,9 @@ func (v RequiredValidator) Validate() error {
 	if v.G1.F2 == nil || len(*v.G1.F2) == 0 {
 		return errors.New("G1.F2 is required")
 	}
+	if v.G1.G3 == nil {
+		return errors.New("G1.G3 is required")
+	}
 	if v.FX == nil || *v.FX == nil || **v.FX == nil || ***v.FX == nil || ****v.FX == nil || *****v.FX == nil {
 		return errors.New("FX is required")
 	}
