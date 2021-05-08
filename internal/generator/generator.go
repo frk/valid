@@ -385,7 +385,11 @@ func buildVarCodeSubBlock(g *generator, code *varcode) {
 // buildVarCodeRules builds IfStmt AST nodes for the varcode's rules.
 func buildVarCodeRules(g *generator, code *varcode) {
 	for _, r := range code.rules {
-		ifs := newRuleIfStmt(g, code, r)
+		ifs, isNop := newRuleIfStmt(g, code, r)
+		if isNop {
+			continue
+		}
+
 		if len(r.Context) > 0 {
 			opt := GO.SelectorExpr{X: g.recv, Sel: GO.Ident{g.vs.ContextOption.Name}}
 			bin := GO.BinaryExpr{Op: GO.BinaryEql, X: opt, Y: GO.StringLit(r.Context)}
@@ -562,31 +566,33 @@ func newNotnilExpr(g *generator, code *varcode) GO.ExprNode {
 }
 
 // newRuleIfStmt produces an if-statement that checks the varcode's variable against the given rule.
-func newRuleIfStmt(g *generator, code *varcode, r *analysis.Rule) (ifs GO.IfStmt) {
+func newRuleIfStmt(g *generator, code *varcode, r *analysis.Rule) (ifs GO.IfStmt, isNop bool) {
 	rt := g.info.RuleTypeMap[r.Name]
 	switch rx := rt.(type) {
+	case analysis.RuleTypeNop:
+		return ifs, true
 	case analysis.RuleTypeIsValid:
-		return newRuleTypeIsValidIfStmt(g, code, r)
+		return newRuleTypeIsValidIfStmt(g, code, r), isNop
 	case analysis.RuleTypeEnum:
-		return newRuleTypeEnumIfStmt(g, code, r)
+		return newRuleTypeEnumIfStmt(g, code, r), isNop
 	case analysis.RuleTypeBasic:
 		if r.Name == "len" {
-			return newRuleTypeBasicLenIfStmt(g, code, r)
+			return newRuleTypeBasicLenIfStmt(g, code, r), isNop
 		} else if r.Name == "runecount" {
-			return newRuleTypeBasicRuneCountIfStmt(g, code, r)
+			return newRuleTypeBasicRuneCountIfStmt(g, code, r), isNop
 		} else if r.Name == "rng" {
-			return newRuleTypeBasicRngIfStmt(g, code, r)
+			return newRuleTypeBasicRngIfStmt(g, code, r), isNop
 		}
-		return newRuleTypeBasicIfStmt(g, code, r)
+		return newRuleTypeBasicIfStmt(g, code, r), isNop
 	case analysis.RuleTypeFunc:
 		if rx.LOp > 0 {
-			return newRuleTypeFuncChainIfStmt(g, code, r, rx)
+			return newRuleTypeFuncChainIfStmt(g, code, r, rx), isNop
 		}
-		return newRuleTypeFuncIfStmt(g, code, r, rx)
+		return newRuleTypeFuncIfStmt(g, code, r, rx), isNop
 	}
 
 	panic("shouldn't reach")
-	return ifs
+	return ifs, isNop
 }
 
 // newRuleTypeIsValidIfStmt produces an if-statement that checks the varcode's variable using the "IsValid()" method.
