@@ -159,6 +159,9 @@ type (
 	// RuleTypeNop is mapped to Rules that should produce NO code.
 	RuleTypeNop struct{}
 
+	// RuleTypeOmitEmpty is mapped to Rules that should produce NO code.
+	RuleTypeOmitEmpty struct{}
+
 	// RuleTypeIsValid is mapped to Rules that should produce code that
 	// validates a value by invoking the "IsValid()" method on that value.
 	RuleTypeIsValid struct{}
@@ -234,6 +237,28 @@ func (RuleTypeNop) ErrConf() ErrMesgConfig {
 func (rt RuleTypeNop) checkRule(a *analysis, r *Rule, t Type, f *StructField) error {
 	if ok := rt.optCount().check(len(r.Options)); !ok {
 		return &anError{Code: errRuleOptionCount, a: a, f: f, r: r}
+	}
+	return nil
+}
+
+// Accepts no options.
+func (RuleTypeOmitEmpty) optCount() ruleOptCount {
+	return ruleOptCount{}
+}
+
+func (RuleTypeOmitEmpty) ErrConf() ErrMesgConfig { return ErrMesgConfig{Text: "is not valid"} }
+
+func (rt RuleTypeOmitEmpty) checkRule(a *analysis, r *Rule, t Type, f *StructField) error {
+	if ok := rt.optCount().check(len(r.Options)); !ok {
+		// TODO add test
+		return &anError{Code: errRuleOptionCount, a: a, f: f, r: r}
+	}
+
+	for _, rr := range f.RuleTag.Rules {
+		if rr.Name == "required" || rr.Name == "notnil" {
+			// TODO add test
+			return &anError{Code: errRuleOmitEmptyConflict, a: a, f: f, r: r}
+		}
 	}
 	return nil
 }

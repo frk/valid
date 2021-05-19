@@ -16,6 +16,7 @@ import (
 
 func TestGenerator(t *testing.T) {
 	tests := []string{
+		"omitempty",
 		"slice2",
 
 		"nothing_to_validate",

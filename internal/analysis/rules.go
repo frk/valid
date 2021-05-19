@@ -74,9 +74,10 @@ var defaultRuleTypeMap = map[string]RuleType{
 	"runecount": RuleTypeBasic{check: isValidRuleRuneCount, optmin: 1, optmax: 2},
 
 	// speciél
-	"-isvalid": RuleTypeNop{},
-	"isvalid":  RuleTypeIsValid{},
-	"enum":     RuleTypeEnum{},
+	"-isvalid":  RuleTypeNop{},
+	"isvalid":   RuleTypeIsValid{},
+	"omitempty": RuleTypeOmitEmpty{},
+	"enum":      RuleTypeEnum{},
 
 	// validators "borrowed" from stdlib
 	"prefix": RuleTypeFunc{

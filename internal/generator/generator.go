@@ -106,13 +106,16 @@ type varcode struct {
 	fields []*varcode
 
 	// The variable's set of rules. If the rules "requried" and/or "notnil"
-	// were specified for the variable they will be removed from this slice
-	// and assigned to their own fields as they require special attention.
+	// and/or "omitempty" were specified for the variable they will be removed
+	// from this slice and assigned to their own fields as they require special
+	// attention.
 	rules []*analysis.Rule
 	// Set if the variable's original rule set includes the "required" rule, otherwise nil.
 	required *analysis.Rule
 	// Set if the variable's original rule set includes the "notnil" rule, otherwise nil.
 	notnil *analysis.Rule
+	// Set if the variable's original rule set includes the "omitempty" rule, otherwise nil.
+	omitempty *analysis.Rule
 
 	// A list of if-statement AST nodes built from the rules slice and used
 	// by the generator to produce code that will, according to those rules,
@@ -128,6 +131,9 @@ type varcode struct {
 	// A "nil guard" AST node built for pointer variables and used by the
 	// generator to produce code that checks that the pointer is not nil.
 	ng GO.ExprNode
+	// A "not empty" AST node built from the "omitempty" rule and used by the
+	// generator to produce code that checks wether the variable is empty or not.
+	ne GO.ExprNode
 	// If set it is used to declare a new variable from vexpr and wrap its
 	// validation code inside a "sub block". This is built specifically to
 	// avoid producing code with repeated pointer dereferencing and/or long
@@ -221,6 +227,8 @@ func buildVarCode(g *generator, code *varcode, tn *analysis.TagNode) {
 			code.required = r
 		} else if r.Name == "notnil" {
 			code.notnil = r
+		} else if r.Name == "omitempty" {
+			code.omitempty = r
 		} else {
 			code.rules = append(code.rules, r)
 		}
@@ -235,6 +243,7 @@ func buildVarCode(g *generator, code *varcode, tn *analysis.TagNode) {
 	}
 
 	buildVarCodeNilGuard(g, code)
+	buildVarCodeNotEmpty(g, code)
 	buildVarCodeRequired(g, code)
 	buildVarCodeNotnil(g, code)
 	buildVarCodeSubBlock(g, code)
@@ -305,6 +314,15 @@ func buildVarCodeNilGuard(g *generator, code *varcode) {
 	code.ng = cond
 }
 
+// buildVarCodeNotEmpty builds the IfStmt AST node for the varcode's ...
+func buildVarCodeNotEmpty(g *generator, code *varcode) {
+	if code.omitempty == nil {
+		return // nothing to do
+	}
+
+	code.ne = newNotEmptyExpr(g, code)
+}
+
 // buildVarCodeRequired builds the IfStmt AST node for the varcode's "required" rule.
 func buildVarCodeRequired(g *generator, code *varcode) {
 	if code.required == nil {
@@ -354,7 +372,7 @@ func buildVarCodeNotnil(g *generator, code *varcode) {
 // buildVarCodeSubBlock builds the "sub block" AST node for the varcode.
 func buildVarCodeSubBlock(g *generator, code *varcode) {
 	// no nil-guard = no sub-block necessary
-	if code.ng == nil {
+	if code.ng == nil && code.ne == nil {
 		// MAYBE-TODO(mkopriva): it might be worth building a sub-block
 		// for struct variables with deeply nested fields to avoid producing
 		// code that references the "leaf" fields via a long chained selector.
@@ -448,6 +466,8 @@ func assembleVarCode(g *generator, code *varcode) GO.StmtNode {
 		if node.Clause != nil {
 			if code.ng != nil {
 				stmtlist = append(stmtlist, GO.IfStmt{Cond: code.ng, Body: GO.BlockStmt{[]GO.StmtNode{node}}})
+			} else if code.ne != nil {
+				stmtlist = append(stmtlist, GO.IfStmt{Cond: code.ne, Body: GO.BlockStmt{[]GO.StmtNode{node}}})
 			} else {
 				stmtlist = append(stmtlist, assembleVarCodeSubBlock(g, code, node))
 			}
@@ -473,6 +493,8 @@ func assembleVarCodeSubBlock(g *generator, code *varcode, stmt GO.StmtNode) GO.S
 		return ifs
 	} else if code.ng != nil {
 		return GO.IfStmt{Cond: code.ng, Body: bs}
+	} else if code.ne != nil {
+		return GO.IfStmt{Cond: code.ne, Body: bs}
 	}
 	return bs
 }
@@ -507,6 +529,8 @@ func assembleVarCodeRules(g *generator, code *varcode) GO.IfStmt {
 	// in else-ifs without the nilguard and could cause panic.
 	if (code.ng != nil && code.rqif == nil && code.nnif == nil) && len(code.ruleifs) == 1 {
 		root.Cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: code.ng, Y: root.Cond}
+	} else if (code.ne != nil && code.rqif == nil && code.nnif == nil) && len(code.ruleifs) == 1 {
+		root.Cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: code.ne, Y: root.Cond}
 	}
 
 	return root
@@ -562,6 +586,26 @@ func newNotnilExpr(g *generator, code *varcode) GO.ExprNode {
 	switch code.vtype.Kind {
 	case analysis.TypeKindPtr, analysis.TypeKindSlice, analysis.TypeKindMap, analysis.TypeKindInterface:
 		return GO.BinaryExpr{Op: GO.BinaryEql, X: code.vexpr, Y: NIL}
+	}
+	return nil
+}
+
+// newNotEmptyExpr produces an expression that checks whether the varcode's
+// variable is empty or not.
+func newNotEmptyExpr(g *generator, code *varcode) GO.ExprNode {
+	switch code.vtype.Kind {
+	case analysis.TypeKindString, analysis.TypeKindMap, analysis.TypeKindSlice:
+		return GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{code.vexpr}, Y: GO.IntLit(0)}
+	case analysis.TypeKindInt, analysis.TypeKindInt8, analysis.TypeKindInt16, analysis.TypeKindInt32, analysis.TypeKindInt64:
+		return GO.BinaryExpr{Op: GO.BinaryGtr, X: code.vexpr, Y: GO.IntLit(0)}
+	case analysis.TypeKindUint, analysis.TypeKindUint8, analysis.TypeKindUint16, analysis.TypeKindUint32, analysis.TypeKindUint64:
+		return GO.BinaryExpr{Op: GO.BinaryGtr, X: code.vexpr, Y: GO.IntLit(0)}
+	case analysis.TypeKindFloat32, analysis.TypeKindFloat64:
+		return GO.BinaryExpr{Op: GO.BinaryGtr, X: code.vexpr, Y: GO.ValueLit("0.0")}
+	case analysis.TypeKindBool:
+		return GO.BinaryExpr{Op: GO.BinaryEql, X: code.vexpr, Y: GO.ValueLit("true")}
+	case analysis.TypeKindPtr, analysis.TypeKindInterface:
+		return GO.BinaryExpr{Op: GO.BinaryNeq, X: code.vexpr, Y: NIL}
 	}
 	return nil
 }

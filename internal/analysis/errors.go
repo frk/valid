@@ -307,6 +307,7 @@ const (
 	errRuleEnumType
 	errRuleEnumTypeUnnamed
 	errRuleEnumTypeNoConst
+	errRuleOmitEmptyConflict
 	errRuleKey
 	errRuleElem
 )
@@ -508,6 +509,11 @@ var error_template_string = `
 {{R "ERROR:"}} {{.FileAndLine}}: 
   Cannot use "{{R .RuleName}}" rule with field {{R .FieldName}} of type {{R .FieldType}}.
   > Type {{R .FieldType}} has no exported constants.
+{{ end }}
+
+{{ define "` + errRuleOmitEmptyConflict.name() + `" -}}
+{{R "ERROR:"}} {{.FileAndLine}}: 
+  Cannot use "{{R .RuleName}}" rule together with rule {{R "required"}} or {{R "notnil"}}.
 {{ end }}
 
 {{ define "` + errRuleKey.name() + `" -}}
