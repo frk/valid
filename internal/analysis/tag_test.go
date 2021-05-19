@@ -132,6 +132,15 @@ func TestParseRuleTag(t *testing.T) {
 			Rules: []*Rule{{Name: "ra"}},
 		}},
 	}, {
+		// flat & nested
+		tag: `is:"ra,[]re"`,
+		want: &TagNode{
+			Rules: []*Rule{{Name: "ra"}},
+			Elem: &TagNode{
+				Rules: []*Rule{{Name: "re"}},
+			},
+		},
+	}, {
 		// nested rule (elem [levels])
 		tag: `is:"[][][][]ra"`,
 		want: &TagNode{

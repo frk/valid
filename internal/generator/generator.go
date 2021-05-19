@@ -440,19 +440,20 @@ func assembleVarCode(g *generator, code *varcode) GO.StmtNode {
 	// ifstmt for the varcode's rules
 	ifs := assembleVarCodeRules(g, code)
 	if ifs.Cond != nil {
-		return assembleVarCodeSubBlock(g, code, ifs)
+		stmtlist = append(stmtlist, assembleVarCodeSubBlock(g, code, ifs))
 	}
 
 	if code.key != nil || code.elem != nil {
 		node := assembleVarCodeKeyElem(g, code)
 		if node.Clause != nil {
 			if code.ng != nil {
-				return GO.IfStmt{Cond: code.ng, Body: GO.BlockStmt{[]GO.StmtNode{node}}}
+				stmtlist = append(stmtlist, GO.IfStmt{Cond: code.ng, Body: GO.BlockStmt{[]GO.StmtNode{node}}})
+			} else {
+				stmtlist = append(stmtlist, assembleVarCodeSubBlock(g, code, node))
 			}
-			return assembleVarCodeSubBlock(g, code, node)
 		}
 	}
-	return nil
+	return stmtlist
 }
 
 // assembleVarCodeSubBlock assembles the varcode's "sub block" with the given stmt as its body.

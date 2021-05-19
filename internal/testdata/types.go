@@ -150,6 +150,9 @@ type UserInput struct {
 	F94 string   `is:"runecount:4:28"`
 	F95 []byte   `is:"runecount::28"`
 	F96 someKind `is:"runecount:4:"` // string kind is ok (must be converted though)
+
+	// required with elems
+	F97 []string `is:"required,[]email"`
 }
 
 // local enum

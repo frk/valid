@@ -1895,6 +1895,19 @@ func TestAnalysisRun(t *testing.T) {
 								{Value: "4", Type: OptionTypeInt},
 								{Value: "", Type: OptionTypeUnknown},
 							}}}},
+						}, {
+							Name: "F97", Key: "F97", IsExported: true,
+							Type: Type{
+								Kind: TypeKindSlice,
+								Elem: &Type{Kind: TypeKindString},
+							},
+							Tag: tagutil.Tag{"is": []string{`required`, `[]email`}},
+							RuleTag: &TagNode{
+								Rules: []*Rule{{Name: "required"}},
+								Elem: &TagNode{
+									Rules: []*Rule{{Name: "email"}},
+								},
+							},
 						}},
 					},
 				},

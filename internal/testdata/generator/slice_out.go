@@ -53,6 +53,11 @@ func (v SliceValidator) Validate() error {
 			if len(e) > 10 {
 				return errors.New("F5 must be of length at most: 10")
 			}
+			for _, e := range e {
+				if e < -54 || e > 256 {
+					return errors.New("F5 must be between: -54 and 256")
+				}
+			}
 		}
 	}
 	return nil

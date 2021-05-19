@@ -16,6 +16,8 @@ import (
 
 func TestGenerator(t *testing.T) {
 	tests := []string{
+		"slice2",
+
 		"nothing_to_validate",
 		"base_fields_with_rules",
 		"nested_fields_with_rules",
@@ -26,7 +28,6 @@ func TestGenerator(t *testing.T) {
 		"nested_fields_with_rules_and_omitnilguard",
 		"nested_fields_with_rules_and_notnil",
 		"nested_fields_with_rules_and_required",
-		/////////////
 
 		"required",
 		"required2",
