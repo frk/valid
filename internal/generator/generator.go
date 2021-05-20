@@ -339,7 +339,7 @@ func buildVarCodeRequired(g *generator, code *varcode) {
 	if len(code.required.Context) > 0 {
 		opt := GO.SelectorExpr{X: g.recv, Sel: GO.Ident{g.vs.ContextOption.Name}}
 		bin := GO.BinaryExpr{Op: GO.BinaryEql, X: opt, Y: GO.StringLit(code.required.Context)}
-		cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: cond, Y: bin}
+		cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: bin, Y: cond}
 	}
 
 	code.rqif = &GO.IfStmt{Cond: cond}
@@ -362,7 +362,7 @@ func buildVarCodeNotnil(g *generator, code *varcode) {
 	if len(code.notnil.Context) > 0 {
 		opt := GO.SelectorExpr{X: g.recv, Sel: GO.Ident{g.vs.ContextOption.Name}}
 		bin := GO.BinaryExpr{Op: GO.BinaryEql, X: opt, Y: GO.StringLit(code.notnil.Context)}
-		cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: cond, Y: bin}
+		cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: bin, Y: cond}
 	}
 
 	code.nnif = &GO.IfStmt{Cond: cond}
@@ -411,7 +411,7 @@ func buildVarCodeRules(g *generator, code *varcode) {
 		if len(r.Context) > 0 {
 			opt := GO.SelectorExpr{X: g.recv, Sel: GO.Ident{g.vs.ContextOption.Name}}
 			bin := GO.BinaryExpr{Op: GO.BinaryEql, X: opt, Y: GO.StringLit(r.Context)}
-			ifs.Cond = GO.ParenExpr{GO.BinaryExpr{Op: GO.BinaryLAnd, X: ifs.Cond, Y: bin}}
+			ifs.Cond = GO.ParenExpr{GO.BinaryExpr{Op: GO.BinaryLAnd, X: bin, Y: ifs.Cond}}
 		}
 
 		code.ruleifs = append(code.ruleifs, ifs)
