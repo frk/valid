@@ -371,7 +371,7 @@ func buildVarCodeNotnil(g *generator, code *varcode) {
 
 // buildVarCodeSubBlock builds the "sub block" AST node for the varcode.
 func buildVarCodeSubBlock(g *generator, code *varcode) {
-	// no nil-guard = no sub-block necessary
+	// no nil-guard and omitempty = no sub-block necessary
 	if code.ng == nil && code.ne == nil {
 		// MAYBE-TODO(mkopriva): it might be worth building a sub-block
 		// for struct variables with deeply nested fields to avoid producing
@@ -464,7 +464,10 @@ func assembleVarCode(g *generator, code *varcode) GO.StmtNode {
 	if code.key != nil || code.elem != nil {
 		node := assembleVarCodeKeyElem(g, code)
 		if node.Clause != nil {
-			if code.ng != nil {
+			if code.ng != nil && code.ne != nil {
+				cond := GO.BinaryExpr{Op: GO.BinaryLAnd, X: code.ng, Y: code.ne}
+				stmtlist = append(stmtlist, GO.IfStmt{Cond: cond, Body: GO.BlockStmt{[]GO.StmtNode{node}}})
+			} else if code.ng != nil {
 				stmtlist = append(stmtlist, GO.IfStmt{Cond: code.ng, Body: GO.BlockStmt{[]GO.StmtNode{node}}})
 			} else if code.ne != nil {
 				stmtlist = append(stmtlist, GO.IfStmt{Cond: code.ne, Body: GO.BlockStmt{[]GO.StmtNode{node}}})
@@ -491,6 +494,9 @@ func assembleVarCodeSubBlock(g *generator, code *varcode, stmt GO.StmtNode) GO.S
 		ifs := *code.nnif
 		ifs.Else = bs
 		return ifs
+	} else if code.ng != nil && code.ne != nil {
+		cond := GO.BinaryExpr{Op: GO.BinaryLAnd, X: code.ng, Y: code.ne}
+		return GO.IfStmt{Cond: cond, Body: bs}
 	} else if code.ng != nil {
 		return GO.IfStmt{Cond: code.ng, Body: bs}
 	} else if code.ne != nil {
@@ -527,10 +533,19 @@ func assembleVarCodeRules(g *generator, code *varcode) GO.IfStmt {
 	// only a single rule we can merge its conditional with that of the "nilguard",
 	// note that this works only with single rules, multiple rules would end up
 	// in else-ifs without the nilguard and could cause panic.
-	if (code.ng != nil && code.rqif == nil && code.nnif == nil) && len(code.ruleifs) == 1 {
-		root.Cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: code.ng, Y: root.Cond}
-	} else if (code.ne != nil && code.rqif == nil && code.nnif == nil) && len(code.ruleifs) == 1 {
-		root.Cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: code.ne, Y: root.Cond}
+	if code.ng != nil && code.ne != nil {
+		if code.rqif == nil && code.nnif == nil && len(code.ruleifs) == 1 {
+			cond := GO.BinaryExpr{Op: GO.BinaryLAnd, X: code.ng, Y: code.ne}
+			root.Cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: cond, Y: root.Cond}
+		}
+	} else if code.ng != nil {
+		if code.rqif == nil && code.nnif == nil && len(code.ruleifs) == 1 {
+			root.Cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: code.ng, Y: root.Cond}
+		}
+	} else if code.ne != nil {
+		if code.rqif == nil && code.nnif == nil && len(code.ruleifs) == 1 {
+			root.Cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: code.ne, Y: root.Cond}
+		}
 	}
 
 	return root

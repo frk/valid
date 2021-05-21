@@ -20,10 +20,10 @@ func (v OmitEmptyValidator) Validate() error {
 			return errors.New("F2 must be of length between: 5 and 85 (inclusive)")
 		}
 	}
-	if v.F3 != nil && !isvalid.Email(*v.F3) {
+	if v.F3 != nil && len(*v.F3) > 0 && !isvalid.Email(*v.F3) {
 		return errors.New("F3 must be a valid email address")
 	}
-	if v.F4 != nil {
+	if v.F4 != nil && len(*v.F4) > 0 {
 		f := *v.F4
 		if !isvalid.Email(f) {
 			return errors.New("F4 must be a valid email address")
