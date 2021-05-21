@@ -94,3 +94,17 @@ type MyNonBasicType struct {
 }
 
 type MyNonBasicType2 []string
+
+// enum + isValider
+type MyEnumValider string
+
+const (
+	MyEnumValiderFoo MyEnumValider = "foo"
+	MyEnumValiderBar MyEnumValider = "bar"
+	MyEnumValiderBaz MyEnumValider = "baz"
+)
+
+func (MyEnumValider) IsValid() bool {
+	// ...
+	return false
+}

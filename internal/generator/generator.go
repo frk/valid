@@ -529,22 +529,25 @@ func assembleVarCodeRules(g *generator, code *varcode) GO.IfStmt {
 		}
 	}
 
-	// if "nilguard" present but no "required" and no "notnil" then if we have
-	// only a single rule we can merge its conditional with that of the "nilguard",
-	// note that this works only with single rules, multiple rules would end up
-	// in else-ifs without the nilguard and could cause panic.
-	if code.ng != nil && code.ne != nil {
-		if code.rqif == nil && code.nnif == nil && len(code.ruleifs) == 1 {
-			cond := GO.BinaryExpr{Op: GO.BinaryLAnd, X: code.ng, Y: code.ne}
-			root.Cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: cond, Y: root.Cond}
-		}
-	} else if code.ng != nil {
-		if code.rqif == nil && code.nnif == nil && len(code.ruleifs) == 1 {
-			root.Cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: code.ng, Y: root.Cond}
-		}
-	} else if code.ne != nil {
-		if code.rqif == nil && code.nnif == nil && len(code.ruleifs) == 1 {
-			root.Cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: code.ne, Y: root.Cond}
+	// skip if subblock is, or will be, built
+	if code.sb == nil {
+		// if "nilguard" present but no "required" and no "notnil" then if we have
+		// only a single rule we can merge its conditional with that of the "nilguard",
+		// note that this works only with single rules, multiple rules would end up
+		// in else-ifs without the nilguard and could cause panic.
+		if code.ng != nil && code.ne != nil {
+			if code.rqif == nil && code.nnif == nil && len(code.ruleifs) == 1 {
+				cond := GO.BinaryExpr{Op: GO.BinaryLAnd, X: code.ng, Y: code.ne}
+				root.Cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: cond, Y: root.Cond}
+			}
+		} else if code.ng != nil {
+			if code.rqif == nil && code.nnif == nil && len(code.ruleifs) == 1 {
+				root.Cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: code.ng, Y: root.Cond}
+			}
+		} else if code.ne != nil {
+			if code.rqif == nil && code.nnif == nil && len(code.ruleifs) == 1 {
+				root.Cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: code.ne, Y: root.Cond}
+			}
 		}
 	}
 

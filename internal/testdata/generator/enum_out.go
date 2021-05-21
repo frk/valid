@@ -20,5 +20,11 @@ func (v EnumValidator) Validate() error {
 	} else if **v.F3 != gibfoo && **v.F3 != gibbar && **v.F3 != gibbaz && **v.F3 != gibquux {
 		v.ea.Error("F3", **v.F3, "enum", gibfoo, gibbar, gibbaz, gibquux)
 	}
+	if v.F4 != nil {
+		f := *v.F4
+		if f != mypkg.MyEnumValiderFoo && f != mypkg.MyEnumValiderBar && f != mypkg.MyEnumValiderBaz {
+			v.ea.Error("F4", f, "enum", mypkg.MyEnumValiderFoo, mypkg.MyEnumValiderBar, mypkg.MyEnumValiderBaz)
+		}
+	}
 	return v.ea.Out()
 }

@@ -30,5 +30,7 @@ type EnumValidator struct {
 	F2 mypkg.MyKind `is:"enum"`
 	F3 **gibberish  `is:"len:3,enum,required"`
 
+	F4 *mypkg.MyEnumValider `is:"enum,-isvalid"`
+
 	ea errorAggregator
 }
