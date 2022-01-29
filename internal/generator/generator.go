@@ -104,6 +104,8 @@ type varcode struct {
 	// If vtype is a struct, the fields varcode slice will be used for
 	// preparing the validation code of the vtype's fields.
 	fields []*varcode
+	// List of context specific varcodes, if any.
+	ctxs []*varcode
 
 	// The variable's set of rules. If the rules "requried" and/or "notnil"
 	// and/or "omitempty" were specified for the variable they will be removed
@@ -127,6 +129,8 @@ type varcode struct {
 	// An if-statement AST node built from the "notnil" rule and used by the
 	// generator to produce code that checks the variable against the nil value.
 	nnif *GO.IfStmt
+	// An if-statement AST node built from "context" specific rules.
+	ctxif *GO.IfStmt
 
 	// A "nil guard" AST node built for pointer variables and used by the
 	// generator to produce code that checks that the pointer is not nil.
@@ -206,54 +210,77 @@ func buildHookCalls(g *generator) {
 
 // buildVarCodes builds the varcode for the generator's target validator struct.
 func buildVarCodes(g *generator) {
-	for _, f := range g.vs.Fields {
-		if !f.ContainsRules() {
-			continue
-		}
-
-		expr := GO.SelectorExpr{X: g.recv, Sel: GO.Ident{f.Name}}
-		code := &varcode{vtype: f.Type, vexpr: expr, field: f}
-
-		buildVarCode(g, code, f.RuleTag)
+	typ := analysis.Type{Kind: analysis.TypeKindStruct, Fields: g.vs.Fields}
+	code := &varcode{vtype: typ, vexpr: g.recv, field: nil}
+	buildVarCode(g, code, nil)
+	if len(code.fields) > 0 || len(code.ctxs) > 0 {
 		g.varcodes = append(g.varcodes, code)
 	}
 }
 
 // buildVarCode builds individual nodes of the AST for the given varcode.
 func buildVarCode(g *generator, code *varcode, tn *analysis.TagNode) {
-	// split off the "required" and "notnil" rules, they need special attention.
-	for _, r := range tn.Rules {
-		if r.Name == "required" {
-			code.required = r
-		} else if r.Name == "notnil" {
-			code.notnil = r
-		} else if r.Name == "omitempty" {
-			code.omitempty = r
-		} else {
-			code.rules = append(code.rules, r)
-		}
-	}
-
 	// TODO(mkopriva): this is a temporary solution, it needs a better/proper
 	// implementation and more thorough tests, right now it will probably
 	// cause weird code to be generated if the `isvalid:"omitnilguard"` tag
 	// is used in unexpected places.
-	if code.field.OmitNilGuard && code.vtype.Kind == analysis.TypeKindPtr && code.vtype.Elem.Kind == analysis.TypeKindStruct {
+	if code.field != nil && code.field.OmitNilGuard &&
+		code.vtype.Kind == analysis.TypeKindPtr &&
+		code.vtype.Elem.Kind == analysis.TypeKindStruct {
 		code.vtype = *code.vtype.Elem
 	}
 
-	buildVarCodeNilGuard(g, code)
-	buildVarCodeNotEmpty(g, code)
-	buildVarCodeRequired(g, code)
-	buildVarCodeNotnil(g, code)
-	buildVarCodeSubBlock(g, code)
-	buildVarCodeRules(g, code)
+	if tn != nil {
+		// split off the "required" and "notnil" rules, they need special attention.
+		for _, r := range tn.Rules {
+			if r.Name == "required" {
+				code.required = r
+			} else if r.Name == "notnil" {
+				code.notnil = r
+			} else if r.Name == "omitempty" {
+				code.omitempty = r
+			} else {
+				code.rules = append(code.rules, r)
+			}
+		}
+
+		buildVarCodeNilGuard(g, code)
+		buildVarCodeNotEmpty(g, code)
+		buildVarCodeRequired(g, code)
+		buildVarCodeNotnil(g, code)
+		buildVarCodeSubBlock(g, code)
+		buildVarCodeRules(g, code)
+	}
 
 	switch code.vtype.Kind {
 	case analysis.TypeKindSlice, analysis.TypeKindArray:
 		if tn.Elem != nil {
 			expr := GO.Ident{"e"}
 			elem := &varcode{vtype: *code.vtype.Elem, vexpr: expr, field: code.field}
+
+			var contextRuleGroups contextRuleGroupList
+			var nonContextRules []*analysis.Rule
+			for _, r := range tn.Elem.Rules {
+				if len(r.Context) > 0 {
+					contextRuleGroups.addVarcode(elem, r)
+				} else {
+					nonContextRules = append(nonContextRules, r)
+				}
+			}
+			tn.Elem.Rules = nonContextRules
+
+			for _, rg := range contextRuleGroups {
+				opt := GO.SelectorExpr{X: g.recv, Sel: GO.Ident{g.vs.ContextOption.Name}}
+				bin := GO.BinaryExpr{Op: GO.BinaryEql, X: opt, Y: GO.StringLit(rg.context)}
+				ctx := &varcode{ctxif: &GO.IfStmt{Cond: bin}}
+				for _, vr := range rg.varcodeRules {
+					next := &varcode{vtype: elem.vtype, vexpr: elem.vexpr, field: elem.field}
+					buildVarCode(g, next, &analysis.TagNode{Rules: vr.rules})
+					ctx.fields = append(ctx.fields, next)
+				}
+				elem.ctxs = append(elem.ctxs, ctx)
+			}
+
 			buildVarCode(g, elem, tn.Elem)
 			code.elem = elem
 		}
@@ -271,6 +298,43 @@ func buildVarCode(g *generator, code *varcode, tn *analysis.TagNode) {
 			code.elem = elem
 		}
 	case analysis.TypeKindStruct:
+		// filter out the context-specific rules and group them by context
+		var contextRuleGroups contextRuleGroupList
+		for _, f := range code.vtype.Fields {
+			if !f.ContainsRules() {
+				continue
+			}
+
+			var nonContextRules []*analysis.Rule
+			for _, r := range f.RuleTag.Rules {
+				if len(r.Context) > 0 {
+					contextRuleGroups.add(f, r)
+				} else {
+					nonContextRules = append(nonContextRules, r)
+				}
+			}
+			f.RuleTag.Rules = nonContextRules
+		}
+
+		// first build the code for the context-specific rules
+		for _, rg := range contextRuleGroups {
+			opt := GO.SelectorExpr{X: g.recv, Sel: GO.Ident{g.vs.ContextOption.Name}}
+			bin := GO.BinaryExpr{Op: GO.BinaryEql, X: opt, Y: GO.StringLit(rg.context)}
+			ctx := &varcode{ctxif: &GO.IfStmt{Cond: bin}}
+
+			for _, fr := range rg.fieldRules {
+				f := fr.field
+
+				expr := GO.SelectorExpr{X: code.vexpr, Sel: GO.Ident{f.Name}}
+				next := &varcode{vtype: f.Type, vexpr: expr, field: f}
+
+				buildVarCode(g, next, &analysis.TagNode{Rules: fr.rules})
+				ctx.fields = append(ctx.fields, next)
+			}
+			code.ctxs = append(code.ctxs, ctx)
+		}
+
+		// next build the code for non-context specific rules
 		for _, f := range code.vtype.Fields {
 			if !f.ContainsRules() {
 				continue
@@ -281,8 +345,78 @@ func buildVarCode(g *generator, code *varcode, tn *analysis.TagNode) {
 
 			buildVarCode(g, next, f.RuleTag)
 			code.fields = append(code.fields, next)
-
 		}
+	}
+}
+
+type fieldRules struct {
+	field *analysis.StructField
+	rules []*analysis.Rule
+}
+
+type varcodeRules struct {
+	varcode *varcode
+	rules   []*analysis.Rule
+}
+type contextRuleGroup struct {
+	context      string
+	fieldRules   []*fieldRules
+	varcodeRules []*varcodeRules
+}
+
+type contextRuleGroupList []*contextRuleGroup
+
+func (ls *contextRuleGroupList) add(f *analysis.StructField, r *analysis.Rule) {
+	var found bool
+
+L0:
+	for _, rg := range *ls {
+		if rg.context == r.Context {
+			found = true
+			for _, fr := range rg.fieldRules {
+				if fr.field == f {
+					fr.rules = append(fr.rules, r)
+					break L0
+				}
+			}
+
+			fr := &fieldRules{f, []*analysis.Rule{r}}
+			rg.fieldRules = append(rg.fieldRules, fr)
+			break L0
+		}
+	}
+	if !found {
+		rg := &contextRuleGroup{context: r.Context}
+		fr := &fieldRules{f, []*analysis.Rule{r}}
+		rg.fieldRules = append(rg.fieldRules, fr)
+		*ls = append(*ls, rg)
+	}
+}
+
+func (ls *contextRuleGroupList) addVarcode(v *varcode, r *analysis.Rule) {
+	var found bool
+
+L0:
+	for _, rg := range *ls {
+		if rg.context == r.Context {
+			found = true
+			for _, vr := range rg.varcodeRules {
+				if vr.varcode == v {
+					vr.rules = append(vr.rules, r)
+					break L0
+				}
+			}
+
+			vr := &varcodeRules{v, []*analysis.Rule{r}}
+			rg.varcodeRules = append(rg.varcodeRules, vr)
+			break L0
+		}
+	}
+	if !found {
+		rg := &contextRuleGroup{context: r.Context}
+		vr := &varcodeRules{v, []*analysis.Rule{r}}
+		rg.varcodeRules = append(rg.varcodeRules, vr)
+		*ls = append(*ls, rg)
 	}
 }
 
@@ -295,6 +429,16 @@ func buildVarCodeNilGuard(g *generator, code *varcode) {
 	// logical op, and equality op
 	lop, eop := GO.BinaryLAnd, GO.BinaryNeq
 	if code.required != nil || code.notnil != nil {
+		// FIXME in some cases this is generating the following:
+		// -------------------------------------------------------------
+		//	if f == nil {
+		//		for range *f {
+		//			...
+		//		}
+		//	}
+		// -------------------------------------------------------------
+		// the nil-pointer-dereferencing will of course cause a panic
+		// and therefore such code SHOULD NOT be generated.
 		lop, eop = GO.BinaryLOr, GO.BinaryEql
 	}
 
@@ -336,11 +480,11 @@ func buildVarCodeRequired(g *generator, code *varcode) {
 		cond = code.ng
 	}
 
-	if len(code.required.Context) > 0 {
-		opt := GO.SelectorExpr{X: g.recv, Sel: GO.Ident{g.vs.ContextOption.Name}}
-		bin := GO.BinaryExpr{Op: GO.BinaryEql, X: opt, Y: GO.StringLit(code.required.Context)}
-		cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: bin, Y: cond}
-	}
+	// XXX if len(code.required.Context) > 0 {
+	// XXX 	opt := GO.SelectorExpr{X: g.recv, Sel: GO.Ident{g.vs.ContextOption.Name}}
+	// XXX 	bin := GO.BinaryExpr{Op: GO.BinaryEql, X: opt, Y: GO.StringLit(code.required.Context)}
+	// XXX 	cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: bin, Y: cond}
+	// XXX }
 
 	code.rqif = &GO.IfStmt{Cond: cond}
 	code.rqif.Body.Add(newErrorReturnStmt(g, code, code.required, nil))
@@ -359,11 +503,11 @@ func buildVarCodeNotnil(g *generator, code *varcode) {
 		cond = code.ng
 	}
 
-	if len(code.notnil.Context) > 0 {
-		opt := GO.SelectorExpr{X: g.recv, Sel: GO.Ident{g.vs.ContextOption.Name}}
-		bin := GO.BinaryExpr{Op: GO.BinaryEql, X: opt, Y: GO.StringLit(code.notnil.Context)}
-		cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: bin, Y: cond}
-	}
+	// XXX if len(code.notnil.Context) > 0 {
+	// XXX 	opt := GO.SelectorExpr{X: g.recv, Sel: GO.Ident{g.vs.ContextOption.Name}}
+	// XXX 	bin := GO.BinaryExpr{Op: GO.BinaryEql, X: opt, Y: GO.StringLit(code.notnil.Context)}
+	// XXX 	cond = GO.BinaryExpr{Op: GO.BinaryLAnd, X: bin, Y: cond}
+	// XXX }
 
 	code.nnif = &GO.IfStmt{Cond: cond}
 	code.nnif.Body.Add(newErrorReturnStmt(g, code, code.notnil, nil))
@@ -408,11 +552,11 @@ func buildVarCodeRules(g *generator, code *varcode) {
 			continue
 		}
 
-		if len(r.Context) > 0 {
-			opt := GO.SelectorExpr{X: g.recv, Sel: GO.Ident{g.vs.ContextOption.Name}}
-			bin := GO.BinaryExpr{Op: GO.BinaryEql, X: opt, Y: GO.StringLit(r.Context)}
-			ifs.Cond = GO.ParenExpr{GO.BinaryExpr{Op: GO.BinaryLAnd, X: bin, Y: ifs.Cond}}
-		}
+		// XXX if len(r.Context) > 0 {
+		// XXX 	opt := GO.SelectorExpr{X: g.recv, Sel: GO.Ident{g.vs.ContextOption.Name}}
+		// XXX 	bin := GO.BinaryExpr{Op: GO.BinaryEql, X: opt, Y: GO.StringLit(r.Context)}
+		// XXX 	ifs.Cond = GO.ParenExpr{GO.BinaryExpr{Op: GO.BinaryLAnd, X: bin, Y: ifs.Cond}}
+		// XXX }
 
 		code.ruleifs = append(code.ruleifs, ifs)
 	}
@@ -444,21 +588,49 @@ func assembleBody(g *generator) (body []GO.StmtNode) {
 
 // assembleVarCode assembles the varcode's AST parts into a single statement node.
 func assembleVarCode(g *generator, code *varcode) GO.StmtNode {
-	// block for subfields
-	var stmtlist GO.StmtList
-	for _, code := range code.fields {
-		if s := assembleVarCode(g, code); s != nil {
-			stmtlist = append(stmtlist, s)
+	if code.ctxif != nil {
+		ifs := *code.ctxif
+		code.ctxif = nil
+		ifs.Body.Add(assembleVarCode(g, code))
+		return ifs
+	}
+
+	var stmtList GO.StmtList
+
+	// block for contexts
+	{
+		var ctxStmtList GO.StmtList
+		for _, ctx := range code.ctxs {
+			if s := assembleVarCode(g, ctx); s != nil {
+				ctxStmtList = append(ctxStmtList, s)
+			}
+		}
+		if len(ctxStmtList) > 0 {
+			stmtList = append(stmtList, assembleVarCodeSubBlock(g, code, ctxStmtList))
 		}
 	}
-	if len(stmtlist) > 0 {
-		return assembleVarCodeSubBlock(g, code, stmtlist)
+
+	// block for subfields
+	{
+		var fieldStmtList GO.StmtList
+		for _, code := range code.fields {
+			if s := assembleVarCode(g, code); s != nil {
+				fieldStmtList = append(fieldStmtList, s)
+			}
+		}
+		if len(fieldStmtList) > 0 {
+			stmtList = append(stmtList, assembleVarCodeSubBlock(g, code, fieldStmtList))
+		}
+	}
+
+	if len(stmtList) > 0 {
+		return stmtList
 	}
 
 	// ifstmt for the varcode's rules
 	ifs := assembleVarCodeRules(g, code)
 	if ifs.Cond != nil {
-		stmtlist = append(stmtlist, assembleVarCodeSubBlock(g, code, ifs))
+		stmtList = append(stmtList, assembleVarCodeSubBlock(g, code, ifs))
 	}
 
 	if code.key != nil || code.elem != nil {
@@ -466,17 +638,17 @@ func assembleVarCode(g *generator, code *varcode) GO.StmtNode {
 		if node.Clause != nil {
 			if code.ng != nil && code.ne != nil {
 				cond := GO.BinaryExpr{Op: GO.BinaryLAnd, X: code.ng, Y: code.ne}
-				stmtlist = append(stmtlist, GO.IfStmt{Cond: cond, Body: GO.BlockStmt{[]GO.StmtNode{node}}})
+				stmtList = append(stmtList, GO.IfStmt{Cond: cond, Body: GO.BlockStmt{[]GO.StmtNode{node}}})
 			} else if code.ng != nil {
-				stmtlist = append(stmtlist, GO.IfStmt{Cond: code.ng, Body: GO.BlockStmt{[]GO.StmtNode{node}}})
+				stmtList = append(stmtList, GO.IfStmt{Cond: code.ng, Body: GO.BlockStmt{[]GO.StmtNode{node}}})
 			} else if code.ne != nil {
-				stmtlist = append(stmtlist, GO.IfStmt{Cond: code.ne, Body: GO.BlockStmt{[]GO.StmtNode{node}}})
+				stmtList = append(stmtList, GO.IfStmt{Cond: code.ne, Body: GO.BlockStmt{[]GO.StmtNode{node}}})
 			} else {
-				stmtlist = append(stmtlist, assembleVarCodeSubBlock(g, code, node))
+				stmtList = append(stmtList, assembleVarCodeSubBlock(g, code, node))
 			}
 		}
 	}
-	return stmtlist
+	return stmtList
 }
 
 // assembleVarCodeSubBlock assembles the varcode's "sub block" with the given stmt as its body.

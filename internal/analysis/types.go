@@ -43,7 +43,8 @@ type (
 		IsEmbedded bool
 		// Indicates whether or not the field is exported.
 		IsExported bool
-		// Indicates that the field, if nilable, is guaranteed to *not* be nil.
+		// Indicates that the field, if nilable,
+		// is guaranteed by the user to *not* be nil.
 		OmitNilGuard bool
 		// The field's analyzed "rule" struct tag.
 		RuleTag *TagNode

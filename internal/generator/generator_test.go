@@ -70,7 +70,10 @@ func TestGenerator(t *testing.T) {
 
 		"error_constructor",
 		"error_aggregator",
-		"context_option",
+		"context_option_1",
+		"context_option_2",
+		"context_option_3",
+		"context_option_4",
 		"references",
 		"custom",
 		"hooks",
