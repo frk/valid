@@ -1,0 +1,2 @@
+working_directory: "testdata/"
+out_name_format: "%_out"

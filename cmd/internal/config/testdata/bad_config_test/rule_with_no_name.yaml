@@ -1,0 +1,11 @@
+working_directory: "testdata/"
+rules:
+  - func: "test.Test1"
+    rule:
+      name: "foo"
+  - func: "test.Test2"
+    rule:
+      arg_min: 1
+  - func: "test.Test3"
+    rule:
+      name: "test"

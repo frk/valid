@@ -1,0 +1,13 @@
+custom_rules:
+  # ...
+  - func: github.com/frk/valid/cmd/internal/rules/testdata/mypkg.MyPreproc1
+    rule: { name: "pre:p1" }
+  # ...
+  - func: github.com/frk/valid/cmd/internal/rules/testdata/mypkg.MyPreproc2
+    rule: { name: "pre:p2" }
+  # ...
+  - func: github.com/frk/valid/cmd/internal/rules/testdata/mypkg.MyPreproc3
+    rule: { name: "pre:p3" }
+  # ...
+  - func: github.com/frk/valid/cmd/internal/rules/testdata/mypkg.MyPreproc4
+    rule: { name: "pre:p4" }

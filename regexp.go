@@ -1,12 +1,13 @@
-package isvalid
+package valid
 
 import (
 	"regexp"
 	"sync"
 )
 
-// RegisterRegexp compiles the given expression and caches the result. The given expr is
-// assumed to be a valid regular expression, if it's not then RegisterRegexp will panic.
+// RegisterRegexp compiles the given expression and caches
+// the result. The given expr is assumed to be a valid regular
+// expression, if it's not then RegisterRegexp will panic.
 func RegisterRegexp(expr string) {
 	rxcache.mu.Lock()
 	defer rxcache.mu.Unlock()

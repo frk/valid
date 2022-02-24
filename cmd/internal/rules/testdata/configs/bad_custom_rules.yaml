@@ -1,0 +1,99 @@
+rules:
+  # func doesn't exist
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.Abcdefg
+    rule: { name: abc }
+  # package doesn't exist
+  - func: local/me/pkg.Abcdefg
+    rule: { name: abc }
+  # bad config in comment
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.RuleFunc2
+  # missing config
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.RuleFunc
+  # no name
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.RuleFunc
+    rule: { }
+  # no name
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.RuleFunc
+    rule: { name: "" }
+  # reserved
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.RuleFunc
+    rule: { name: required }
+  # reserved
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.RuleFunc
+    rule: { name: notnil }
+  # reserved
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.RuleFunc
+    rule: { name: omitnil }
+  # reserved
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.RuleFunc
+    rule: { name: optional }
+  # reserved
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.RuleFunc
+    rule: { name: noguard }
+  # reserved
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.RuleFunc
+    rule: { name: isvalid }
+  # reserved
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.RuleFunc
+    rule: { name: -isvalid }
+  # reserved
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.RuleFunc
+    rule: { name: enum }
+  # is: has invalid signature
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.RuleFunc3
+    rule: { name: myrule }
+  # is: has invalid signature #2
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.RuleFunc4
+    rule: { name: myrule }
+  # incompatible number of args
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.RuleFunc6
+    rule:
+      name: test
+      args:
+        - { default: 123 }
+        - { default: true }
+        - { options: [{ value: foo }, { value: bar }]}
+  # incompatible number of args
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.RuleFunc7
+    rule:
+      name: test
+      args: [{ default: 123 }]
+  # incompatible bounds
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.RuleFunc
+    rule:
+      name: test
+      arg_min: 8
+  # incompatible bounds
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.RuleFunc
+    rule:
+      name: test
+      arg_max: 7
+  # incompatible bounds
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.RuleFunc
+    rule:
+      name: test
+      arg_min: 8
+      arg_max: 7
+  # pre: bad signature for PREPROC rule
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.RuleFunc
+    rule: { name: "pre:rule" }
+  # pre: illegal use of 'join_op' for PREPROC rule
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.PreProc1
+    rule:
+      name: "pre:rule"
+      join_op: AND
+  # pre: illegal use of 'err' for PREPROC rule
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.PreProc1
+    rule:
+      name: "pre:rule"
+      error: { text: "foo bar" }
+  # pre: incompatible number of args
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.PreProc1
+    rule:
+      name: "pre:foo_bar"
+      args: [{ default: 123 }]
+  # pre: incompatible arg types
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.PreProc2
+    rule:
+      name: "pre:foo_bar"
+      args: [{ default: foo }]

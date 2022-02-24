@@ -1,0 +1,2 @@
+working_directory: "testdata/"
+validator_name_pattern: "[a-z)"

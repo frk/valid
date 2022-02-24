@@ -1,0 +1,10 @@
+
+- [ ] Currency
+- [x] Decimal
+- [ ] EIN
+- [ ] IC
+- [ ] PassportNumber
+- [x] Phone
+- [ ] URL
+- [ ] VAT
+- [x] ZIP

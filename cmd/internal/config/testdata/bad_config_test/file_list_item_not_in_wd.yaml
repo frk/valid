@@ -1,0 +1,3 @@
+working_directory: "testdata/"
+file_list:
+  - "/foo/bar/file1.go"

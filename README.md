@@ -1,25 +1,11 @@
-[`godoc`](http://godoc.org/github.com/frk/isvalid)
-[`pkg.go.dev`](https://pkg.go.dev/github.com/frk/isvalid)
+[`godoc`](http://godoc.org/github.com/frk/valid)
+[`pkg.go.dev`](https://pkg.go.dev/github.com/frk/valid)
 
-WORK IN PROGRESS
+# valid
 
-# isvalid
-
-The package `isvalid` defines a number of validation functions and other objects that can
-be used, together with the [`cmd/isvalid`](cmd/isvalid) tool, to generate static input validation.
+The package `valid` defines a number of validation functions and other objects that can
+be used, together with the [`cmd/validgen`](cmd/validgen) tool, to generate static input validation.
 
 --------
 
 Some (most) validators, including their tests & comments, were ported from https://github.com/validatorjs/validator.js
-
-#### TODO:
-
-- [ ] Currency
-- [x] Decimal
-- [ ] EIN
-- [ ] IC
-- [ ] PassportNumber
-- [x] Phone
-- [ ] URL
-- [ ] VAT
-- [x] ZIP

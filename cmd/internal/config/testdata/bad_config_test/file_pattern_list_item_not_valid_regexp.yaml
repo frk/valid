@@ -1,0 +1,3 @@
+working_directory: "testdata/"
+file_pattern_list:
+  - "[a-z)"

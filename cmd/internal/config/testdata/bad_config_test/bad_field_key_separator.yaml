@@ -1,0 +1,4 @@
+working_directory: "testdata/"
+error_handling:
+  field_key:
+    separator: "..."
