@@ -8,6 +8,7 @@ import (
 
 	"github.com/frk/valid/cmd/internal/gotype"
 	"github.com/frk/valid/cmd/internal/rules"
+	"github.com/frk/valid/cmd/internal/search"
 
 	GO "github.com/frk/ast/golang"
 )
@@ -24,8 +25,8 @@ var (
 	BLANK         = GO.Ident{"_"}
 )
 
-func Generate(pkgName string, infos []*rules.Info) ([]byte, error) {
-	ast := fileAST(pkgName, infos)
+func Generate(pkg search.Pkg, infos []*rules.Info) ([]byte, error) {
+	ast := fileAST(gotype.Pkg(pkg), infos)
 	buffer := new(bytes.Buffer)
 	if err := GO.Write(ast, buffer); err != nil {
 		return nil, err
@@ -35,6 +36,7 @@ func Generate(pkgName string, infos []*rules.Info) ([]byte, error) {
 
 // the "global" state of the generator
 type gg struct {
+	pkg     gotype.Pkg
 	imports []*pkginfo
 	init    []*rules.Rule
 	info    *rules.Info
@@ -65,8 +67,9 @@ type pkginfo struct {
 	num int
 }
 
-// pkg adds a new pkginfo to the import set if it is not already a member of that set.
-func (g *gg) pkg(p gotype.Pkg) *pkginfo {
+// addImport adds a new pkginfo to the import set if
+// it is not already a member of that set.
+func (g *gg) addImport(p gotype.Pkg) *pkginfo {
 	if p.Name == "" {
 		p.Name = p.Path
 		if i := strings.LastIndexByte(p.Name, '/'); i > -1 {

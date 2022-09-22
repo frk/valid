@@ -36,13 +36,13 @@ func (b *bb) preprocCall(n *rules.Node) GO.CallExpr {
 	}
 
 	r := n.PreRules[0]
-	pkg := b.g.pkg(r.Spec.FType.Pkg)
+	pkg := b.g.addImport(r.Spec.FType.Pkg)
 	args := append(GO.ExprList{b.val}, b.g.argmap[r]...)
 
 	call := GO.CallExpr{Fun: GO.QualifiedIdent{pkg.name, r.Spec.FName}}
 	call.Args.List = args
 	for _, r := range n.PreRules[1:] {
-		pkg := b.g.pkg(r.Spec.FType.Pkg)
+		pkg := b.g.addImport(r.Spec.FType.Pkg)
 		args := append(GO.ExprList{call}, b.g.argmap[r]...)
 
 		call = GO.CallExpr{Fun: GO.QualifiedIdent{pkg.name, r.Spec.FName}}

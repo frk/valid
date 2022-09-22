@@ -12,8 +12,6 @@ type Pkg struct {
 	Path string
 	// The package's name.
 	Name string
-	// The local package name (including ".").
-	Local string
 }
 
 // Type is the representation of a Go type.
@@ -24,8 +22,6 @@ type Type struct {
 	Name string
 	// The kind of the go type.
 	Kind Kind
-	// Indicates whether or not the package is imported.
-	IsImported bool
 	// Indicates whether or not the field is exported.
 	IsExported bool
 	// If the base type's an array type, this field will hold the array's length.
@@ -93,6 +89,25 @@ func (t *Type) IsGoAnySlice() bool {
 		return t.Elem.IsGoAny()
 	}
 	return false
+}
+
+// IsComparable reports wether or not a value of the Go
+// type represented by t is comparable.
+func (t *Type) IsComparable() bool {
+	if t.Kind == K_MAP || t.Kind == K_SLICE || t.Kind == K_FUNC {
+		return false
+	}
+	if t.Kind == K_ARRAY {
+		return t.Elem.IsComparable()
+	}
+	if t.Kind == K_STRUCT {
+		for _, f := range t.Fields {
+			if !f.Type.IsComparable() {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 // IsNilable reports wether or not a value of the Go
@@ -200,9 +215,9 @@ func (t *Type) NeedsConversion(u *Type) bool {
 }
 
 // String retruns a string representation of the t Type.
-func (t Type) String() string {
+func (t Type) TypeString(pkg *Pkg) string {
 	if len(t.Name) > 0 {
-		if t.IsImported {
+		if pkg == nil || *pkg != t.Pkg {
 			return t.Pkg.Name + "." + t.Name
 		}
 		return t.Name
@@ -218,18 +233,18 @@ func (t Type) String() string {
 
 	switch t.Kind {
 	case K_ARRAY:
-		return "[" + strconv.FormatInt(t.ArrayLen, 10) + "]" + t.Elem.String()
+		return "[" + strconv.FormatInt(t.ArrayLen, 10) + "]" + t.Elem.TypeString(pkg)
 	case K_INTERFACE:
 		if !t.IsEmptyInterface() {
 			return "interface{ ... }"
 		}
 		return "interface{}"
 	case K_MAP:
-		return "map[" + t.Key.String() + "]" + t.Elem.String()
+		return "map[" + t.Key.TypeString(pkg) + "]" + t.Elem.TypeString(pkg)
 	case K_PTR:
-		return "*" + t.Elem.String()
+		return "*" + t.Elem.TypeString(pkg)
 	case K_SLICE:
-		return "[]" + t.Elem.String()
+		return "[]" + t.Elem.TypeString(pkg)
 	case K_STRUCT:
 		if len(t.Fields) > 0 {
 			return "struct{ ... }"
@@ -240,11 +255,11 @@ func (t Type) String() string {
 	case K_FUNC:
 		in := make([]string, len(t.In))
 		for i := range t.In {
-			in[i] = t.In[i].Type.String()
+			in[i] = t.In[i].Type.TypeString(pkg)
 		}
 		out := make([]string, len(t.Out))
 		for i := range t.Out {
-			out[i] = t.Out[i].Type.String()
+			out[i] = t.Out[i].Type.TypeString(pkg)
 		}
 
 		s := "func(" + strings.Join(in, ", ") + ")"
@@ -289,12 +304,16 @@ func (v *Var) ShallowCopy() *Var {
 
 // StructField describes a single struct field in a struct.
 type StructField struct {
+	// The package to which the field belongs.
+	Pkg Pkg
 	// Name of the field.
 	Name string
 	// The field's type.
 	Type *Type
 	// The field's raw, uparsed struct tag.
 	Tag string
+	// Indicates that the tag `is:"-"` was used.
+	CanIgnore bool
 	// Indicates whether or not the field is embedded.
 	IsEmbedded bool
 	// Indicates whether or not the field is exported.
@@ -302,6 +321,19 @@ type StructField struct {
 	// Var holds a reference to the *types.Var
 	// representation of the field.
 	Var *types.Var `cmp:"+"`
+}
+
+func (f *StructField) CanAccess(from Pkg) bool {
+	if f.Name == "_" {
+		return false
+	}
+	if f.CanIgnore {
+		return false
+	}
+	if !f.IsExported && !f.IsEmbedded && f.Pkg != from {
+		return false
+	}
+	return true
 }
 
 // FieldSelector is a list of fields that represents a chain of selectors where
@@ -327,12 +359,12 @@ func (s FieldSelector) CopyWith(f *StructField) FieldSelector {
 
 // Method describes a single method in the method set of a named type or interface.
 type Method struct {
+	// The package to which the method belongs.
+	Pkg Pkg
 	// The name of the method.
 	Name string
 	// The method's type.
 	Type *Type
-	// Indicates whether or not the method is imported.
-	IsImported bool
 	// Indicates whether or not the method is exported.
 	IsExported bool
 }

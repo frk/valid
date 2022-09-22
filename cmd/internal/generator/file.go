@@ -3,19 +3,20 @@ package generator
 import (
 	"strings"
 
+	"github.com/frk/valid/cmd/internal/gotype"
 	"github.com/frk/valid/cmd/internal/rules"
 
 	GO "github.com/frk/ast/golang"
 )
 
-func fileAST(pkgname string, infos []*rules.Info) GO.File {
-	g := &gg{}
+func fileAST(pkg gotype.Pkg, infos []*rules.Info) GO.File {
+	g := &gg{pkg: pkg}
 	g.argmap = make(map[*rules.Rule][]GO.ExprNode)
 	g.enumap = make(map[*rules.Rule][]GO.ExprNode)
 
 	f := GO.File{
 		Preamble: FILE_PREAMBLE,
-		PkgName:  pkgname,
+		PkgName:  pkg.Name,
 	}
 	for _, info := range infos {
 		f.Decls = append(f.Decls, methodAST(g, info))
@@ -32,7 +33,7 @@ func fileAST(pkgname string, infos []*rules.Info) GO.File {
 func initAST(g *gg) GO.FuncDecl {
 	init := GO.FuncDecl{Name: GO.Ident{"init"}}
 	for _, r := range g.init {
-		pkg := g.pkg(r.Spec.FType.Pkg)
+		pkg := g.addImport(r.Spec.FType.Pkg)
 		args := g.argmap[r]
 		call := GO.CallExpr{Fun: GO.QualifiedIdent{pkg.name, "RegisterRegexp"}}
 		call.Args.List = args[0]

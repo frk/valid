@@ -21,6 +21,7 @@ func TestChecker_functionCheck(t *testing.T) {
 		name: "Test_ERR_FUNCTION_INTYPE_1_Validator",
 		err: &Error{C: ERR_FUNCTION_INTYPE, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"contains:foo"`,
 				Type: T.int,
@@ -39,6 +40,7 @@ func TestChecker_functionCheck(t *testing.T) {
 		name: "Test_ERR_FUNCTION_ARGTYPE_1_Validator",
 		err: &Error{C: ERR_FUNCTION_ARGTYPE, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"uuid:v6"`,
 				Type: T.string,
@@ -60,6 +62,7 @@ func TestChecker_functionCheck(t *testing.T) {
 		name: "Test_ERR_FUNCTION_ARGVALUE_1_Validator",
 		err: &Error{C: ERR_FUNCTION_ARGVALUE, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"uuid:6"`,
 				Type: T.string,
@@ -90,7 +93,7 @@ func TestChecker_functionCheck(t *testing.T) {
 			match := testMatch(t, tt.name)
 
 			info := new(Info)
-			checker := NewChecker(&test_ast, fkCfg, info)
+			checker := NewChecker(&test_ast, test_pkg.Pkg(), fkCfg, info)
 			err := checker.Check(match)
 
 			got := _ttError(err)

@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/frk/valid/cmd/internal/config"
-	"github.com/frk/valid/cmd/internal/errors"
 	"github.com/frk/valid/cmd/internal/gotype"
 	"github.com/frk/valid/cmd/internal/search"
 
@@ -350,8 +349,12 @@ func validateArgOptsAsFuncParams(s *Spec) error {
 			}
 		}
 		if p == nil {
-			// panic?
-			return errors.TODO("validateArgOptsAsFuncParams: <invalid> function param: %+v", argOpts)
+			// NOTE this relies on the fact that ArgOpts is
+			// constructured from the rule's Args *after* it
+			// has been confirmed, with isValidNumberOfArgs,
+			// that the number of Args is ok, given the
+			// associated function's type.
+			panic("shouldn't reach")
 		}
 
 		for k, a := range argOpts {

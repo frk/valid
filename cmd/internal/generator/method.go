@@ -78,7 +78,7 @@ func exitAST(info *rules.Info, b bb) {
 
 func newErrorAggregatorAST(info *rules.Info, b bb) {
 	agg := global.ErrorAggregator
-	pkg := b.g.pkg(agg.Pkg)
+	pkg := b.g.addImport(agg.Pkg)
 
 	typ := GO.QualifiedIdent{pkg.name, agg.Name}
 	call := GO.CallExpr{Fun: GO.Ident{"new"}}

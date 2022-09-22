@@ -21,6 +21,7 @@ func TestChecker_enumCheck(t *testing.T) {
 		name: "Test_ERR_ENUM_NONAME_1_Validator",
 		err: &Error{C: ERR_ENUM_NONAME, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"enum"`,
 				Type: T.uint,
@@ -33,24 +34,26 @@ func TestChecker_enumCheck(t *testing.T) {
 		name: "Test_ERR_ENUM_KIND_1_Validator",
 		err: &Error{C: ERR_ENUM_KIND, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"enum"`,
-				Type: &gotype.Type{Kind: gotype.K_STRUCT, Name: "enum_kind", Pkg: T.pkg_rules},
+				Type: &gotype.Type{Kind: gotype.K_STRUCT, Name: "enum_kind", Pkg: T.pkg},
 				Var:  T._var,
 			},
-			ty: &gotype.Type{Kind: gotype.K_STRUCT, Name: "enum_kind", Pkg: T.pkg_rules},
+			ty: &gotype.Type{Kind: gotype.K_STRUCT, Name: "enum_kind", Pkg: T.pkg},
 			r:  &Rule{Name: "enum", Spec: GetSpec("enum")},
 		},
 	}, {
 		name: "Test_ERR_ENUM_NOCONST_1_Validator",
 		err: &Error{C: ERR_ENUM_NOCONST, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"enum"`,
-				Type: &gotype.Type{Kind: gotype.K_UINT, Name: "enum_noconst", Pkg: T.pkg_rules},
+				Type: &gotype.Type{Kind: gotype.K_UINT, Name: "enum_noconst", Pkg: T.pkg},
 				Var:  T._var,
 			},
-			ty: &gotype.Type{Kind: gotype.K_UINT, Name: "enum_noconst", Pkg: T.pkg_rules},
+			ty: &gotype.Type{Kind: gotype.K_UINT, Name: "enum_noconst", Pkg: T.pkg},
 			r:  &Rule{Name: "enum", Spec: GetSpec("enum")},
 		},
 	}}
@@ -66,7 +69,7 @@ func TestChecker_enumCheck(t *testing.T) {
 			match := testMatch(t, tt.name)
 
 			info := new(Info)
-			checker := NewChecker(&test_ast, fkCfg, info)
+			checker := NewChecker(&test_ast, test_pkg.Pkg(), fkCfg, info)
 			err := checker.Check(match)
 
 			got := _ttError(err)

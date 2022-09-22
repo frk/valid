@@ -9,5 +9,12 @@ func (c *Checker) optionalCheck(n *Node, r *Rule) error {
 			}
 		}
 	}
+	if r.Name == "omitnil" {
+		for _, r2 := range n.IsRules {
+			if r2.Name == "notnil" {
+				return &Error{C: ERR_OPTIONAL_CONFLICT, ty: n.Type, r: r, r2: r2}
+			}
+		}
+	}
 	return nil
 }

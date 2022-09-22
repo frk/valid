@@ -26,7 +26,6 @@ func NewAnalyzer(p *types.Package) (a *Analyzer) {
 	a = new(Analyzer)
 	a.pkg.Path = p.Path()
 	a.pkg.Name = p.Name()
-	a.pkg.Local = p.Name()
 
 	a.done = make(map[string]*Type)
 	return a
@@ -38,8 +37,6 @@ func (a *Analyzer) Object(obj types.Object) (u *Type) {
 	if pkg := obj.Pkg(); pkg != nil {
 		u.Pkg.Path = pkg.Path()
 		u.Pkg.Name = pkg.Name()
-		u.Pkg.Local = pkg.Name()
-		u.IsImported = pkg.Path() != a.pkg.Path
 	}
 	return u
 }
@@ -66,13 +63,11 @@ func (a *Analyzer) Analyze(t types.Type) (u *Type) {
 		if pkg := named.Obj().Pkg(); pkg != nil {
 			u.Pkg.Path = pkg.Path()
 			u.Pkg.Name = pkg.Name()
-			u.Pkg.Local = pkg.Name()
-			u.IsImported = pkg.Path() != a.pkg.Path
 		}
 
 		u.Name = named.Obj().Name()
 		u.IsExported = named.Obj().Exported()
-		u.Methods = a.analyzeMethods(named, !u.IsImported)
+		u.Methods = a.analyzeMethods(named)
 		t = named.Underlying()
 	}
 
@@ -136,7 +131,7 @@ func (a *Analyzer) Analyze(t types.Type) (u *Type) {
 		u.Elem = a.Analyze(T.Elem())
 	case *types.Interface:
 		u.Kind = K_INTERFACE
-		u.Methods = a.analyzeMethods(T, !u.IsImported)
+		u.Methods = a.analyzeMethods(T)
 	case *types.Signature:
 		u.Kind = K_FUNC
 		u.In, u.Out = a.analyzeSignature(T)
@@ -147,49 +142,38 @@ func (a *Analyzer) Analyze(t types.Type) (u *Type) {
 		// so we can ignore the element's type and the direction.
 	case *types.Struct:
 		u.Kind = K_STRUCT
-		u.Fields = a.analyzeFields(T, !u.IsImported)
+		u.Fields = a.analyzeFields(T)
 	}
 
 	return u
 }
 
-func (a *Analyzer) analyzeFields(stype *types.Struct, local bool) (fields []*StructField) {
+func (a *Analyzer) analyzeFields(stype *types.Struct) (fields []*StructField) {
 	for i := 0; i < stype.NumFields(); i++ {
 		fvar := stype.Field(i)
 		ftag := stype.Tag(i)
-
-		// Skip fields that are imported but not exported.
-		if !local && !fvar.Exported() {
-			continue
-		}
-
-		// Skip fields with blank name.
-		if fvar.Name() == "_" {
-			continue
-		}
-
-		// Skip fields that were explicitly flagged; fields with
-		// no `is` tag may still be useful if they are referenced by
-		// a separate field's rule with an argument.
 		tag := tagutil.New(ftag)
-		if tag.First("is") == "-" {
-			continue
-		}
 
 		f := new(StructField)
-		fields = append(fields, f)
-
 		f.Tag = ftag
 		f.Name = fvar.Name()
+		f.CanIgnore = (tag.First("is") == "-")
 		f.IsEmbedded = fvar.Embedded()
 		f.IsExported = fvar.Exported()
 		f.Type = a.Analyze(fvar.Type())
 		f.Var = fvar
+
+		if pkg := fvar.Pkg(); pkg != nil {
+			f.Pkg.Path = pkg.Path()
+			f.Pkg.Name = pkg.Name()
+		}
+
+		fields = append(fields, f)
 	}
 	return fields
 }
 
-func (a *Analyzer) analyzeMethods(mm Methoder, local bool) (methods []*Method) {
+func (a *Analyzer) analyzeMethods(mm Methoder) (methods []*Method) {
 	for i := 0; i < mm.NumMethods(); i++ {
 		mo := mm.Method(i)
 
@@ -201,7 +185,8 @@ func (a *Analyzer) analyzeMethods(mm Methoder, local bool) (methods []*Method) {
 		// NOTE this nil check is necessary for
 		// "labels and objects in the Universe scope."
 		if pkg := mo.Pkg(); pkg != nil {
-			m.IsImported = pkg.Path() != a.pkg.Path
+			m.Pkg.Path = pkg.Path()
+			m.Pkg.Name = pkg.Name()
 		}
 
 		methods = append(methods, m)

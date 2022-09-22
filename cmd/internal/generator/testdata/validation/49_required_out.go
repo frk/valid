@@ -5,6 +5,7 @@ package testdata
 import (
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/frk/valid"
 )
@@ -54,6 +55,12 @@ func (v T49Validator) Validate() error {
 		} else if len(f) < 8 || len(f) > 64 {
 			return errors.New("F18 must be of length between: 8 and 64 (inclusive)")
 		}
+	}
+	if v.F2 == nil || *v.F2 == (T49EmptyStruct{}) {
+		return errors.New("F2 is required")
+	}
+	if v.F3 == nil || *v.F3 == (time.Time{}) {
+		return errors.New("F3 is required")
 	}
 	return nil
 }

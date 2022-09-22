@@ -102,7 +102,7 @@ func (cmd *Command) Run() error {
 				// 4. rule-check the matched validator structs
 				info := new(rules.Info)
 				fkCfg := cmd.Cfg.ErrorHandling.FieldKey
-				checker := rules.NewChecker(&AST, &fkCfg, info)
+				checker := rules.NewChecker(&AST, pkg.Pkg(), &fkCfg, info)
 				if err := checker.Check(match); err != nil {
 					return err
 				}
@@ -110,7 +110,7 @@ func (cmd *Command) Run() error {
 			}
 
 			// 5. generate code
-			code, err := generator.Generate(pkg.Name, infos)
+			code, err := generator.Generate(pkg.Pkg(), infos)
 			if err != nil {
 				return err
 			}

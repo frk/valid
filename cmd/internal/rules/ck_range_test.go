@@ -21,6 +21,7 @@ func TestChecker_rangeCheck(t *testing.T) {
 		name: "Test_ERR_RANGE_TYPE_1_Validator",
 		err: &Error{C: ERR_RANGE_TYPE, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"rng:10:20"`,
 				Type: T.string,
@@ -40,6 +41,7 @@ func TestChecker_rangeCheck(t *testing.T) {
 		name: "Test_ERR_RANGE_TYPE_2_Validator",
 		err: &Error{C: ERR_RANGE_TYPE, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"rng:10:20"`,
 				Type: T.Slice(T.int),
@@ -59,6 +61,7 @@ func TestChecker_rangeCheck(t *testing.T) {
 		name: "Test_ERR_RANGE_NOARG_1_Validator",
 		err: &Error{C: ERR_RANGE_NOARG, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"rng::"`,
 				Type: T.int,
@@ -75,6 +78,7 @@ func TestChecker_rangeCheck(t *testing.T) {
 		name: "Test_ERR_RANGE_NOARG_2_Validator",
 		err: &Error{C: ERR_RANGE_NOARG, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"rng:10:"`,
 				Type: T.int,
@@ -91,6 +95,7 @@ func TestChecker_rangeCheck(t *testing.T) {
 		name: "Test_ERR_RANGE_NOARG_3_Validator",
 		err: &Error{C: ERR_RANGE_NOARG, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"rng::20"`,
 				Type: T.int,
@@ -107,6 +112,7 @@ func TestChecker_rangeCheck(t *testing.T) {
 		name: "Test_ERR_RANGE_ARGTYPE_1_Validator",
 		err: &Error{C: ERR_RANGE_ARGTYPE, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"rng:foo:20"`,
 				Type: T.int,
@@ -127,6 +133,7 @@ func TestChecker_rangeCheck(t *testing.T) {
 		name: "Test_ERR_RANGE_ARGTYPE_2_Validator",
 		err: &Error{C: ERR_RANGE_ARGTYPE, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"rng:3.14:20"`,
 				Type: T.int,
@@ -147,6 +154,7 @@ func TestChecker_rangeCheck(t *testing.T) {
 		name: "Test_ERR_RANGE_ARGTYPE_3_Validator",
 		err: &Error{C: ERR_RANGE_ARGTYPE, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"rng:-10:20"`,
 				Type: T.uint16,
@@ -167,6 +175,7 @@ func TestChecker_rangeCheck(t *testing.T) {
 		name: "Test_ERR_RANGE_ARGTYPE_4_Validator",
 		err: &Error{C: ERR_RANGE_ARGTYPE, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"rng:&S.F:20"`,
 				Type: T.int,
@@ -188,6 +197,7 @@ func TestChecker_rangeCheck(t *testing.T) {
 		name: "Test_ERR_RANGE_BOUNDS_1_Validator",
 		err: &Error{C: ERR_RANGE_BOUNDS, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"rng:20:10"`,
 				Type: T.int,
@@ -207,6 +217,7 @@ func TestChecker_rangeCheck(t *testing.T) {
 		name: "Test_ERR_RANGE_BOUNDS_2_Validator",
 		err: &Error{C: ERR_RANGE_BOUNDS, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"rng:10:10"`,
 				Type: T.int,
@@ -226,6 +237,7 @@ func TestChecker_rangeCheck(t *testing.T) {
 		name: "Test_ERR_RANGE_BOUNDS_3_Validator",
 		err: &Error{C: ERR_RANGE_BOUNDS, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"rng:10:-20"`,
 				Type: T.int,
@@ -254,7 +266,7 @@ func TestChecker_rangeCheck(t *testing.T) {
 			match := testMatch(t, tt.name)
 
 			info := new(Info)
-			checker := NewChecker(&test_ast, fkCfg, info)
+			checker := NewChecker(&test_ast, test_pkg.Pkg(), fkCfg, info)
 			err := checker.Check(match)
 
 			got := _ttError(err)

@@ -19,6 +19,7 @@ func TestChecker_makeNode(t *testing.T) {
 		name: "Test_ERR_RULE_ELEM_1_is_Validator",
 		err: &Error{C: ERR_RULE_ELEM, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"[]email"`,
 				Type: T.string,
@@ -31,6 +32,7 @@ func TestChecker_makeNode(t *testing.T) {
 		name: "Test_ERR_RULE_ELEM_2_is_Validator",
 		err: &Error{C: ERR_RULE_ELEM, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"[][]email"`,
 				Type: T.Slice(T.string),
@@ -43,6 +45,7 @@ func TestChecker_makeNode(t *testing.T) {
 		name: "Test_ERR_RULE_ELEM_3_is_Validator",
 		err: &Error{C: ERR_RULE_ELEM, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"[][]email,[]email"`,
 				Type: T.Slice(T.Map(T.string, T.string)),
@@ -58,6 +61,7 @@ func TestChecker_makeNode(t *testing.T) {
 		name: "Test_ERR_RULE_KEY_1_is_Validator",
 		err: &Error{C: ERR_RULE_KEY, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"[email]"`,
 				Type: T.string,
@@ -70,6 +74,7 @@ func TestChecker_makeNode(t *testing.T) {
 		name: "Test_ERR_RULE_KEY_2_is_Validator",
 		err: &Error{C: ERR_RULE_KEY, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"[email]"`,
 				Type: T.Slice(T.string),
@@ -82,6 +87,7 @@ func TestChecker_makeNode(t *testing.T) {
 		name: "Test_ERR_RULE_KEY_3_is_Validator",
 		err: &Error{C: ERR_RULE_KEY, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"[][email]"`,
 				Type: T.Map(T.string, T.Slice(T.string)),
@@ -94,6 +100,7 @@ func TestChecker_makeNode(t *testing.T) {
 		name: "Test_ERR_RULE_ELEM_1_pre_Validator",
 		err: &Error{C: ERR_RULE_ELEM, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `pre:"[]trim"`,
 				Type: T.string,
@@ -106,6 +113,7 @@ func TestChecker_makeNode(t *testing.T) {
 		name: "Test_ERR_RULE_ELEM_2_pre_Validator",
 		err: &Error{C: ERR_RULE_ELEM, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `pre:"[][]trim"`,
 				Type: T.Slice(T.string),
@@ -118,6 +126,7 @@ func TestChecker_makeNode(t *testing.T) {
 		name: "Test_ERR_RULE_ELEM_3_pre_Validator",
 		err: &Error{C: ERR_RULE_ELEM, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `pre:"[][]trim,[]trim"`,
 				Type: T.Slice(T.Map(T.string, T.string)),
@@ -133,6 +142,7 @@ func TestChecker_makeNode(t *testing.T) {
 		name: "Test_ERR_RULE_KEY_1_pre_Validator",
 		err: &Error{C: ERR_RULE_KEY, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `pre:"[trim]"`,
 				Type: T.string,
@@ -145,6 +155,7 @@ func TestChecker_makeNode(t *testing.T) {
 		name: "Test_ERR_RULE_KEY_2_pre_Validator",
 		err: &Error{C: ERR_RULE_KEY, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `pre:"[trim]"`,
 				Type: T.Slice(T.string),
@@ -157,6 +168,7 @@ func TestChecker_makeNode(t *testing.T) {
 		name: "Test_ERR_RULE_KEY_3_pre_Validator",
 		err: &Error{C: ERR_RULE_KEY, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `pre:"[][trim]"`,
 				Type: T.Map(T.string, T.Slice(T.string)),
@@ -169,6 +181,7 @@ func TestChecker_makeNode(t *testing.T) {
 		name: "Test_ERR_RULE_UNDEFINED_1_is_Validator",
 		err: &Error{C: ERR_RULE_UNDEFINED, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"email,trim"`,
 				Type: T.string,
@@ -185,6 +198,7 @@ func TestChecker_makeNode(t *testing.T) {
 		name: "Test_ERR_RULE_UNDEFINED_2_is_Validator",
 		err: &Error{C: ERR_RULE_UNDEFINED, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"email,trim"`,
 				Type: T.Ptr(T.string),
@@ -201,6 +215,7 @@ func TestChecker_makeNode(t *testing.T) {
 		name: "Test_ERR_RULE_UNDEFINED_1_pre_Validator",
 		err: &Error{C: ERR_RULE_UNDEFINED, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `pre:"trim,email"`,
 				Type: T.string,
@@ -217,6 +232,7 @@ func TestChecker_makeNode(t *testing.T) {
 		name: "Test_ERR_RULE_UNDEFINED_2_pre_Validator",
 		err: &Error{C: ERR_RULE_UNDEFINED, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `pre:"trim,email"`,
 				Type: T.Ptr(T.string),
@@ -242,7 +258,7 @@ func TestChecker_makeNode(t *testing.T) {
 			match := testMatch(t, tt.name)
 
 			info := new(Info)
-			checker := NewChecker(&test_ast, fkCfg, info)
+			checker := NewChecker(&test_ast, test_pkg.Pkg(), fkCfg, info)
 			err := checker.Check(match)
 
 			got := (*ttError)(err.(*Error))

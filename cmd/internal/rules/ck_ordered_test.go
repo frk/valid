@@ -21,6 +21,7 @@ func TestChecker_orderedCheck(t *testing.T) {
 		name: "Test_ERR_ORDERED_TYPE_1_Validator",
 		err: &Error{C: ERR_ORDERED_TYPE, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"min:8"`,
 				Type: T.Slice(T.string),
@@ -37,6 +38,7 @@ func TestChecker_orderedCheck(t *testing.T) {
 		name: "Test_ERR_ORDERED_TYPE_2_Validator",
 		err: &Error{C: ERR_ORDERED_TYPE, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"gt:8"`,
 				Type: T.Slice(T.int),
@@ -53,6 +55,7 @@ func TestChecker_orderedCheck(t *testing.T) {
 		name: "Test_ERR_ORDERED_ARGTYPE_1_Validator",
 		err: &Error{C: ERR_ORDERED_ARGTYPE, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"gte:0.8"`,
 				Type: T.int,
@@ -70,6 +73,7 @@ func TestChecker_orderedCheck(t *testing.T) {
 		name: "Test_ERR_ORDERED_ARGTYPE_2_Validator",
 		err: &Error{C: ERR_ORDERED_ARGTYPE, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"gte:foo"`,
 				Type: T.float64,
@@ -87,6 +91,7 @@ func TestChecker_orderedCheck(t *testing.T) {
 		name: "Test_ERR_ORDERED_ARGTYPE_3_Validator",
 		err: &Error{C: ERR_ORDERED_ARGTYPE, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"lte:&S.F"`,
 				Type: T.string,
@@ -114,7 +119,7 @@ func TestChecker_orderedCheck(t *testing.T) {
 			match := testMatch(t, tt.name)
 
 			info := new(Info)
-			checker := NewChecker(&test_ast, fkCfg, info)
+			checker := NewChecker(&test_ast, test_pkg.Pkg(), fkCfg, info)
 			err := checker.Check(match)
 
 			got := _ttError(err)

@@ -169,14 +169,14 @@ func TestGenerator(t *testing.T) {
 			infos := make([]*rules.Info, len(f.Matches))
 			for k, match := range f.Matches {
 				info := new(rules.Info)
-				checkr := rules.NewChecker(&AST, fkCfg, info)
-				if err := checkr.Check(match); err != nil {
+				checker := rules.NewChecker(&AST, pkg.Pkg(), fkCfg, info)
+				if err := checker.Check(match); err != nil {
 					t.Fatal(err)
 				}
 				infos[k] = info
 			}
 
-			code, err := Generate(pkg.Name, infos)
+			code, err := Generate(pkg.Pkg(), infos)
 			if err != nil {
 				t.Error(err)
 				return

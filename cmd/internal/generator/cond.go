@@ -97,6 +97,15 @@ func (b *bb) requiredCondExpr(n *rules.Node, r *rules.Rule) GO.ExprNode {
 			return GO.BinaryExpr{Op: GO.BinaryEql, X: b.val, Y: NIL}
 		case gotype.K_PTR:
 			return GO.BinaryExpr{Op: GO.BinaryEql, X: b.val, Y: NIL}
+		case gotype.K_STRUCT:
+			lit := GO.StructLit{Compact: true}
+			if n.Type.Pkg != b.g.pkg {
+				pkg := b.g.addImport(n.Type.Pkg)
+				lit.Type = GO.QualifiedIdent{pkg.name, n.Type.Name}
+			} else {
+				lit.Type = GO.Ident{n.Type.Name}
+			}
+			return GO.BinaryExpr{Op: GO.BinaryEql, X: b.val, Y: GO.ParenExpr{lit}}
 		}
 	}
 
@@ -157,7 +166,7 @@ func (b *bb) lengthCondExpr(n *rules.Node, r *rules.Rule) GO.ExprNode {
 	case "len":
 		cx = GO.CallLenExpr{b.val}
 	case "runecount":
-		pkg := b.g.pkg(utf8)
+		pkg := b.g.addImport(utf8)
 		expr := GO.CallExpr{Args: GO.ArgsList{List: b.val}}
 		if n.Type.Kind == gotype.K_STRING {
 			expr.Fun = GO.QualifiedIdent{pkg.name, "RuneCountInString"}
@@ -207,7 +216,7 @@ func (b *bb) enumCondExpr(n *rules.Node, r *rules.Rule) (x GO.ExprNode) {
 
 // builds an expression that checks the value using the rule spec's function.
 func (b *bb) functionCondExpr(n *rules.Node, r *rules.Rule) (x GO.ExprNode) {
-	pkg := b.g.pkg(r.Spec.FType.Pkg)
+	pkg := b.g.addImport(r.Spec.FType.Pkg)
 	args := b.g.argmap[r]
 
 	// If this is the builtin regexp rule, then add

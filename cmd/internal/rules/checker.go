@@ -33,6 +33,8 @@ type Checker struct {
 	*Info
 	// The set of go/ast packages associated with the type being checked.
 	ast *search.AST
+	// The package for which the code will be generated.
+	pkg gotype.Pkg
 	// The file set with which the type being checked is associated.
 	fs *token.FileSet
 	// The analyzer used to analyze the matched type.
@@ -45,8 +47,8 @@ type Checker struct {
 
 // NewChecker returns a new Checker instance.
 // The optional info argument, will be populated during rule-checking.
-func NewChecker(ast *search.AST, fkCfg *config.FieldKeyConfig, info *Info) (c *Checker) {
-	c = &Checker{ast: ast}
+func NewChecker(ast *search.AST, pkg search.Pkg, fkCfg *config.FieldKeyConfig, info *Info) (c *Checker) {
+	c = &Checker{ast: ast, pkg: gotype.Pkg(pkg)}
 	c.fieldKey = fkFunc(fkCfg)
 
 	c.Info = info
@@ -121,7 +123,7 @@ func (c *Checker) checkRules(n *Node) error {
 		// Check that when r has Context then
 		// also the Validator has a ContextField.
 		if len(r.Context) > 0 && c.vs.ContextField == nil {
-			return errors.TODO("checkRules: validator has no context field")
+			return &Error{C: ERR_CONTEXT_NOFIELD, ty: c.vs.Type, r: r}
 		}
 
 		// Ensure that the Value of a Arg of type ARG_FIELD

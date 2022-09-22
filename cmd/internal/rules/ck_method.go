@@ -1,10 +1,7 @@
 package rules
 
-import (
-	"github.com/frk/valid/cmd/internal/errors"
-)
-
-// methodCheck ...
+// methodCheck checks that the node can be used to
+// generate a call to the rule's method, e.g. "IsValid".
 func (c *Checker) methodCheck(n *Node, r *Rule) error {
 	// Check that n implements a method that matches the rule type.
 	var methodFound bool
@@ -36,12 +33,16 @@ loop:
 		break loop
 	}
 	if !methodFound {
-		return errors.TODO("methodCheck: method not found")
+		return &Error{C: ERR_METHOD_TYPE, ty: n.Type, r: r}
 	}
 
 	// Check that the arguments specified in the rule tag can be used
 	// as the arguments for the corresponding method parameters.
 	if err := c.checkRuleArgsAsFuncParams(r); err != nil {
+		// TODO would be nice to have a test case for this
+		// but for that I'd need to add other METHOD rules
+		// since currently there's only one and that one
+		// takes no input arguments.
 		return err
 	}
 

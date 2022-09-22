@@ -66,7 +66,7 @@ func (c *Checker) makeNode(t *gotype.Type, is, pre *Tag, fs gotype.FieldSelector
 	t = base.Type
 
 	if false {
-		fmt.Printf("type=%s is=%s pre=%s\n", t.String(), is.String(), pre.String())
+		fmt.Printf("type=%s is=%s pre=%s\n", t.TypeString(nil), is.String(), pre.String())
 	}
 
 	// Make sure that the rule structure in both tags
@@ -103,6 +103,10 @@ func (c *Checker) makeNode(t *gotype.Type, is, pre *Tag, fs gotype.FieldSelector
 		}
 	case gotype.K_STRUCT:
 		for _, f := range t.Fields {
+			if !f.CanAccess(c.pkg) {
+				continue
+			}
+
 			node, err := c.makeFieldNode(f, fs)
 			if err != nil {
 				return nil, err
@@ -203,7 +207,7 @@ func (c *Checker) makeNodeFromPtr(t *gotype.Type, is, pre *Tag) (root, base *Nod
 	}
 
 	// apply base specific rules
-	if required != nil && (t.Kind.IsBasic() || t.IsNilable() || len(t.Name) > 0) {
+	if required != nil && (t.Kind.IsBasic() || t.IsNilable() || (len(t.Name) > 0 && t.IsComparable())) {
 		base.IsRules = append(base.IsRules, required)
 	}
 	if notnil != nil && t.IsNilable() {

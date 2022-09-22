@@ -73,8 +73,12 @@ func (c *Checker) checkRuleArgsAsFuncParams(r *Rule) error {
 			}
 		}
 		if p == nil {
-			// panic?
-			return errors.TODO("checkRuleArgsAsFuncParams: <invalid> function param: %+v", r.Args[i])
+			// NOTE this relies on the fact that ArgOpts is
+			// constructured from the rule's Args *after* it
+			// has been confirmed, with isValidNumberOfArgs,
+			// that the number of Args is ok, given the
+			// associated function's type.
+			panic("shouldn't reach")
 		}
 
 		if !c.canConvertRuleArg(p.Type, r.Args[i]) {

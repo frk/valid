@@ -9,9 +9,8 @@ import (
 
 func TestAnalyzer_Validator(t *testing.T) {
 	pkg0 := Pkg{
-		Path:  "github.com/frk/valid/cmd/internal/gotype/testdata",
-		Name:  "testdata",
-		Local: "testdata",
+		Path: "github.com/frk/valid/cmd/internal/gotype/testdata",
+		Name: "testdata",
 	}
 
 	errorType := &Type{
@@ -41,8 +40,10 @@ func TestAnalyzer_Validator(t *testing.T) {
 				Kind:       K_STRUCT,
 				IsExported: true,
 				Fields: []*StructField{{
+					Pkg:  pkg0,
 					Name: "err",
 					Type: &Type{Pkg: pkg0, Name: "errorConstructor", Kind: K_STRUCT, Methods: []*Method{{
+						Pkg:  pkg0,
 						Name: "Error",
 						Type: &Type{
 							Kind:       K_FUNC,
@@ -71,8 +72,10 @@ func TestAnalyzer_Validator(t *testing.T) {
 				Kind:       K_STRUCT,
 				IsExported: true,
 				Fields: []*StructField{{
+					Pkg:  pkg0,
 					Name: "err",
 					Type: &Type{Pkg: pkg0, Name: "errorAggregator", Kind: K_STRUCT, Methods: []*Method{{
+						Pkg:  pkg0,
 						Name: "Error",
 						Type: &Type{
 							Kind:       K_FUNC,
@@ -86,6 +89,7 @@ func TestAnalyzer_Validator(t *testing.T) {
 						},
 						IsExported: true,
 					}, {
+						Pkg:  pkg0,
 						Name: "Out",
 						Type: &Type{
 							Kind: K_FUNC,
@@ -105,9 +109,10 @@ func TestAnalyzer_Validator(t *testing.T) {
 			Name:       "Test4Validator",
 			Kind:       K_STRUCT,
 			IsExported: true,
-			Fields:     []*StructField{{Name: "context", Type: &Type{Kind: K_STRING}, Var: &types.Var{}}},
+			Fields:     []*StructField{{Pkg: pkg0, Name: "context", Type: &Type{Kind: K_STRING}, Var: &types.Var{}}},
 		}, ContextField: &ContextField{Name: "context"}},
 	}, {
+		// (*gotype.Validator).Type.Methods[0].Type.Out[0].Type.Methods[0].Pkg.Name
 		named: test_type("Test5Validator").(*types.Named),
 		want: &Validator{
 			Type: &Type{
@@ -116,8 +121,10 @@ func TestAnalyzer_Validator(t *testing.T) {
 				Kind:       K_STRUCT,
 				IsExported: true,
 				Methods: []*Method{{
+					Pkg:  pkg0,
 					Name: "beforevalidate", Type: &Type{Kind: K_FUNC, Out: []*Var{{Type: errorType}}},
 				}, {
+					Pkg:  pkg0,
 					Name: "AfterValidate", Type: &Type{Kind: K_FUNC, Out: []*Var{{Type: errorType}}},
 					IsExported: true,
 				}},
@@ -127,12 +134,12 @@ func TestAnalyzer_Validator(t *testing.T) {
 	}}
 
 	compare := compare.Config{ObserveFieldTag: "cmp"}
-	for _, tt := range tests {
+	for i, tt := range tests {
 		t.Run(tt.named.String(), func(t *testing.T) {
 			a := NewAnalyzer(test_pkg.Type)
 			got := a.Validator(tt.named)
 			if err := compare.Compare(got, tt.want); err != nil {
-				t.Error(err)
+				t.Errorf("#%d: %v", i, err)
 			}
 		})
 	}

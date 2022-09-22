@@ -89,6 +89,21 @@ type Package struct {
 	Files []*File
 }
 
+// Pkg describes a Go package. This is used by generator.Generate
+// to identify the package for which the code should be generated.
+type Pkg struct {
+	Path string
+	Name string
+}
+
+// Pkg returns the Pkg description of p.
+func (p Package) Pkg() Pkg {
+	return Pkg{
+		Path: p.Path,
+		Name: p.Name,
+	}
+}
+
 // Search scans one or more Go packages looking for validator struct types
 // whose names match the rxValidator regexp. The result will be a list of
 // Packages, where each Package will contain a list of Files that belong to

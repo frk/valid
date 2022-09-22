@@ -21,6 +21,7 @@ func TestChecker_requiredCheck(t *testing.T) {
 		name: "Test_ERR_NOTNIL_TYPE_1_Validator",
 		err: &Error{C: ERR_NOTNIL_TYPE, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"notnil"`,
 				Type: T.string,
@@ -33,6 +34,7 @@ func TestChecker_requiredCheck(t *testing.T) {
 		name: "Test_ERR_NOTNIL_TYPE_2_Validator",
 		err: &Error{C: ERR_NOTNIL_TYPE, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"notnil"`,
 				Type: T.bool,
@@ -45,6 +47,7 @@ func TestChecker_requiredCheck(t *testing.T) {
 		name: "Test_ERR_NOTNIL_TYPE_3_Validator",
 		err: &Error{C: ERR_NOTNIL_TYPE, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"notnil"`,
 				Type: T.float64,
@@ -66,7 +69,7 @@ func TestChecker_requiredCheck(t *testing.T) {
 			match := testMatch(t, tt.name)
 
 			info := new(Info)
-			checker := NewChecker(&test_ast, fkCfg, info)
+			checker := NewChecker(&test_ast, test_pkg.Pkg(), fkCfg, info)
 			err := checker.Check(match)
 
 			got := _ttError(err)

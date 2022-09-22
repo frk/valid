@@ -184,9 +184,9 @@ func (e *Error) CfgArgKey() string {
 func (e *Error) CfgFuncParamType() string {
 	s := e.ft.Type().(*types.Signature)
 	if s.Variadic() && s.Params().Len() < *e.fpi {
-		return "..." + e.fp.Type.String()
+		return "..." + e.fp.Type.TypeString(nil)
 	}
-	return e.fp.Type.String()
+	return e.fp.Type.TypeString(nil)
 }
 
 func (e *Error) FieldPos() string {
@@ -194,7 +194,7 @@ func (e *Error) FieldPos() string {
 }
 
 func (e *Error) Field() string {
-	return fmt.Sprintf("%s %s `%s`", e.sf.Name, e.sf.Type, e.sf.Tag)
+	return fmt.Sprintf("%s %s `%s`", e.sf.Name, e.sf.Type.TypeString(nil), e.sf.Tag)
 }
 
 func (e *Error) FieldName() string {
@@ -202,7 +202,7 @@ func (e *Error) FieldName() string {
 }
 
 func (e *Error) FieldType() string {
-	return e.sf.Type.String()
+	return e.sf.Type.TypeString(nil)
 }
 
 func (e *Error) FieldTypeFamily() string {
@@ -214,7 +214,7 @@ func (e *Error) FieldTypeFamily() string {
 	case e.sf.Type.Kind.IsInteger():
 		return "int"
 	}
-	return e.sf.Type.String()
+	return e.sf.Type.TypeString(nil)
 }
 
 func (e *Error) Tag() string {
@@ -234,7 +234,7 @@ func (e *Error) TagSTKey() string {
 }
 
 func (e *Error) Type() string {
-	return e.ty.String()
+	return e.ty.TypeString(nil)
 }
 
 func (e *Error) Rule() string {
@@ -261,23 +261,32 @@ func (e *Error) RuleFuncIdent() string {
 	return e.r.Spec.FType.Pkg.Name + "." + e.r.Spec.FName
 }
 
+func (e *Error) RuleFuncName() string {
+	return e.r.Spec.FName
+}
+
 func (e *Error) RuleFuncType() string {
-	return e.r.Spec.FType.String()
+	return e.r.Spec.FType.TypeString(nil)
+}
+
+func (e *Error) RuleFuncNameWithType() string {
+	t := e.r.Spec.FType.TypeString(nil)
+	return e.r.Spec.FName + strings.TrimPrefix(t, "func")
 }
 
 func (e *Error) RuleFuncIn0Type() string {
-	return e.r.Spec.FType.In[0].Type.String()
+	return e.r.Spec.FType.In[0].Type.TypeString(nil)
 }
 
 func (e *Error) RuleFuncOut0Type() string {
-	return e.r.Spec.FType.Out[0].Type.String()
+	return e.r.Spec.FType.Out[0].Type.TypeString(nil)
 }
 
 func (e *Error) RuleFuncParamType() string {
 	if e.r.Spec.FType.IsVariadic && len(e.r.Spec.FType.In) < *e.fpi {
-		return "..." + e.fp.Type.String()
+		return "..." + e.fp.Type.TypeString(nil)
 	}
-	return e.fp.Type.String()
+	return e.fp.Type.TypeString(nil)
 }
 
 func (e *Error) FuncParamIdent() string {
@@ -321,7 +330,7 @@ func (e *Error) RuleArgValue() string {
 
 func (e *Error) RuleArgType() string {
 	if e.ra.Type == ARG_FIELD {
-		return e.raf.Type.String()
+		return e.raf.Type.TypeString(nil)
 	}
 	return e.ra.Type.String()
 }
@@ -331,7 +340,7 @@ func (e *Error) RuleArgIsField() bool {
 }
 
 func (e *Error) RuleArgFieldType() string {
-	return e.raf.Type.String()
+	return e.raf.Type.TypeString(nil)
 }
 
 type ErrorCode uint
@@ -386,6 +395,10 @@ const (
 	ERR_FUNCTION_INTYPE   // bad FUNCTION rule function's input type, incompatible with node
 	ERR_FUNCTION_ARGTYPE  // bad argument type in FUNCTION rule
 	ERR_FUNCTION_ARGVALUE // bad argument value in FUNCTION rule
+
+	ERR_METHOD_TYPE // illegal METHOD rule on type that does not have the specified method
+
+	ERR_CONTEXT_NOFIELD // context rule used in validator with no context field
 
 	// TODO rename
 	ERR_ARG_BADCMP // argument's type incompatible with field's type (for comparison)
@@ -558,7 +571,7 @@ var error_template = `
 {{ end }}
 
 {{ define "` + ERR_OPTIONAL_CONFLICT.ident() + `" -}}
-{{ ERROR }} Incompatible use of "{{wb .RuleName}}" rule together with the "{{wb .Rule2Name}}"` +
+{{ ERROR }} Conflicting use of "{{wb .RuleName}}" rule together with the "{{wb .Rule2Name}}"` +
 	` rule in field {{wb .FieldName}} (type {{wb .FieldType}}).
   > FILE: {{W .FieldPos}}
   > FIELD: {{W .Field}}
@@ -734,6 +747,18 @@ var error_template = `
   > FIELD: {{W .Field}}
   > HINT: For a set of valid argument values, see the "{{wb .RuleName}}" rule's spec as defined` +
 	`{{NT}}  in the config file or in the {{wb .RuleFuncIdent}} function's documentation.
+{{ end }}
+
+{{ define "` + ERR_METHOD_TYPE.ident() + `" -}}
+{{ ERROR }} Illegal use of the "{{wb .RuleName}}" rule in field {{wb .FieldName}}` +
+	` (type {{wb .FieldType}}). Type {{wb .FieldType}} does not implement` +
+	` the method {{wb .RuleFuncNameWithType}}.
+  > FILE: {{W .FieldPos}}
+  > FIELD: {{W .Field}}
+{{ end }}
+
+{{ define "` + ERR_CONTEXT_NOFIELD.ident() + `" -}}
+{{ ERROR }} context no filed ...
 {{ end }}
 
 {{ define "` + ERR_ARG_BADCMP.ident() + `" -}}

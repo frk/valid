@@ -9,3 +9,15 @@ be used, together with the [`cmd/validgen`](cmd/validgen) tool, to generate stat
 --------
 
 Some (most) validators, including their tests & comments, were ported from https://github.com/validatorjs/validator.js
+
+validgen configuration
+custom validation functions
+	configuring from file
+	configuring through comments
+specifying arguments for validation functions
+passing dependencies to validation functions
+error handling
+- default error handling
+- custom error handling
+
+basic optional/required rules

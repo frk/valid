@@ -64,7 +64,7 @@ func (b *bb) errGlobalHandler(n *rules.Node, r *rules.Rule, body *GO.BlockStmt, 
 		body.Add(GO.ExprStmt{x})
 	} else {
 		ctor := global.ErrorConstructor
-		pkg := b.g.pkg(ctor.Type.Pkg)
+		pkg := b.g.addImport(ctor.Type.Pkg)
 
 		x := GO.ExprNode(nil)
 		x = GO.QualifiedIdent{pkg.name, ctor.Name}
@@ -177,11 +177,11 @@ func (b *bb) errDefault(n *rules.Node, r *rules.Rule, body *GO.BlockStmt) {
 	textExpr := GO.ValueLit(strconv.Quote(text))
 
 	if len(refs) > 0 {
-		pkg := b.g.pkg(gotype.Pkg{Path: "fmt"})
+		pkg := b.g.addImport(gotype.Pkg{Path: "fmt"})
 		body.Add(GO.ReturnStmt{GO.CallExpr{Fun: GO.QualifiedIdent{pkg.name, "Errorf"},
 			Args: GO.ArgsList{List: append(GO.ExprList{textExpr}, refs...)}}})
 	} else {
-		pkg := b.g.pkg(gotype.Pkg{Path: "errors"})
+		pkg := b.g.addImport(gotype.Pkg{Path: "errors"})
 		body.Add(GO.ReturnStmt{GO.CallExpr{Fun: GO.QualifiedIdent{pkg.name, "New"},
 			Args: GO.ArgsList{List: GO.ExprList{textExpr}}}})
 	}

@@ -21,6 +21,7 @@ func TestChecker_comparableCheck(t *testing.T) {
 		name: "Test_ERR_ARG_BADCMP_1_Validator",
 		err: &Error{C: ERR_ARG_BADCMP, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"eq:42:64:foo:-22"`,
 				Type: T.int,
@@ -43,6 +44,7 @@ func TestChecker_comparableCheck(t *testing.T) {
 		name: "Test_ERR_ARG_BADCMP_2_Validator",
 		err: &Error{C: ERR_ARG_BADCMP, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"eq:123:&S.G"`,
 				Type: T.int,
@@ -64,6 +66,7 @@ func TestChecker_comparableCheck(t *testing.T) {
 		name: "Test_ERR_ARG_BADCMP_3_Validator",
 		err: &Error{C: ERR_ARG_BADCMP, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"eq:0.03"`,
 				Type: T.int,
@@ -81,6 +84,7 @@ func TestChecker_comparableCheck(t *testing.T) {
 		name: "Test_ERR_ARG_BADCMP_4_Validator",
 		err: &Error{C: ERR_ARG_BADCMP, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"ne:-345"`,
 				Type: T.uint,
@@ -98,6 +102,7 @@ func TestChecker_comparableCheck(t *testing.T) {
 		name: "Test_ERR_ARG_BADCMP_5_Validator",
 		err: &Error{C: ERR_ARG_BADCMP, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"eq:1"`,
 				Type: T.bool,
@@ -115,6 +120,7 @@ func TestChecker_comparableCheck(t *testing.T) {
 		name: "Test_ERR_ARG_BADCMP_6_Validator",
 		err: &Error{C: ERR_ARG_BADCMP, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{
+				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:  `is:"eq:true"`,
 				Type: T.int,
@@ -141,7 +147,7 @@ func TestChecker_comparableCheck(t *testing.T) {
 			match := testMatch(t, tt.name)
 
 			info := new(Info)
-			checker := NewChecker(&test_ast, fkCfg, info)
+			checker := NewChecker(&test_ast, test_pkg.Pkg(), fkCfg, info)
 			err := checker.Check(match)
 
 			got := _ttError(err)

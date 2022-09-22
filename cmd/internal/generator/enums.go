@@ -9,7 +9,7 @@ import (
 func (g *gg) prepEnums(n *rules.Node, r *rules.Rule) {
 	var pkgname string
 	if g.info.Validator.Type.Pkg.Path != n.Type.Pkg.Path {
-		pkg := g.pkg(n.Type.Pkg)
+		pkg := g.addImport(n.Type.Pkg)
 		pkgname = pkg.name
 	}
 
