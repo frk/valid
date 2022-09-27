@@ -11,9 +11,9 @@ func printUsage() {
 
 // TODO(mkopriva): write out a more comprehensive usage description
 
-const usage = `usage: valid [-c] [-wd] [-r] [-f] [-rx] [-o] [-fktag] [-fkbase] [-fksep]
+const usage = `usage: valid [-c] [-wd] [-r] [-f] [-rx] [-o] [-fk.tag] [-fk.join] [-fk.sep]
 
-valid generates validation code for Go structs.
+validgen generates validation code for Go structs.
 
 The -c flag specifies the config file that the tool should use to configure itself.
 If not specified the tool will look for the ".valid.yaml" config in the project's
