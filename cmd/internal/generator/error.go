@@ -32,7 +32,7 @@ func (b *bb) err(n *rules.Node, r *rules.Rule, body *GO.BlockStmt) {
 func (b *bb) errGlobalHandler(n *rules.Node, r *rules.Rule, body *GO.BlockStmt, isAgg bool) {
 	args := make(GO.ExprList, 3)
 	args[0] = GO.StringLit(b.key)
-	args[1] = b.val
+	args[1] = b.rootv()
 	args[2] = GO.StringLit(r.Name)
 
 	if r.Spec.Kind == rules.ENUM {
@@ -76,7 +76,7 @@ func (b *bb) errGlobalHandler(n *rules.Node, r *rules.Rule, body *GO.BlockStmt, 
 func (b *bb) errHandler(n *rules.Node, r *rules.Rule, body *GO.BlockStmt) {
 	args := make(GO.ExprList, 3)
 	args[0] = GO.StringLit(b.key)
-	args[1] = b.val
+	args[1] = b.rootv()
 	args[2] = GO.StringLit(r.Name)
 
 	if r.Spec.Kind == rules.ENUM {

@@ -14,7 +14,7 @@ func (v T14Validator) Validate() error {
 		v.ea.Error("F2", v.F2, "enum", mypkg.MyFoo, mypkg.MyBar, mypkg.MyBaz)
 	}
 	if v.F3 == nil || *v.F3 == nil || **v.F3 == "" {
-		v.ea.Error("F3", **v.F3, "required")
+		v.ea.Error("F3", v.F3, "required")
 	} else {
 		f := **v.F3
 		if len(f) != 3 {
@@ -24,7 +24,7 @@ func (v T14Validator) Validate() error {
 		}
 	}
 	if v.F4 != nil && (*v.F4 != mypkg.MyEnumFoo && *v.F4 != mypkg.MyEnumBar && *v.F4 != mypkg.MyEnumBaz) {
-		v.ea.Error("F4", *v.F4, "enum", mypkg.MyEnumFoo, mypkg.MyEnumBar, mypkg.MyEnumBaz)
+		v.ea.Error("F4", v.F4, "enum", mypkg.MyEnumFoo, mypkg.MyEnumBar, mypkg.MyEnumBaz)
 	}
 	return v.ea.Out()
 }

@@ -31,7 +31,7 @@ func (v T46bValidator) Validate() error {
 		return v.ec.Error("F1", v.F1, "len", "", v.Max)
 	}
 	if v.F2 != nil && (*v.F2 < v.Min || *v.F2 > v.Max) {
-		return v.ec.Error("F2", *v.F2, "rng", v.Min, v.Max)
+		return v.ec.Error("F2", v.F2, "rng", v.Min, v.Max)
 	}
 	if !valid.Phone(v.F3, v.SomeValue) {
 		return v.ec.Error("F3", v.F3, "phone", v.SomeValue)
@@ -47,7 +47,7 @@ func (v T46cValidator) Validate() error {
 		v.ea.Error("F1", v.F1, "len", "", v.Max)
 	}
 	if v.F2 != nil && (*v.F2 < v.Min || *v.F2 > v.Max) {
-		v.ea.Error("F2", *v.F2, "rng", v.Min, v.Max)
+		v.ea.Error("F2", v.F2, "rng", v.Min, v.Max)
 	}
 	if !valid.Phone(v.F3, v.SomeValue) {
 		v.ea.Error("F3", v.F3, "phone", v.SomeValue)

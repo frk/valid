@@ -111,6 +111,7 @@ type bb struct {
 	vals   []GO.ExprNode
 	idx    GO.ExprNode
 	key    string
+	tmp    bool
 }
 
 func (b *bb) new() (out bb) {
@@ -175,10 +176,18 @@ func (b *bb) pund() {
 	b.vals = b.vals[:len(b.vals)-1]
 }
 
+func (b *bb) rootv() GO.ExprNode {
+	if !b.tmp && len(b.vals) > 0 {
+		return b.vals[0]
+	}
+	return b.val
+}
+
 func (b *bb) tempVar() {
 	val := GO.Ident{"f"}
 	b.add(GO.AssignStmt{Token: GO.AssignDefine, Lhs: val, Rhs: b.val})
 	b.val = val
+	b.tmp = true
 }
 
 func (b *bb) subBlock() {
