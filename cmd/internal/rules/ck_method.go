@@ -19,12 +19,12 @@ loop:
 		}
 
 		for i := range m.Type.In {
-			if !m.Type.In[i].Type.Identical(r.Spec.FType.In[i].Type) {
+			if !m.Type.In[i].Type.IsIdentical(r.Spec.FType.In[i].Type) {
 				continue loop
 			}
 		}
 		for i := range m.Type.Out {
-			if !m.Type.Out[i].Type.Identical(r.Spec.FType.Out[i].Type) {
+			if !m.Type.Out[i].Type.IsIdentical(r.Spec.FType.Out[i].Type) {
 				continue loop
 			}
 		}

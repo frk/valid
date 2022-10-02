@@ -1,0 +1,3 @@
+rules:
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.RuleFunc8
+    rule: { name: r8 }

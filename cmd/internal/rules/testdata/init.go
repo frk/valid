@@ -35,6 +35,17 @@ func RuleFunc7(s string, opt1 uint, opt2 bool, opt3 string) bool {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// valid rules
+
+type CheckHelper interface {
+	Check(v string) bool
+}
+
+func RuleFunc8(s string, h CheckHelper) bool {
+	return h.Check(s)
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // valid pre-processors
 
 func PreProc1(s string) string {

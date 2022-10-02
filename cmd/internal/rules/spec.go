@@ -194,7 +194,7 @@ func specFromFunc(a *search.AST, f *types.Func, rs *config.RuleSpec) (*Spec, err
 		}
 	case PREPROC:
 		// Make sure the function's signature is alright.
-		if len(ty.In) < 1 || (len(ty.Out) != 1 || !ty.In[0].Type.Identical(ty.Out[0].Type)) {
+		if len(ty.In) < 1 || (len(ty.Out) != 1 || !ty.In[0].Type.IsIdentical(ty.Out[0].Type)) {
 			return nil, &Error{C: ERR_CONFIG_PREFUNCTYPE, a: a, ft: f, rs: rs}
 		}
 

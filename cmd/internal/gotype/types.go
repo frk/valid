@@ -147,12 +147,12 @@ func (t *Type) HasIsValid() bool {
 
 // Reports whether or not the type t represents a pointer type of u.
 func (t *Type) PtrOf(u *Type) bool {
-	return t.Kind == K_PTR && t.Elem.Identical(u)
+	return t.Kind == K_PTR && t.Elem.IsIdentical(u)
 }
 
 // Reports whether the types represented by t and u are equal. Note that this
 // does not handle unnamed struct, interface (non-empty), func, and channel types.
-func (t *Type) Identical(u *Type) bool {
+func (t *Type) IsIdentical(u *Type) bool {
 	// named with same name and same package, accept
 	if t.Name != "" && t.Pkg.Path != "" {
 		if t.Name == u.Name && t.Pkg.Path == u.Pkg.Path {
@@ -175,8 +175,8 @@ func (t *Type) Identical(u *Type) bool {
 		return false
 	}
 
-	// func or channel, reject
-	if t.Kind == K_FUNC || t.Kind == K_CHAN {
+	// channel, reject
+	if t.Kind == K_CHAN {
 		return false
 	}
 
@@ -188,27 +188,44 @@ func (t *Type) Identical(u *Type) bool {
 	// unnamed
 	switch t.Kind {
 	case K_ARRAY:
-		return t.ArrayLen == u.ArrayLen && t.Elem.Identical(u.Elem)
+		return t.ArrayLen == u.ArrayLen && t.Elem.IsIdentical(u.Elem)
 	case K_MAP:
-		return t.Key.Identical(u.Key) && t.Elem.Identical(u.Elem)
+		return t.Key.IsIdentical(u.Key) && t.Elem.IsIdentical(u.Elem)
 	case K_SLICE, K_PTR:
-		return t.Elem.Identical(u.Elem)
+		return t.Elem.IsIdentical(u.Elem)
 	case K_INTERFACE:
 		// TODO range over the methods and compare those
 		return t.IsEmptyInterface() && u.IsEmptyInterface()
+	case K_FUNC:
+		// incompatible number of in/out parameters, reject
+		if len(t.In) != len(u.In) || len(t.Out) != len(u.Out) {
+			return false
+		}
+		// non-identical input parameter types, reject
+		for i := range t.In {
+			if !t.In[i].Type.IsIdentical(u.In[i].Type) {
+				return false
+			}
+		}
+		// non-identical output parameter types, reject
+		for i := range t.Out {
+			if !t.Out[i].Type.IsIdentical(u.Out[i].Type) {
+				return false
+			}
+		}
 	}
 
 	// accept
 	return true
 }
 
-// Reports whether or not a value of type t needs to be converted before
-// it can be assigned to a variable of type u.
+// Reports whether or not a value of type t needs to be converted
+// before it can be assigned to a variable of type u.
 func (t *Type) NeedsConversion(u *Type) bool {
-	if u.Identical(t) {
+	if u.IsIdentical(t) {
 		return false
 	}
-	if u.IsEmptyInterface() {
+	if t.Kind == K_INTERFACE {
 		return false
 	}
 	return true
@@ -518,12 +535,16 @@ func (t *Type) CanConvert(u *Type) bool {
 // handle unnamed struct, interface, func, and channel types.
 func (t *Type) CanAssign(u *Type) AssignmentStatus {
 	// if same, accept
-	if u.Identical(t) {
+	if u.IsIdentical(t) {
 		return ASSIGNMENT_OK
 	}
 
 	// if t is interface{}, accept
 	if t.IsEmptyInterface() {
+		return ASSIGNMENT_OK
+	}
+	// if t is interface{ ... } and u implements t, accept
+	if t.Kind == K_INTERFACE && u.Implements(t) {
 		return ASSIGNMENT_OK
 	}
 
@@ -554,18 +575,51 @@ func (t *Type) CanAssign(u *Type) AssignmentStatus {
 	if t.Kind == u.Kind && !t.Kind.IsBasic() {
 		switch t.Kind {
 		case K_ARRAY:
-			if t.ArrayLen == u.ArrayLen && t.Elem.Identical(u.Elem) {
+			if t.ArrayLen == u.ArrayLen && t.Elem.IsIdentical(u.Elem) {
 				return ASSIGNMENT_CONVERT
 			}
 		case K_MAP:
-			if t.Key.Identical(u.Key) && t.Elem.Identical(u.Elem) {
+			if t.Key.IsIdentical(u.Key) && t.Elem.IsIdentical(u.Elem) {
 				return ASSIGNMENT_CONVERT
 			}
 		case K_SLICE, K_PTR:
-			if t.Elem.Identical(u.Elem) {
+			if t.Elem.IsIdentical(u.Elem) {
 				return ASSIGNMENT_CONVERT
 			}
 		}
 	}
 	return ASSIGNMENT_INVALID
+}
+
+func (t *Type) Implements(u *Type) bool {
+	if u.Kind != K_INTERFACE {
+		return false
+	}
+
+	if t.Kind == K_PTR {
+		t = t.Elem
+	}
+
+methodLoop:
+	for _, um := range u.Methods {
+		for _, tm := range t.Methods {
+			if um.Name != tm.Name {
+				continue // try next
+			}
+			if !um.IsExported && um.Pkg != tm.Pkg {
+				continue // try next
+			}
+			if !tm.Type.IsIdentical(um.Type) {
+				continue // try next
+			}
+
+			// tm matches um
+			continue methodLoop
+		}
+
+		// no method in t matched um
+		return false
+	}
+
+	return true
 }

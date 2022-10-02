@@ -1,5 +1,9 @@
 package testdata
 
+import (
+	"github.com/frk/valid/cmd/internal/rules/testdata/mypkg"
+)
+
 type Test_ERR_FUNCTION_INTYPE_1_Validator struct {
 	F int `is:"contains:foo"`
 }
@@ -27,4 +31,8 @@ type Test_function_Validator struct {
 	UUID5 string `is:"uuid:v4"`
 	UUID6 string `is:"uuid:5"`
 	UUID7 string `is:"uuid:v5"`
+
+	R8 string `is:"r8:&helper"`
+
+	helper *mypkg.CheckHelper
 }

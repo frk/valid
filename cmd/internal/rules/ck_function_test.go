@@ -82,6 +82,11 @@ func TestChecker_functionCheck(t *testing.T) {
 		},
 	}}
 
+	cfg := loadConfig("testdata/configs/test_custom_rules.yaml")
+	if err := initCustomSpecs(cfg, &test_ast); err != nil {
+		t.Fatalf("loadConfig(testdata/configs/test_custom_rules.yaml) failed: %v", err)
+	}
+
 	compare := compare.Config{ObserveFieldTag: "cmp"}
 	fkCfg := &config.FieldKeyConfig{
 		Join:      config.Bool{Value: true, IsSet: true},
