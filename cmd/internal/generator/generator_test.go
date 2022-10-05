@@ -79,6 +79,7 @@ func TestGenerator(t *testing.T) {
 		"validation/59_noguard",
 		"validation/60_embed",
 		"validation/61_omitkey",
+		"validation/62_omitnil",
 
 		// TODO test IsValid with `is:"-"`
 		// TODO test IsValid combined with other rules

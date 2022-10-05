@@ -51,9 +51,139 @@ func TestCheckerCheck(t *testing.T) {
 		name string
 		err  error
 		show bool
-	}{
-		// ...
-	}
+	}{{
+		name: "Test_ERR_FIELD_UNKNOWN_1_Validator",
+		err: &Error{
+			C: ERR_FIELD_UNKNOWN, a: T._ast, sfv: T._var,
+			sf: &gotype.StructField{
+				Pkg:  T.pkg,
+				Name: "F", IsExported: true,
+				Tag:  `is:"gt:&num"`,
+				Type: T.int,
+				Var:  T._var,
+			},
+			ty: T.int,
+			r: &Rule{
+				Name: "gt",
+				Args: []*Arg{
+					{Type: ARG_FIELD, Value: "num"},
+				},
+				Spec: GetSpec("gt"),
+			},
+			ra: &Arg{Type: ARG_FIELD, Value: "num"},
+		},
+		show: true,
+	}, {
+		name: "Test_ERR_FIELD_UNKNOWN_2_Validator",
+		err: &Error{
+			C: ERR_FIELD_UNKNOWN, a: T._ast, sfv: T._var,
+			sf: &gotype.StructField{
+				Pkg:  T.pkg,
+				Name: "F", IsExported: true,
+				Tag:  `pre:"p4:&num"`,
+				Type: T.string,
+				Var:  T._var,
+			},
+			ty: T.string,
+			r: &Rule{
+				Name: "p4",
+				Args: []*Arg{{Type: ARG_FIELD, Value: "num"}},
+				Spec: GetSpec("pre:p4"),
+			},
+			ra: &Arg{Type: ARG_FIELD, Value: "num"},
+		},
+		show: true,
+	}, {
+		name: "Test_ERR_RULE_ARGMIN_1_Validator",
+		err: &Error{
+			C: ERR_RULE_ARGMIN, a: T._ast, sfv: T._var,
+			sf: &gotype.StructField{
+				Pkg:  T.pkg,
+				Name: "F", IsExported: true,
+				Tag:  `is:"gt"`,
+				Type: T.int,
+				Var:  T._var,
+			},
+			ty: T.int,
+			r:  &Rule{Name: "gt", Spec: GetSpec("gt")},
+		},
+		show: true,
+	}, {
+		name: "Test_ERR_RULE_ARGMIN_2_Validator",
+		err: &Error{
+			C: ERR_RULE_ARGMIN, a: T._ast, sfv: T._var,
+			sf: &gotype.StructField{
+				Pkg:  T.pkg,
+				Name: "F", IsExported: true,
+				Tag:  `pre:"p4"`,
+				Type: T.string,
+				Var:  T._var,
+			},
+			ty: T.string,
+			r:  &Rule{Name: "p4", Spec: GetSpec("pre:p4")},
+		},
+		show: true,
+	}, {
+		name: "Test_ERR_RULE_ARGMAX_1_Validator",
+		err: &Error{
+			C: ERR_RULE_ARGMAX, a: T._ast, sfv: T._var,
+			sf: &gotype.StructField{
+				Pkg:  T.pkg,
+				Name: "F", IsExported: true,
+				Tag:  `is:"gt:4:5"`,
+				Type: T.int,
+				Var:  T._var,
+			},
+			ty: T.int,
+			r: &Rule{
+				Name: "gt",
+				Args: []*Arg{
+					{Type: ARG_INT, Value: "4"},
+					{Type: ARG_INT, Value: "5"},
+				},
+				Spec: GetSpec("gt"),
+			},
+		},
+		show: true,
+	}, {
+		name: "Test_ERR_RULE_ARGMAX_2_Validator",
+		err: &Error{
+			C: ERR_RULE_ARGMAX, a: T._ast, sfv: T._var,
+			sf: &gotype.StructField{
+				Pkg:  T.pkg,
+				Name: "F", IsExported: true,
+				Tag:  `pre:"p4:1:2:3"`,
+				Type: T.string,
+				Var:  T._var,
+			},
+			ty: T.string,
+			r: &Rule{
+				Name: "p4",
+				Args: []*Arg{
+					{Type: ARG_INT, Value: "1"},
+					{Type: ARG_INT, Value: "2"},
+					{Type: ARG_INT, Value: "3"},
+				},
+				Spec: GetSpec("pre:p4"),
+			},
+		},
+		show: true,
+	}, {
+		name: "Test_ERR_PREPROC_INNVALID_1_Validator",
+		err: &Error{
+			C: ERR_PREPROC_INVALID, a: T._ast, sfv: T._var,
+			sf: &gotype.StructField{
+				Pkg:  T.pkg,
+				Name: "F", IsExported: true,
+				Tag:  `pre:"p0"`,
+				Type: T.string,
+				Var:  T._var,
+			},
+			ty: T.string,
+			r:  &Rule{Name: "p0", Spec: GetSpec("pre:p0")},
+		},
+		show: true,
+	}}
 
 	compare := compare.Config{ObserveFieldTag: "cmp"}
 	fkCfg := &config.FieldKeyConfig{

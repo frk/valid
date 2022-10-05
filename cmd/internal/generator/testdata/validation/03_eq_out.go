@@ -10,5 +10,8 @@ func (v T03Validator) Validate() error {
 	if v.F1 != "foo" {
 		return errors.New("F1 must be equal to: \"foo\"")
 	}
+	if v.F2 != nil && *v.F2 != 3.14 {
+		return errors.New("F2 must be equal to: 3.14")
+	}
 	return nil
 }

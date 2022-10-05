@@ -6,10 +6,6 @@ import (
 	"text/template"
 )
 
-func TODO(s string, a ...interface{}) error {
-	return fmt.Errorf(s, a...)
-}
-
 func ParseTemplate(text string) { t = template.Must(t.Parse(text)) }
 
 func String(name string, data interface{}) string {

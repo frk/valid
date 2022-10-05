@@ -58,6 +58,23 @@ func init() {
 		ArgMin: 1,
 		ArgMax: 1,
 	}
+
+	// non-PREPROC, for a test that ensures the code checks the Kind==PREPROC
+	_custom["pre:p0"] = &Spec{
+		Name: "p0", Kind: FUNCTION,
+		FName: "MyPreproc0",
+		FType: &gotype.Type{
+			Pkg: gotype.Pkg{
+				Name: "mypkg",
+				Path: "github.com/frk/valid/cmd/internal/rules/testdata/mypkg",
+			},
+			In:   []*gotype.Var{{Name: "v", Type: &gotype.Type{Kind: gotype.K_STRING}}},
+			Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
+			Kind: gotype.K_FUNC,
+		},
+		ArgMin: 1,
+		ArgMax: 1,
+	}
 }
 
 func TestChecker_preprocessorCheck(t *testing.T) {

@@ -19,5 +19,11 @@ func (v T02Validator) Validate() error {
 	if v.F4 == nil {
 		return errors.New("F4 cannot be nil")
 	}
+	if v.F5 == nil {
+		return errors.New("F5 cannot be nil")
+	}
+	if v.F6 == nil {
+		return errors.New("F6 cannot be nil")
+	}
 	return nil
 }

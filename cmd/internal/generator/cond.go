@@ -46,23 +46,33 @@ func (b *bb) condExpr(n *rules.Node, r *rules.Rule) GO.ExprNode {
 
 // builds an expression that checks whether the value is empty or not.
 func (b *bb) optionalCondExpr(n *rules.Node, r *rules.Rule) GO.ExprNode {
-	switch n.Type.Kind {
-	case gotype.K_STRING:
-		return GO.BinaryExpr{Op: GO.BinaryNeq, X: b.val, Y: GO.ValueLit(`""`)}
-	case gotype.K_MAP, gotype.K_SLICE:
-		return GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{b.val}, Y: GO.IntLit(0)}
-	case gotype.K_INT, gotype.K_INT8, gotype.K_INT16, gotype.K_INT32, gotype.K_INT64:
-		return GO.BinaryExpr{Op: GO.BinaryGtr, X: b.val, Y: GO.IntLit(0)}
-	case gotype.K_UINT, gotype.K_UINT8, gotype.K_UINT16, gotype.K_UINT32, gotype.K_UINT64:
-		return GO.BinaryExpr{Op: GO.BinaryGtr, X: b.val, Y: GO.IntLit(0)}
-	case gotype.K_FLOAT32, gotype.K_FLOAT64:
-		return GO.BinaryExpr{Op: GO.BinaryGtr, X: b.val, Y: GO.ValueLit("0.0")}
-	case gotype.K_BOOL:
-		return GO.BinaryExpr{Op: GO.BinaryEql, X: b.val, Y: GO.ValueLit("true")}
-	case gotype.K_INTERFACE:
-		return GO.BinaryExpr{Op: GO.BinaryNeq, X: b.val, Y: NIL}
-	case gotype.K_PTR:
-		return GO.BinaryExpr{Op: GO.BinaryNeq, X: b.val, Y: NIL}
+	switch r.Name {
+	case "omitnil":
+		switch n.Type.Kind {
+		case gotype.K_MAP, gotype.K_SLICE, gotype.K_INTERFACE:
+			return GO.BinaryExpr{Op: GO.BinaryNeq, X: b.val, Y: NIL}
+		case gotype.K_PTR, gotype.K_FUNC, gotype.K_CHAN:
+			return GO.BinaryExpr{Op: GO.BinaryNeq, X: b.val, Y: NIL}
+		}
+	case "optional":
+		switch n.Type.Kind {
+		case gotype.K_STRING:
+			return GO.BinaryExpr{Op: GO.BinaryNeq, X: b.val, Y: GO.ValueLit(`""`)}
+		case gotype.K_MAP, gotype.K_SLICE:
+			return GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{b.val}, Y: GO.IntLit(0)}
+		case gotype.K_INT, gotype.K_INT8, gotype.K_INT16, gotype.K_INT32, gotype.K_INT64:
+			return GO.BinaryExpr{Op: GO.BinaryGtr, X: b.val, Y: GO.IntLit(0)}
+		case gotype.K_UINT, gotype.K_UINT8, gotype.K_UINT16, gotype.K_UINT32, gotype.K_UINT64:
+			return GO.BinaryExpr{Op: GO.BinaryGtr, X: b.val, Y: GO.IntLit(0)}
+		case gotype.K_FLOAT32, gotype.K_FLOAT64:
+			return GO.BinaryExpr{Op: GO.BinaryGtr, X: b.val, Y: GO.ValueLit("0.0")}
+		case gotype.K_BOOL:
+			return GO.BinaryExpr{Op: GO.BinaryEql, X: b.val, Y: GO.ValueLit("true")}
+		case gotype.K_INTERFACE:
+			return GO.BinaryExpr{Op: GO.BinaryNeq, X: b.val, Y: NIL}
+		case gotype.K_PTR:
+			return GO.BinaryExpr{Op: GO.BinaryNeq, X: b.val, Y: NIL}
+		}
 	}
 
 	panic("shouldn't reach")
@@ -76,7 +86,7 @@ func (b *bb) requiredCondExpr(n *rules.Node, r *rules.Rule) GO.ExprNode {
 		switch n.Type.Kind {
 		case gotype.K_MAP, gotype.K_SLICE, gotype.K_INTERFACE:
 			return GO.BinaryExpr{Op: GO.BinaryEql, X: b.val, Y: NIL}
-		case gotype.K_PTR:
+		case gotype.K_PTR, gotype.K_FUNC, gotype.K_CHAN:
 			return GO.BinaryExpr{Op: GO.BinaryEql, X: b.val, Y: NIL}
 		}
 	case "required":

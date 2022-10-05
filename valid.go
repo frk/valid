@@ -1081,7 +1081,8 @@ func ISO31661A(v string, num int) bool {
 	return false
 }
 
-// ISO4217 reports whether or not v is a valid currency code as defined by the ISO 4217 standard.
+// ISO4217 reports whether or not v is a valid currency code
+// as defined by the ISO 4217 standard.
 //
 // valid:rule.yaml
 //	name: iso4217
@@ -1346,8 +1347,10 @@ func MagnetURI(v string) bool {
 	return rxMagnetURI.MatchString(v)
 }
 
-// Match reports whether or not v contains any match of the *registered* regular
-// expression re. NOTE: re MUST be registered upfront with RegisterRegexp otherwise
+// Match reports whether or not v contains any match
+// of the *registered* regular expression expr.
+//
+// NOTE: expr MUST be registered upfront with RegisterRegexp otherwise
 // Match will return false even if v matches the regular expression.
 //
 // valid:rule.yaml
@@ -1355,8 +1358,8 @@ func MagnetURI(v string) bool {
 //	error:
 //	  text: "must match the regular expression"
 //	  with_args: true
-func Match(v string, re string) bool {
-	if rx, ok := rxcache.m[re]; ok {
+func Match(v string, expr string) bool {
+	if rx, ok := rxcache.m[expr]; ok {
 		return rx.MatchString(v)
 	}
 	return false

@@ -79,6 +79,10 @@ func (e *Error) Error() string {
 	return errors.String(e.C.ident(), e)
 }
 
+func (e *Error) HasOriginalError() bool {
+	return e.err != nil
+}
+
 func (e *Error) OriginalError() string {
 	return strings.TrimRight(e.err.Error(), "\n")
 }
@@ -257,6 +261,22 @@ func (e *Error) RuleArgs() string {
 	return strings.Join(vv, ":")
 }
 
+func (e *Error) RuleArgNum() string {
+	return strconv.Itoa(len(e.r.Args))
+}
+
+func (e *Error) RuleSpecArgMin() string {
+	return strconv.Itoa(e.r.Spec.ArgMin)
+}
+
+func (e *Error) RuleSpecArgMax() string {
+	return strconv.Itoa(e.r.Spec.ArgMax)
+}
+
+func (e *Error) RuleSpecKind() string {
+	return e.r.Spec.Kind.String()
+}
+
 func (e *Error) RuleFuncIdent() string {
 	return e.r.Spec.FType.Pkg.Name + "." + e.r.Spec.FName
 }
@@ -365,6 +385,10 @@ const (
 	ERR_RULE_UNDEFINED // illegal use of undefined rule
 	ERR_RULE_KEY       // illegal rule key on non-map field
 	ERR_RULE_ELEM      // illegal rule elem on non-map/non-slice/non-array field
+	ERR_RULE_ARGMIN    // number of rule arguments is less than min
+	ERR_RULE_ARGMAX    // number of rule arguments is more than max
+
+	ERR_FIELD_UNKNOWN // unknown field referenced by rule argument
 
 	ERR_NOTNIL_TYPE // illegal rule "notnil" on non-nilable field
 
@@ -391,6 +415,7 @@ const (
 	ERR_PREPROC_INTYPE  // bad PREPROC rule function's input type, incompatible with node
 	ERR_PREPROC_OUTTYPE // bad PREPROC rule function's output type, incompatible with node
 	ERR_PREPROC_ARGTYPE // bad argument type in PREPROC rule
+	ERR_PREPROC_INVALID // invalid PREPROC rule
 
 	ERR_FUNCTION_INTYPE   // bad FUNCTION rule function's input type, incompatible with node
 	ERR_FUNCTION_ARGTYPE  // bad argument type in FUNCTION rule
@@ -559,6 +584,26 @@ var error_template = `
   > FIELD: {{W .Field}}
 {{ end }}
 
+{{ define "` + ERR_RULE_ARGMIN.ident() + `" -}}
+{{ ERROR }} Invalid number of arguments in "{{wb .RuleName}}". Expected at least {{wb .RuleSpecArgMin}}` +
+	` argument(s), but instead got {{wb .RuleArgNum}} argument(s).
+  > FILE: {{W .FieldPos}}
+  > FIELD: {{W .Field}}
+{{ end }}
+
+{{ define "` + ERR_RULE_ARGMAX.ident() + `" -}}
+{{ ERROR }} Invalid number of arguments in "{{wb .RuleName}}". Expected at most {{wb .RuleSpecArgMax}}` +
+	` argument(s), but instead got {{wb .RuleArgNum}} argument(s).
+  > FILE: {{W .FieldPos}}
+  > FIELD: {{W .Field}}
+{{ end }}
+
+{{ define "` + ERR_FIELD_UNKNOWN.ident() + `" -}}
+{{ ERROR }} Unknown field "{{wb .RuleArgValue}}" referenced in rule argument.
+  > FILE: {{W .FieldPos}}
+  > FIELD: {{W .Field}}
+{{ end }}
+
 {{ define "` + ERR_NOTNIL_TYPE.ident() + `" -}}
 {{ ERROR }} Illegal use of "{{wb "notnil"}}" rule in field {{wb .FieldName}}` +
 	` of a {{R "non-nilable"}} type "{{wb .FieldType}}".
@@ -721,6 +766,13 @@ var error_template = `
 	`{{NT}}  the {{wb .RuleFuncIdent}} function's {{wb .FuncParamIdent}} parameter (type {{wb .RuleFuncParamType}}).
 {{ end }}
 
+{{ define "` + ERR_PREPROC_INVALID.ident() + `" -}}
+{{ ERROR }} Cannot use "{{wb .RuleName}}" (kind {{R .RuleSpecKind}}) as a preprocessor.` +
+	` Only preprocessor rules can be used in {{wb "pre:"}}"..." tags.
+  > FILE: {{W .FieldPos}}
+  > FIELD: {{W .Field}}
+{{ end }}
+
 {{ define "` + ERR_FUNCTION_INTYPE.ident() + `" -}}
 {{ ERROR }} Illegal use of the "{{wb .RuleName}}" rule with function {{wb .RuleFuncIdent}}` +
 	` (type {{wb .RuleFuncType}}) in field {{wb .FieldName}} (type "{{wb .FieldType}}").
@@ -740,11 +792,14 @@ var error_template = `
 {{ end }}
 
 {{ define "` + ERR_FUNCTION_ARGVALUE.ident() + `" -}}
-{{ ERROR }} Cannot use value "{{R .RuleArgValue}}" as argument to the "{{wb .RuleName}}" rule.
+{{ ERROR }} Cannot use value "{{R .RuleArgValue}}" as the {{wb .FuncParamIdent}} argument to the "{{wb .RuleName}}" rule.
   > FILE: {{W .FieldPos}}
   > FIELD: {{W .Field}}
   > HINT: For a set of valid argument values, see the "{{wb .RuleName}}" rule's spec as defined` +
 	`{{NT}}  in the config file or in the {{wb .RuleFuncIdent}} function's documentation.
+{{- if .HasOriginalError}}
+  > {{.ErrType}}: {{R (quote .OriginalError) }}
+{{- end}}
 {{ end }}
 
 {{ define "` + ERR_METHOD_TYPE.ident() + `" -}}

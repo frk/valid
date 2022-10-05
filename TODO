@@ -1,3 +1,12 @@
+add support for using tags to specify the default values of optional fields
+	- required fields should probably *not* allow "default"
+	tag since that seems to be a conflicting spec
+
+add support for validation functions that can return an error in addition to the
+normal validation result (boolean)
+	- for example, this can help with a function that checks email-uniqueness but
+	fails due to db-connection / invalid-sql errors rather than because the email
+	is already taken...
 
 - [ ] Currency
 - [x] Decimal

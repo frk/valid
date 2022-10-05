@@ -13,6 +13,13 @@ import (
 
 type SpecKind uint
 
+func (k SpecKind) String() string {
+	if int(k) < len(_speckindstring) {
+		return _speckindstring[k]
+	}
+	return "<invalid>"
+}
+
 const (
 	_ SpecKind = iota
 
@@ -33,6 +40,21 @@ const (
 	// "preprocessors"
 	PREPROC // <custom/builtin/included func rules>
 )
+
+var _speckindstring = [...]string{
+	REQUIRED:   "REQUIRED",
+	COMPARABLE: "COMPARABLE",
+	ORDERED:    "ORDERED",
+	LENGTH:     "LENGTH",
+	RANGE:      "RANGE",
+	ENUM:       "ENUM",
+	FUNCTION:   "FUNCTION",
+	METHOD:     "METHOD",
+	OPTIONAL:   "OPTIONAL",
+	NOGUARD:    "NOGUARD",
+	REMOVE:     "REMOVE",
+	PREPROC:    "PREPROC",
+}
 
 type Spec struct {
 	// The unique name of the rule.

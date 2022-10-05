@@ -4,8 +4,9 @@ import (
 	"regexp"
 
 	"github.com/frk/valid"
-	"github.com/frk/valid/cmd/internal/errors"
 	"github.com/frk/valid/cmd/internal/gotype"
+	"github.com/frk/valid/internal/cldr"
+	"github.com/frk/valid/internal/tables"
 )
 
 // functionCheck ...
@@ -88,146 +89,133 @@ func (c *Checker) checkRuleArgsAsFuncParams(r *Rule) error {
 	return nil
 }
 
-////////////////////////////////////////////////////////////////////////////////
-//
-// Check Argument Values of Included Rules:
-//
-// The methods here are used to normalize and validate the arguments provided
-// to the rules of the github.com/frk/valid package.
-//
-// Some of the rules in that package take arguments of spe
-//
-// The arguments' types are checked later by a separate method.
-// Because of that these checks SHOULD only validate the *value* of the argument
-// if the type of the argument is as expected. If the type of the argument is not
-// as expected then skip the value validation.
-//
-////////////////////////////////////////////////////////////////////////////////
-
+// checkIncludedRuleArgValues is used to validate the literal arguments
+// provided to the rules of the github.com/frk/valid package.
 func (c *Checker) checkIncludedRuleArgValues(r *Rule) error {
+	if len(r.Args) == 0 { // no args to check?
+		return nil
+	}
+
+	// The majority of the included rules need only their
+	// first argument checked, the rest will be handled on
+	// a per-rule basis.
+	var a0 *Arg
+	if len(r.Args) > 0 && r.Args[0].Type != ARG_FIELD {
+		a0 = r.Args[0]
+	}
+
 	switch r.Spec.Name {
-	case "alpha":
-		if err := c.checkArgLangTag(r.Args[0]); err != nil {
-			return err
+
+	// both alpha & alnum expect an ISO-639 language code as argument
+	case "alpha", "alnum":
+		if a0 != nil && !valid.ISO639(a0.Value, 0) {
+			p, pi := r.Spec.getFuncParamByArgIndex(0)
+			return &Error{r: r, ra: a0, fp: p, fpi: &pi}
 		}
-	case "alnum":
-		if err := c.checkArgLangTag(r.Args[0]); err != nil {
-			return err
-		}
+
+	// ccy expects a valid ISO-4217 currency code as argument
 	case "ccy":
-		// TODO ccy (currency code)
+		if a0 != nil && !valid.ISO4217(a0.Value) {
+			p, pi := r.Spec.getFuncParamByArgIndex(0)
+			return &Error{r: r, ra: a0, fp: p, fpi: &pi}
+		}
+
+	// decimal expects a cldr-supported locale as argument
 	case "decimal":
-		// TODO decimal (locale)
-	case "hash":
-		// TODO hash (algo)
-	case "ip":
-		if err := c.checkArgIPVersion(r.Args[0]); err != nil {
-			return err
-		}
-	case "isbn":
-		// TODO isbn (ver)
-	case "iso639":
-		// TODO iso639 (num)
-	case "iso31661a":
-		// TODO iso31661a (num)
-	case "mac":
-		if err := c.checkArgMACVersion(r); err != nil {
-			return err
-		}
-	case "phone":
-		if err := c.checkArgCountryCode(r.Args[0]); err != nil {
-			return err
-		}
-	case "re":
-		if err := c.checkArgRegexp(r); err != nil {
-			return err
-		}
-	case "uuid":
-		if a := r.Args[0]; a.Type != ARG_FIELD {
-			if a.Value != "3" && a.Value != "4" && a.Value != "5" {
+		if a0 != nil {
+			if _, ok := cldr.Locale(a0.Value); !ok {
 				p, pi := r.Spec.getFuncParamByArgIndex(0)
-				return &Error{r: r, ra: a, fp: p, fpi: &pi}
+				return &Error{r: r, ra: a0, fp: p, fpi: &pi}
 			}
 		}
-	case "vat":
-		// TODO vat (country code)
-	case "zip":
-		if err := c.checkArgCountryCode(r.Args[0]); err != nil {
-			return err
-		}
-	}
-	return nil
-}
 
-// check that the rule's arguments are one of the supported language tags.
-func (c *Checker) checkArgLangTag(a *Arg) error {
-	if a.Type == ARG_STRING && !valid.ISO639(a.Value, 0) {
-		return errors.TODO("checkArgLangTag: language tag argument is not supported: %v", a.Value)
-	}
-	return nil
-}
-
-// check that the rule's arguments are valid country codes.
-func (c *Checker) checkArgCountryCode(a *Arg) error {
-	if a.Type == ARG_STRING && !valid.ISO31661A(a.Value, 0) {
-		return errors.TODO("checkArgCountryCode: arg is not valid country code")
-	}
-	return nil
-}
-
-var rxUUIDVer = regexp.MustCompile(`^(?:v?[1-5])$`)
-
-// check that the rule's arguments are valid UUID versions.
-// NOTE this check also modifies the *Arg to normalize its value.
-func (c *Checker) checkArgUUIDVersion(a *Arg) error {
-	if a.Type == ARG_FIELD {
-		return nil
-	}
-
-	if a.Type == ARG_STRING || a.IsUInt() {
-		if !rxUUIDVer.MatchString(a.Value) {
-			return errors.TODO("checkArgUUIDVersion: arg is not valid UUID version")
-		}
-
-		if len(a.Value) > 1 && (a.Value[0] == 'v' || a.Value[0] == 'V') {
-			a.Value = a.Value[1:]
-			a.Type = ARG_INT
-		}
-	}
-	return nil
-}
-
-// checks that the rule's arguments are valid IP versions.
-func (c *Checker) checkArgIPVersion(a *Arg) error {
-	if a.Type == ARG_FIELD {
-		return nil
-	}
-
-	if !a.IsUInt() || (a.Value != "0" && a.Value != "4" && a.Value != "6") {
-		return errors.TODO("checkArgIPVersion: arg is not valid IP version")
-	}
-	return nil
-}
-
-// checks that the rule's arguments are valid MAC versions.
-func (c *Checker) checkArgMACVersion(r *Rule) error {
-	for _, arg := range r.Args {
-		if arg.IsUInt() {
-			if arg.Value != "0" && arg.Value != "6" && arg.Value != "8" {
-				return errors.TODO("checkArgMACVersion: arg is not valid MAC version")
+	// hash expects an argument present in the HashAlgoLen table
+	case "hash":
+		if a0 != nil {
+			if _, ok := tables.HashAlgoLen[a0.Value]; !ok {
+				p, pi := r.Spec.getFuncParamByArgIndex(0)
+				return &Error{r: r, ra: a0, fp: p, fpi: &pi}
 			}
 		}
-	}
-	return nil
-}
 
-// check that the rule's arguments are strings containing compilable regular expressions.
-func (c *Checker) checkArgRegexp(r *Rule) error {
-	for _, arg := range r.Args {
-		if arg.Type != ARG_FIELD {
-			if _, err := regexp.Compile(arg.Value); err != nil {
-				return errors.TODO("checkArgRegexp: arg is not valid regular expression")
+	// ip expects an integer specifying a valid ip version as
+	// argument, additionally the value 0 is also accepted which
+	// allows the validation to validate against all versions
+	case "ip":
+		if a0 != nil {
+			if a0.Value != "4" && a0.Value != "6" && a0.Value != "0" {
+				p, pi := r.Spec.getFuncParamByArgIndex(0)
+				return &Error{r: r, ra: a0, fp: p, fpi: &pi}
 			}
+		}
+
+	// isbn expects an integer specifying a valid isbn version as
+	// argument, additionally the value 0 is also accepted which
+	// allows the validation to validate against all versions
+	case "isbn":
+		if a0 != nil {
+			if a0.Value != "10" && a0.Value != "13" && a0.Value != "0" {
+				p, pi := r.Spec.getFuncParamByArgIndex(0)
+				return &Error{r: r, ra: a0, fp: p, fpi: &pi}
+			}
+		}
+
+	// iso639 expects an integer specifying a valid iso639 version as
+	// argument, additionally the value 0 is also accepted which allows
+	// the validation to validate against all versions
+	case "iso639":
+		if a0 != nil {
+			if a0.Value != "1" && a0.Value != "2" && a0.Value != "0" {
+				p, pi := r.Spec.getFuncParamByArgIndex(0)
+				return &Error{r: r, ra: a0, fp: p, fpi: &pi}
+			}
+		}
+
+	// iso31661a expects an integer specifying a valid iso31661a version as
+	// argument, additionally the value 0 is also accepted which allows the
+	// validation to validate against all versions
+	case "iso31661a":
+		if a0 != nil {
+			if a0.Value != "2" && a0.Value != "3" && a0.Value != "0" {
+				p, pi := r.Spec.getFuncParamByArgIndex(0)
+				return &Error{r: r, ra: a0, fp: p, fpi: &pi}
+			}
+		}
+
+	// mac expects an integer specifying a valid mac version as argument,
+	// additionally the value 0 is also accepted which allows the validation
+	// to validate against all versions
+	case "mac":
+		if a0 != nil {
+			if a0.Value != "6" && a0.Value != "8" && a0.Value != "0" {
+				p, pi := r.Spec.getFuncParamByArgIndex(0)
+				return &Error{r: r, ra: a0, fp: p, fpi: &pi}
+			}
+		}
+
+	// re expects a valid regular expression as argument
+	case "re":
+		if a0 != nil {
+			if _, err := regexp.Compile(a0.Value); err != nil {
+				p, pi := r.Spec.getFuncParamByArgIndex(0)
+				return &Error{r: r, ra: a0, fp: p, fpi: &pi, err: err}
+			}
+		}
+
+	// uuid expects an integer specifying a supported uuid version
+	case "uuid":
+		if a0 != nil {
+			if a0.Value != "3" && a0.Value != "4" && a0.Value != "5" {
+				p, pi := r.Spec.getFuncParamByArgIndex(0)
+				return &Error{r: r, ra: a0, fp: p, fpi: &pi}
+			}
+		}
+
+	// phone, var, and zip all expect a valid ISO-3166-1A country code
+	case "phone", "vat", "zip":
+		if a0 != nil && !valid.ISO31661A(a0.Value, 0) {
+			p, pi := r.Spec.getFuncParamByArgIndex(0)
+			return &Error{r: r, ra: a0, fp: p, fpi: &pi}
 		}
 	}
 	return nil

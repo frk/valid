@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/frk/valid/cmd/internal/config"
-	"github.com/frk/valid/cmd/internal/errors"
 	"github.com/frk/valid/cmd/internal/gotype"
 	"github.com/frk/valid/cmd/internal/search"
 
@@ -126,7 +125,7 @@ func (c *Checker) checkRules(n *Node) error {
 		for _, a := range r.Args {
 			if a.Type == ARG_FIELD {
 				if _, ok := c.Info.KeyMap[a.Value]; !ok {
-					return errors.TODO("checkRules: field key matches no known field")
+					return &Error{C: ERR_FIELD_UNKNOWN, ty: n.Type, r: r, ra: a}
 				}
 			}
 		}
@@ -136,10 +135,10 @@ func (c *Checker) checkRules(n *Node) error {
 		// Check that the number of arguments provided
 		// to the rule is allowed by the spec.
 		if r.Spec.ArgMin > -1 && r.Spec.ArgMin > len(r.Args) {
-			return errors.TODO("checkRules: rule has not enough arguments")
+			return &Error{C: ERR_RULE_ARGMIN, ty: n.Type, r: r}
 		}
 		if r.Spec.ArgMax > -1 && r.Spec.ArgMax < len(r.Args) {
-			return errors.TODO("checkRules: rule has too many arguments")
+			return &Error{C: ERR_RULE_ARGMAX, ty: n.Type, r: r}
 		}
 
 		// run type specific rule-check
@@ -192,16 +191,16 @@ func (c *Checker) checkRules(n *Node) error {
 func (c *Checker) checkPreproc(n *Node) error {
 	for _, r := range n.PreRules {
 		if r.Spec.Kind != PREPROC {
-			return errors.TODO("checkPreproc: rule kind is not preprocessor")
+			return &Error{C: ERR_PREPROC_INVALID, ty: n.Type, r: r}
 		}
 
 		// Ensure that the Value of a Arg of kind AFIELD
 		// references a valid field key which will be indicated
 		// by a presence of a selector in the analyzer's KeyMap.
-		for _, arg := range r.Args {
-			if arg.Type == ARG_FIELD {
-				if _, ok := c.Info.KeyMap[arg.Value]; !ok {
-					return errors.TODO("checkPreproc: field key matches no known field")
+		for _, a := range r.Args {
+			if a.Type == ARG_FIELD {
+				if _, ok := c.Info.KeyMap[a.Value]; !ok {
+					return &Error{C: ERR_FIELD_UNKNOWN, ty: n.Type, r: r, ra: a}
 				}
 			}
 		}
@@ -211,10 +210,10 @@ func (c *Checker) checkPreproc(n *Node) error {
 		// Check that the number of arguments provided
 		// to the rule is allowed by the spec.
 		if r.Spec.ArgMin > -1 && r.Spec.ArgMin > len(r.Args) {
-			return errors.TODO("checkPreproc: rule has not enough arguments")
+			return &Error{C: ERR_RULE_ARGMIN, ty: n.Type, r: r}
 		}
 		if r.Spec.ArgMax > -1 && r.Spec.ArgMax < len(r.Args) {
-			return errors.TODO("checkPreproc: rule has too many arguments")
+			return &Error{C: ERR_RULE_ARGMAX, ty: n.Type, r: r}
 		}
 
 		// run spec specific rule-check
@@ -287,7 +286,9 @@ func (c *Checker) err(err error, opts errOpts) error {
 		e.sfv = e.sf.Var
 	}
 	if e.ra != nil && e.ra.Type == ARG_FIELD {
-		e.raf = c.KeyMap[e.ra.Value].Field
+		if node, ok := c.KeyMap[e.ra.Value]; ok {
+			e.raf = node.Field
+		}
 	}
 	return e
 }
