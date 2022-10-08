@@ -12,10 +12,6 @@ type Test3Validator struct {
 	err errorAggregator
 }
 
-type Test4Validator struct {
-	context string
-}
-
 type Test5Validator struct {
 	// ...
 }

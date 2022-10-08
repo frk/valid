@@ -12,8 +12,6 @@ type Validator struct {
 	// Info on the valid.ErrorConstructor or valid.ErrorAggregator
 	// field of the validator struct type, or nil.
 	ErrorHandlerField *ErrorHandlerField
-	// Info on the validator type's field named "context" (case insensitive), or nil.
-	ContextField *ContextField
 	// Info on the validator type's method named "beforevalidate" (case insensitive), or nil.
 	BeforeValidateMethod *MethodInfo
 	// Info on the validator type's method named "aftervalidate" (case insensitive), or nil.
@@ -29,13 +27,6 @@ type ErrorHandlerField struct {
 	// Indicates whether or not the field's type implements
 	// the valid.ErrorAggregator interface.
 	IsAggregator bool
-}
-
-// ContextField is the result of analyzing a validator struct's
-// field whose name is equal to "context" (case insensitive).
-type ContextField struct {
-	// Name of the field (case preserved).
-	Name string
 }
 
 // MethodInfo represents the result of analysing a type's method.
@@ -72,9 +63,6 @@ func (an *Analyzer) Validator(named *types.Named) *Validator {
 			v.ErrorHandlerField = new(ErrorHandlerField)
 			v.ErrorHandlerField.Name = f.Name
 			v.ErrorHandlerField.IsAggregator = true
-		} else if strings.ToLower(f.Name) == "context" && f.Type.Kind == K_STRING {
-			v.ContextField = new(ContextField)
-			v.ContextField.Name = f.Name
 		}
 	}
 	return v

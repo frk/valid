@@ -154,7 +154,7 @@ func (t *Tag) IsEmpty() bool {
 //      node      = rule | [ "[" [ node ] "]" ] [ ( node | rule "," node ) ] .
 //      rule      = rule_name [ { ":" rule_arg } ] { "," rule } .
 //      rule_name = identifier .
-//      rule_arg  = | boolean_lit | integer_lit | float_lit | string_lit | quoted_string_lit | field_reference | context_property .
+//      rule_arg  = | boolean_lit | integer_lit | float_lit | string_lit | quoted_string_lit | field_reference .
 //
 //      boolean_lit       = "true" | "false" .
 //      integer_lit       = "0" | [ "-" ] "1"…"9" { "0"…"9" } .
@@ -165,8 +165,6 @@ func (t *Tag) IsEmpty() bool {
 //      field_reference     = "&" field_key .
 //      field_key           = identifier { field_key_separator identifier } .
 //      field_key_separator = "." | (* optionally specified by the user *)
-//
-//      context_property = "@" identifier .
 //
 //      identifier = letter { letter } .
 //      letter     = "A"…"Z" | "a"…"z" | "_" .
@@ -309,12 +307,8 @@ func parseRule(str, stkey string) *Tag {
 			}
 
 			astr := str[:i]
-			if len(astr) > 0 && astr[0] == '@' {
-				rule.Context = astr[1:]
-			} else {
-				arg := parseArg(astr)
-				rule.Args = append(rule.Args, arg)
-			}
+			arg := parseArg(astr)
+			rule.Args = append(rule.Args, arg)
 
 			str = str[i:]
 			if str == "" {

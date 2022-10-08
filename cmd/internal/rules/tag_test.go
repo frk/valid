@@ -269,8 +269,8 @@ func TestParse(t *testing.T) {
 		},
 	}, {
 		// ... with arguments and all ...
-		tag: `is:"[ra,re:1:2:3,[re::\"]]\\\"[]]\":foo,ri:@my_ctx,[ri:&MyField:::-321,ru:\"  \",[ru,ro:\"]\"]` +
-			`ro:\"[\",ru]ru:foo:123::&MyOtherField:]ri:@my_ctx,re::\"]]\\\"[]]\":foo]ra:xyz:,re:&mykey:@MyCtx,` +
+		tag: `is:"[ra,re:1:2:3,[re::\"]]\\\"[]]\":foo,ri,[ri:&MyField:::-321,ru:\"  \",[ru,ro:\"]\"]` +
+			`ro:\"[\",ru]ru:foo:123::&MyOtherField:]ri,re::\"]]\\\"[]]\":foo]ra:xyz:,re:&mykey,` +
 			`[la:\"]heee![\"]re,ri:,[le:a,li:b,lu:c]ri:\"foo \\\"]]]\":,ru::-abc,[c:lu,b:li,a:le]ru,ro:\"[foo]\":"`,
 		want: &Tag{
 			Key: &Tag{
@@ -289,7 +289,7 @@ func TestParse(t *testing.T) {
 							{Value: "]]\\\"[]]", Type: ARG_STRING},
 							{Value: "foo", Type: ARG_STRING},
 						}},
-						{Name: "ri", Context: "my_ctx"},
+						{Name: "ri"},
 					},
 					Key: &Tag{
 						Rules: []*Rule{
@@ -334,7 +334,7 @@ func TestParse(t *testing.T) {
 				},
 				Elem: &Tag{
 					Rules: []*Rule{
-						{Name: "ri", Context: "my_ctx"},
+						{Name: "ri"},
 						{Name: "re", Args: []*Arg{
 							{Value: "", Type: ARG_UNKNOWN},
 							{Value: "]]\\\"[]]", Type: ARG_STRING},
@@ -349,7 +349,7 @@ func TestParse(t *testing.T) {
 						{Value: "xyz", Type: ARG_STRING},
 						{Value: "", Type: ARG_UNKNOWN},
 					}},
-					{Name: "re", Context: "MyCtx", Args: []*Arg{
+					{Name: "re", Args: []*Arg{
 						{Value: "mykey", Type: ARG_FIELD},
 					}},
 				},

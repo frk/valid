@@ -41,27 +41,19 @@ func TestMain(m *testing.M) {
 }
 
 func TestCheckerCheck(t *testing.T) {
+	p0 := gotype.Pkg{
+		Path: "github.com/frk/valid/cmd/internal/rules/testdata",
+		Name: "testdata",
+	}
+	_ = p0
+
 	tests := []struct {
 		name string
 		err  error
 		show bool
-	}{{
-		name: "Test_ERR_CONTEXT_NOFIELD_1_Validator",
-		err: &Error{C: ERR_CONTEXT_NOFIELD, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
-				Name: "F", IsExported: true,
-				Tag:  `is:"eq:42:@foo"`,
-				Type: T.int,
-				Var:  T._var,
-			},
-			ty: T.int,
-			r: &Rule{
-				Name: "eq",
-				Args: []*Arg{{Type: ARG_INT, Value: "42"}},
-				Spec: GetSpec("eq"),
-			},
-		},
-	}}
+	}{
+		// ...
+	}
 
 	compare := compare.Config{ObserveFieldTag: "cmp"}
 	fkCfg := &config.FieldKeyConfig{

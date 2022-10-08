@@ -398,8 +398,6 @@ const (
 
 	ERR_METHOD_TYPE // illegal METHOD rule on type that does not have the specified method
 
-	ERR_CONTEXT_NOFIELD // context rule used in validator with no context field
-
 	// TODO rename
 	ERR_ARG_BADCMP // argument's type incompatible with field's type (for comparison)
 
@@ -755,10 +753,6 @@ var error_template = `
 	` the method {{wb .RuleFuncNameWithType}}.
   > FILE: {{W .FieldPos}}
   > FIELD: {{W .Field}}
-{{ end }}
-
-{{ define "` + ERR_CONTEXT_NOFIELD.ident() + `" -}}
-{{ ERROR }} context no filed ...
 {{ end }}
 
 {{ define "` + ERR_ARG_BADCMP.ident() + `" -}}

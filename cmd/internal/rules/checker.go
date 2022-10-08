@@ -120,12 +120,6 @@ func (c *Checker) check(n *Node) error {
 
 func (c *Checker) checkRules(n *Node) error {
 	for _, r := range n.IsRules {
-		// Check that when r has Context then
-		// also the Validator has a ContextField.
-		if len(r.Context) > 0 && c.vs.ContextField == nil {
-			return &Error{C: ERR_CONTEXT_NOFIELD, ty: c.vs.Type, r: r}
-		}
-
 		// Ensure that the Value of a Arg of type ARG_FIELD
 		// references a valid field key which will be indicated
 		// by a presence of a selector in the analyzer's KeyMap.

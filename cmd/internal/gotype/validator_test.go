@@ -103,15 +103,6 @@ func TestAnalyzer_Validator(t *testing.T) {
 			ErrorHandlerField: &ErrorHandlerField{Name: "err", IsAggregator: true},
 		},
 	}, {
-		named: test_type("Test4Validator").(*types.Named),
-		want: &Validator{Type: &Type{
-			Pkg:        pkg0,
-			Name:       "Test4Validator",
-			Kind:       K_STRUCT,
-			IsExported: true,
-			Fields:     []*StructField{{Pkg: pkg0, Name: "context", Type: &Type{Kind: K_STRING}, Var: &types.Var{}}},
-		}, ContextField: &ContextField{Name: "context"}},
-	}, {
 		// (*gotype.Validator).Type.Methods[0].Type.Out[0].Type.Methods[0].Pkg.Name
 		named: test_type("Test5Validator").(*types.Named),
 		want: &Validator{
