@@ -26,10 +26,10 @@ func (c *Checker) functionCheck(n *Node, r *Rule) error {
 		return c.err(err, errOpts{C: ERR_FUNCTION_ARGTYPE, ty: n.Type})
 	}
 
-	// Some builtin functions accept arguments of a known set of valid
+	// Some included functions accept arguments of a known set of valid
 	// values, check that the rule argument's values belong to that set.
-	if r.Spec.FType.IsBuiltin() {
-		if err := c.checkBuiltinRuleArgValues(r); err != nil {
+	if r.Spec.FType.IsIncluded() {
+		if err := c.checkIncludedRuleArgValues(r); err != nil {
 			return c.err(err, errOpts{C: ERR_FUNCTION_ARGVALUE, ty: n.Type})
 		}
 	}
@@ -90,7 +90,7 @@ func (c *Checker) checkRuleArgsAsFuncParams(r *Rule) error {
 
 ////////////////////////////////////////////////////////////////////////////////
 //
-// Check Argument Values of Builtin Rules:
+// Check Argument Values of Included Rules:
 //
 // The methods here are used to normalize and validate the arguments provided
 // to the rules of the github.com/frk/valid package.
@@ -104,7 +104,7 @@ func (c *Checker) checkRuleArgsAsFuncParams(r *Rule) error {
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-func (c *Checker) checkBuiltinRuleArgValues(r *Rule) error {
+func (c *Checker) checkIncludedRuleArgValues(r *Rule) error {
 	switch r.Spec.Name {
 	case "alpha":
 		if err := c.checkArgLangTag(r.Args[0]); err != nil {

@@ -33,7 +33,7 @@ func TestMain(m *testing.M) {
 
 	T.loc = gotype.MustGetType("time", "Location", &test_ast)
 
-	if err := loadBuiltinSpecs(&test_ast); err != nil {
+	if err := loadIncludedSpecs(&test_ast); err != nil {
 		log.Fatal(err)
 	}
 

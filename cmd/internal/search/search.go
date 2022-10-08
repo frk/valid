@@ -438,7 +438,7 @@ func FindObject(pkgpath, name string, a *AST) (obj types.Object, err error) {
 	return nil, &Error{C: ERR_OBJECT_NOTFOUND, pkg: pkgpath, name: name}
 }
 
-// FindBuiltinFuncs
+// FindIncludedFuncs
 //
 // TODO(mkopriva): make this not blow up if package can't be found
 //                 on the system, because of the following:
@@ -447,21 +447,20 @@ func FindObject(pkgpath, name string, a *AST) (obj types.Object, err error) {
 // 	have github.com/frk/valid source on the user's machine, which
 // 	is ok because the source would be downloaded automatically as
 // 	soon as the user attempts to run the generated code, or maybe
-// 	the user does not intend to use the builtin rules, or perhaps
+// 	the user does not intend to use the included rules, or perhaps
 // 	the user has supplied a set of custom rules that override
-// 	the builtin ones anyway.
+// 	the included ones anyway.
 //
 // 	In case the error is genuine the code should keep working without
 // 	issues, it's just that the reporting of user errors will be poorer.
-func FindBuiltinFuncs(a *AST, callback func(fn *types.Func, rawCfg []byte) error) error {
+func FindIncludedFuncs(a *AST, callback func(fn *types.Func, rawCfg []byte) error) error {
 	pkg, err := findpkg("github.com/frk/valid", "", a)
 	if err != nil {
 		return err
 	}
 
 	for i, syn := range pkg.Syntax {
-		// all the builtin funcs are in the valid.go file,
-		// if this is not it; next
+		// all the included funcs are in the valid.go file, if this is not it; next
 		if !strings.HasSuffix(pkg.GoFiles[i], "valid.go") {
 			continue
 		}

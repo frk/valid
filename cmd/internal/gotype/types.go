@@ -61,9 +61,9 @@ func (t *Type) IsEmptyInterface() bool {
 	return t.Kind == K_INTERFACE && len(t.Methods) == 0
 }
 
-// IsBuiltin reports whether or not the Type was
+// IsIncluded reports whether or not the Type was
 // declared in the github.com/frk/valid package.
-func (t *Type) IsBuiltin() bool {
+func (t *Type) IsIncluded() bool {
 	return t.Pkg.Path == "github.com/frk/valid"
 }
 

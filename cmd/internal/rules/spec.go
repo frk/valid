@@ -22,7 +22,7 @@ const (
 	LENGTH     // len, runecount
 	RANGE      // rng
 	ENUM       // enum
-	FUNCTION   // <custom/builtin func rules>
+	FUNCTION   // <custom/builtin/included func rules>
 	METHOD     // isvalid (implicit), ...
 
 	// "modifiers"
@@ -31,7 +31,7 @@ const (
 	REMOVE   // -isvalid
 
 	// "preprocessors"
-	PREPROC // <custom/builtin func rules>
+	PREPROC // <custom/builtin/included func rules>
 )
 
 type Spec struct {
@@ -104,17 +104,17 @@ var _joinOps = [...]JoinOp{
 // InitSpecs should be invoked only once
 // and before starting the first rule-check.
 func InitSpecs(cfg config.Config, a *search.AST) error {
-	if err := loadBuiltinSpecs(a); err != nil {
+	if err := loadIncludedSpecs(a); err != nil {
 		return err
 	}
 	return initCustomSpecs(cfg, a)
 }
 
-// loadBuiltinSpecs loads the rule specs for function
+// loadIncludedSpecs loads the rule specs for function
 // rules implemented by the github.com/frk/valid package.
-func loadBuiltinSpecs(a *search.AST) error {
+func loadIncludedSpecs(a *search.AST) error {
 	// loads functions from the "github.com/frk/valid" package
-	return search.FindBuiltinFuncs(a, func(ftyp *types.Func, rawCfg []byte) error {
+	return search.FindIncludedFuncs(a, func(ftyp *types.Func, rawCfg []byte) error {
 		cfg := new(config.RuleSpec)
 		if err := yaml.Unmarshal(rawCfg, cfg); err != nil {
 			return &Error{C: ERR_CONFIG_INVALID, a: a, ft: ftyp, err: err}
@@ -123,7 +123,7 @@ func loadBuiltinSpecs(a *search.AST) error {
 		if err != nil {
 			return err
 		}
-		_builtin[spec.Name] = spec
+		_included[spec.Name] = spec
 		return nil
 	})
 }

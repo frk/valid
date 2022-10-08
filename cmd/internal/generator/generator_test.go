@@ -96,6 +96,26 @@ func TestGenerator(t *testing.T) {
 		"global/02_global_error_aggregator",
 		"global/03_global_error_agg_has_priority_over_ctor",
 		"global/04_local_has_priority_over_global",
+
+		// docs
+		"docs/required/v",
+		"docs/optional/v",
+		"docs/omitnil/v",
+		"docs/noguard/v",
+		"docs/re/v",
+		"docs/eq/v",
+		"docs/ne/v",
+		"docs/gt/v",
+		"docs/lt/v",
+		"docs/gte/v",
+		"docs/min/v",
+		"docs/lte/v",
+		"docs/max/v",
+		"docs/rng/v",
+		"docs/len/v",
+		"docs/runecount/v",
+		"docs/enum/v",
+		"docs/isvalid/v",
 	}
 
 	var AST search.AST

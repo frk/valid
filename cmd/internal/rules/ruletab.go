@@ -8,10 +8,10 @@ func GetSpec(name string) *Spec {
 	if spec, ok := _custom[name]; ok {
 		return spec
 	}
-	if spec, ok := _builtin[name]; ok {
+	if spec, ok := _included[name]; ok {
 		return spec
 	}
-	if spec, ok := _basic_and_stdlib[name]; ok {
+	if spec, ok := _builtin_and_stdlib[name]; ok {
 		return spec
 	}
 	return nil
@@ -20,26 +20,54 @@ func GetSpec(name string) *Spec {
 // A set of rule specs populated by initCustomSpecs.
 var _custom = map[string]*Spec{}
 
-// A set of rule specs populated by loadBuiltinSpecs.
-var _builtin = map[string]*Spec{}
+// A set of rule specs populated by loadIncludedSpecs.
+var _included = map[string]*Spec{}
 
-// A set of specs for basic rules and rules implemented
+// A set of specs for builtin rules and rules implemented
 // with functions from the standard library.
-var _basic_and_stdlib = map[string]*Spec{}
+var _builtin_and_stdlib = map[string]*Spec{}
 
 func init() {
-	specs := append(_basic_specs, _stdlib_specs...)
+	specs := joinSpecLists(
+		_builtin_specs,
+		_special_specs,
+		_stdlib_specs,
+		_stdlib_pre_specs,
+	)
 	for _, s := range specs {
 		key := s.Name
 		if s.Kind == PREPROC {
 			key = "pre:" + key
 		}
-		_basic_and_stdlib[key] = s
+		_builtin_and_stdlib[key] = s
 	}
 }
 
-// A set of specs for basic rules.
-var _basic_specs = []*Spec{{
+// A list of specs that utilize the Go language's primitive
+// operators and builtin functions to do the validation.
+var _builtin_specs = []*Spec{{
+	Name:   "required",
+	Kind:   REQUIRED,
+	ArgMin: 0,
+	ArgMax: 0,
+	Err:    ErrSpec{Text: "is required"},
+}, {
+	Name:   "notnil",
+	Kind:   REQUIRED,
+	ArgMin: 0,
+	ArgMax: 0,
+	Err:    ErrSpec{Text: "cannot be nil"},
+}, {
+	Name:   "optional",
+	Kind:   OPTIONAL,
+	ArgMin: 0,
+	ArgMax: 0,
+}, {
+	Name:   "omitnil",
+	Kind:   OPTIONAL,
+	ArgMin: 0,
+	ArgMax: 0,
+}, {
 	Name:   "eq",
 	Kind:   COMPARABLE,
 	ArgMin: 1,
@@ -115,18 +143,6 @@ var _basic_specs = []*Spec{{
 		Text: "must be less than or equal to", WithArgs: true,
 	},
 }, {
-	Name:   "required",
-	Kind:   REQUIRED,
-	ArgMin: 0,
-	ArgMax: 0,
-	Err:    ErrSpec{Text: "is required"},
-}, {
-	Name:   "notnil",
-	Kind:   REQUIRED,
-	ArgMin: 0,
-	ArgMax: 0,
-	Err:    ErrSpec{Text: "cannot be nil"},
-}, {
 	Name:   "rng",
 	Kind:   RANGE,
 	ArgMin: 2,
@@ -134,6 +150,19 @@ var _basic_specs = []*Spec{{
 	Err: ErrSpec{
 		Text: "must be between", WithArgs: true,
 		ArgSep: " and ",
+	},
+}, {
+	Name:   "enum",
+	Kind:   ENUM,
+	ArgMin: 0,
+	ArgMax: 0,
+	Err: ErrSpec{
+		// NOTE since "enum" takes no arguments it is the
+		// generator's responsibility to use the enum's
+		// constants as the arguments to the error message.
+		Text:     "must be one of",
+		WithArgs: true,
+		ArgSep:   " or ",
 	},
 }, {
 	Name:   "len",
@@ -150,7 +179,35 @@ var _basic_specs = []*Spec{{
 			ArgSuffix: "(inclusive)",
 		},
 	},
+}}
+
+// A list of specs for "special" rules.
+var _special_specs = []*Spec{{
+	Name:   "noguard",
+	Kind:   NOGUARD,
+	ArgMin: 0,
+	ArgMax: 0,
 }, {
+	Name:  "isvalid",
+	Kind:  METHOD,
+	FName: "IsValid",
+	FType: &gotype.Type{
+		Pkg:  gotype.Pkg{},
+		In:   []*gotype.Var{},
+		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_BOOL}}},
+		Kind: gotype.K_FUNC,
+	},
+	Err: ErrSpec{Text: "is not valid"},
+}, {
+	Name:   "-isvalid",
+	Kind:   REMOVE,
+	ArgMin: 0,
+	ArgMax: 0,
+}}
+
+// A list of specs for validation rules that are implmeneted
+// with functions from the Go standard library.
+var _stdlib_specs = []*Spec{{
 	Name:   "runecount",
 	Kind:   LENGTH,
 	ArgMin: 1,
@@ -166,54 +223,6 @@ var _basic_specs = []*Spec{{
 		},
 	},
 }, {
-	Name:   "enum",
-	Kind:   ENUM,
-	ArgMin: 0,
-	ArgMax: 0,
-	Err: ErrSpec{
-		// NOTE since "enum" takes no arguments it is the
-		// generator's responsibility to use the enum's
-		// constants as the arguments to the error message.
-		Text:     "must be one of",
-		WithArgs: true,
-		ArgSep:   " or ",
-	},
-}, {
-	Name:   "optional",
-	Kind:   OPTIONAL,
-	ArgMin: 0,
-	ArgMax: 0,
-}, {
-	Name:   "omitnil",
-	Kind:   OPTIONAL,
-	ArgMin: 0,
-	ArgMax: 0,
-}, {
-	Name:   "noguard",
-	Kind:   NOGUARD,
-	ArgMin: 0,
-	ArgMax: 0,
-}, {
-	Name:   "-isvalid",
-	Kind:   REMOVE,
-	ArgMin: 0,
-	ArgMax: 0,
-}, {
-	Name:  "isvalid",
-	Kind:  METHOD,
-	FName: "IsValid",
-	FType: &gotype.Type{
-		Pkg:  gotype.Pkg{},
-		In:   []*gotype.Var{},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_BOOL}}},
-		Kind: gotype.K_FUNC,
-	},
-	Err: ErrSpec{Text: "is not valid"},
-}}
-
-// A set of specs for rules that are implmeneted
-// with functions from the Go standard library.
-var _stdlib_specs = []*Spec{{
 	Name:  "prefix",
 	Kind:  FUNCTION,
 	FName: "HasPrefix",
@@ -289,7 +298,11 @@ var _stdlib_specs = []*Spec{{
 		WithArgs: true,
 		ArgSep:   " or ",
 	},
-}, {
+}}
+
+// A list of specs for preprocessor rules that are implmeneted
+// with functions from the Go standard library.
+var _stdlib_pre_specs = []*Spec{{
 	Name:  "repeat",
 	Kind:  PREPROC,
 	FName: "Repeat",
@@ -601,3 +614,11 @@ var _stdlib_specs = []*Spec{{
 	ArgMin: 0,
 	ArgMax: 0,
 }}
+
+// helper
+func joinSpecLists(ss ...[]*Spec) (out []*Spec) {
+	for i := range ss {
+		out = append(out, ss[i]...)
+	}
+	return out
+}

@@ -14,9 +14,6 @@ type Rule struct {
 	// The spec associated with the rule. Note that this is
 	// not populated by the parser but instead by the Checker.
 	Spec *Spec
-	// The context property of the rule.
-	// NOTE currently not used by the generator.
-	Context string
 }
 
 func (r Rule) String() (out string) {

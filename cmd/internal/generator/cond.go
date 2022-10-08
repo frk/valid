@@ -219,9 +219,9 @@ func (b *bb) functionCondExpr(n *rules.Node, r *rules.Rule) (x GO.ExprNode) {
 	pkg := b.g.addImport(r.Spec.FType.Pkg)
 	args := b.g.argmap[r]
 
-	// If this is the builtin regexp rule, then add
+	// If this is the included regexp rule, then add
 	// a registry call statement for the init function.
-	if r.Spec.Name == "re" && r.Spec.FType.IsBuiltin() {
+	if r.Spec.Name == "re" && r.Spec.FType.IsIncluded() {
 		b.g.init = append(b.g.init, r)
 	}
 
