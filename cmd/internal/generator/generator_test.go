@@ -118,6 +118,9 @@ func TestGenerator(t *testing.T) {
 		"docs/runecount/v",
 		"docs/enum/v",
 		"docs/isvalid/v",
+		"docs/contains/v",
+		"docs/prefix/v",
+		"docs/suffix/v",
 	}
 
 	var AST search.AST
