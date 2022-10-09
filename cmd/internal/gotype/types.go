@@ -225,7 +225,7 @@ func (t *Type) NeedsConversion(u *Type) bool {
 	if u.IsIdentical(t) {
 		return false
 	}
-	if t.Kind == K_INTERFACE {
+	if u.Kind == K_INTERFACE {
 		return false
 	}
 	return true

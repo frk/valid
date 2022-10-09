@@ -117,9 +117,11 @@ func Base58(v string) bool {
 	return rxBase58.MatchString(v)
 }
 
-// Base64 reports whether or not v is a valid base64 string. NOTE: The standard
-// "encoding/base64" package is used for validation. With urlsafe=false StdEncoding
-// is used and with urlsafe=true RawURLEncoding is used.
+// Base64 reports whether or not v is a valid base64 string.
+//
+// NOTE: The standard "encoding/base64" package is used for
+// validation. With urlsafe=false StdEncoding is used and with
+// urlsafe=true RawURLEncoding is used.
 //
 // valid:rule.yaml
 //	name: base64
@@ -167,6 +169,7 @@ func Bool(v string) bool {
 }
 
 // CIDR reports whether or not v is a valid Classless Inter-Domain Routing notation.
+//
 // NOTE: CIDR uses "net".ParseCIDR to determine the validity of v.
 //
 // valid:rule.yaml
@@ -529,8 +532,9 @@ func ETH(v string) bool {
 	return rxETH.MatchString(v)
 }
 
-// Email reports whether or not v is a valid email address. NOTE: Email uses
-// "net/mail".ParseAddress to determine the validity of v.
+// Email reports whether or not v is a valid email address.
+//
+// NOTE: Email uses "net/mail".ParseAddress to determine the validity of v.
 //
 // valid:rule.yaml
 //	name: email
@@ -545,9 +549,10 @@ var rxTLDIllegal = regexp.MustCompile(`[\s\x{2002}-\x{200B}\x{202F}\x{205F}\x{30
 var rxFQDNPart = regexp.MustCompile(`^[a-zA-Z\x{00a1}-\x{ffff}0-9-]+$`)
 var rxFQDNPartIllegal = regexp.MustCompile(`[\x{ff01}-\x{ff5e}]`)
 
-// FQDN reports whether or not v is a valid Fully Qualified Domain Name. NOTE: FQDN
-// TLD is required, numeric TLDs or trailing dots are disallowed, and underscores
-// are forbidden.
+// FQDN reports whether or not v is a valid Fully Qualified Domain Name.
+//
+// NOTE: FQDN TLD is required, numeric TLDs or trailing dots are disallowed,
+// and underscores are forbidden.
 //
 // valid:rule.yaml
 //	name: fqdn
@@ -1145,7 +1150,7 @@ func ISSN(v string, requireHyphen, caseSensitive bool) bool {
 // valid:rule.yaml
 //	name: in
 //	error: { text: "must be in the list" }
-func In(v interface{}, list ...interface{}) bool {
+func In(v any, list ...any) bool {
 	for _, item := range list {
 		if v == item {
 			return true
@@ -1165,8 +1170,10 @@ func Int(v string) bool {
 	return rxInt.MatchString(v)
 }
 
-// JSON reports whether or not v is a valid JSON value. NOTE: the input is validated
-// using json.Unmarshal which accepts primitive values as long as they are JSON values.
+// JSON reports whether or not v is a valid JSON value.
+//
+// NOTE: the input is validated using json.Unmarshal which
+// accepts primitive values as long as they are JSON values.
 //
 // valid:rule.yaml
 //	name: json
@@ -1650,6 +1657,7 @@ func UpperCase(v string) bool {
 //
 // valid:rule.yaml
 //	name: vat
+//	args: [{ default: us }]
 //	error: { text: "must be a valid VAT number" }
 func VAT(v string, cc string) bool {
 	if c, ok := l10n.Get(cc); ok && c.VAT != nil {

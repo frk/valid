@@ -5,7 +5,6 @@
 - [`optional`](#optional) (is optional)
 - [`omitnil`](#omit-nil) (omit `nil`)
 - [`noguard`](#no-guard) (no guard)
-- [`re`](#regular-expression) (regular expression)
 - [`eq`](#is-equal-to) (is equal to)
 - [`ne`](#is-not-equal-to) (is not equal to)
 - [`gt`](#is-greater-than) (is greater than)
@@ -232,53 +231,6 @@ if !valid.Email(*v.F1) {
 	return errors.New("...")
 }
 if len(**v.F2) != 5 {
-	return errors.New("...")
-}
-```
-
-</td></tr>
-</tbody></table>
-
-## Regular Expression
-
-The `re` rule can be used to validate a field with a regular expression.
-
-Note; the generated code will include a top-level `init()` func that registers
-(and compiles) the regular expression(s) with [`valid.RegisterRegexp`](https://pkg.go.dev/github.com/frk/valid#RegisterRegexp)
-and then the validation is done using the [`valid.Match`](https://pkg.go.dev/github.com/frk/valid#Match)
-function, which, under the hood, uses the regexp string as the map-key to retrieve the
-registered (and compiled) regular expression and then invokes its [`MatchString`](https://pkg.go.dev/regexp@go1.19.1#Regexp.MatchString)
-method to do the validation.
-
-<table><thead><tr><th>Rule Tag</th><th>Generated Output</th></tr></thead><tbody>
-<tr><td>
-
-```go
-type Validator struct {
-	F1 string  `is:"re:foo"`
-	F2 string  `is:"re:\"\\w+\""`
-	F3 *string `is:"re:\"^[a-z]+\\[[0-9]+\\]$\""`
-}
-```
-
-</td><td>
-
-```go
-func init() {
-	valid.RegisterRegexp(`foo`)
-	valid.RegisterRegexp(`\w+`)
-	valid.RegisterRegexp(`^[a-z]+\[[0-9]+\]$`)
-}
-
-// ...
-
-if !valid.Match(v.F1, `foo`) {
-	return errors.New("...")
-}
-if !valid.Match(v.F2, `\w+`) {
-	return errors.New("...")
-}
-if v.F3 != nil && !valid.Match(*v.F3, `^[a-z]+\[[0-9]+\]$`) {
 	return errors.New("...")
 }
 ```

@@ -235,16 +235,27 @@ func (b *bb) functionCondExpr(n *rules.Node, r *rules.Rule) (x GO.ExprNode) {
 		b.g.init = append(b.g.init, r)
 	}
 
+	// If the node's type isn't identical to the target
+	// check if it needs to be converted or not.
+	v, t := b.val, r.Spec.FType.In[0].Type
+	if r.Spec.FType.IsVariadic && len(r.Spec.FType.In) == 1 {
+		t = t.Elem
+	}
+	if n.Type.NeedsConversion(t) {
+		T := GO.Ident{t.TypeString(nil)}
+		v = GO.CallExpr{Fun: T, Args: GO.ArgsList{List: v}}
+	}
+
 	if r.Spec.JoinOp == 0 {
 		cx := GO.CallExpr{Fun: GO.QualifiedIdent{pkg.name, r.Spec.FName}}
-		cx.Args.List = append(GO.ExprList{b.val}, args...)
+		cx.Args.List = append(GO.ExprList{v}, args...)
 		return GO.UnaryExpr{Op: GO.UnaryNot, X: cx}
 	}
 
 	if r.Spec.JoinOp > 0 {
 		for _, a := range args {
 			cx := GO.CallExpr{Fun: GO.QualifiedIdent{pkg.name, r.Spec.FName}}
-			cx.Args.List = GO.ExprList{b.val, a}
+			cx.Args.List = GO.ExprList{v, a}
 
 			switch {
 			// x || x...
