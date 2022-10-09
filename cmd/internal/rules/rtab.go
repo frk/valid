@@ -622,6 +622,36 @@ var _stdlib_pre_specs = []*Spec{{
 	},
 	ArgMin: 0,
 	ArgMax: 0,
+}, {
+	Name:  "ceil",
+	Kind:  PREPROC,
+	FName: "Ceil",
+	FType: &gotype.Type{
+		Pkg: gotype.Pkg{
+			Name: "math",
+			Path: "math",
+		},
+		In:   []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_FLOAT64}}},
+		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_FLOAT64}}},
+		Kind: gotype.K_FUNC,
+	},
+	ArgMin: 0,
+	ArgMax: 0,
+}, {
+	Name:  "floor",
+	Kind:  PREPROC,
+	FName: "Floor",
+	FType: &gotype.Type{
+		Pkg: gotype.Pkg{
+			Name: "math",
+			Path: "math",
+		},
+		In:   []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_FLOAT64}}},
+		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_FLOAT64}}},
+		Kind: gotype.K_FUNC,
+	},
+	ArgMin: 0,
+	ArgMax: 0,
 }}
 
 // helper

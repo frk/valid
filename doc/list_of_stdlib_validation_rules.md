@@ -1,7 +1,7 @@
 # List of Standard Library Validation Rules
 
 - [`runecount`](#has-rune-count) (has number of characters)
-- [`contains`](#contains) (has substring)
+- [`contains`](#has-substring) (contains / has substring)
 - [`prefix`](#has-prefix) (has prefix)
 - [`suffix`](#has-suffix) (has suffix)
 
@@ -100,7 +100,6 @@ if v.F != nil && (utf8.RuneCount(*v.F) > 16) {
 
 </td></tr>
 </tbody></table>
-
 
 ## Has Substring
 
