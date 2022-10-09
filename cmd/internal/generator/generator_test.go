@@ -113,6 +113,7 @@ func TestGenerator(t *testing.T) {
 		"docs/lte/v",
 		"docs/max/v",
 		"docs/rng/v",
+		"docs/between/v",
 		"docs/len/v",
 		"docs/runecount/v",
 		"docs/enum/v",

@@ -75,3 +75,22 @@ type Test_range_Validator struct {
 		Float float64
 	}
 }
+
+type Test_between_Validator struct {
+	Int1   int       `is:"between:-10:20"`
+	Int2   int       `is:"between:&S.Int:20"`
+	MyInt1 mypkg.Int `is:"between:-10:20"`
+	MyInt2 mypkg.Int `is:"between:&S.MyInt:20"`
+	Uint1  int       `is:"between:10:20"`
+	Uint2  int       `is:"between:&S.Uint:20"`
+	Float1 float64   `is:"between:-1.0:2.0"`
+	Float2 float64   `is:"between:&S.Float:2.0"`
+	Float3 float32   `is:"between:-3:21"`
+
+	S struct {
+		Int   int
+		MyInt mypkg.Int
+		Uint  int
+		Float float64
+	}
+}

@@ -151,6 +151,15 @@ var _builtin_specs = []*Spec{{
 		Text: "must be between", WithArgs: true,
 		ArgSep: " and ",
 	},
+}, { // alias for rng
+	Name:   "between",
+	Kind:   RANGE,
+	ArgMin: 2,
+	ArgMax: 2,
+	Err: ErrSpec{
+		Text: "must be between", WithArgs: true,
+		ArgSep: " and ",
+	},
 }, {
 	Name:   "enum",
 	Kind:   ENUM,

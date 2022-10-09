@@ -18,6 +18,8 @@ func TestChecker_rangeCheck(t *testing.T) {
 	}{{
 		name: "Test_range_Validator", err: nil,
 	}, {
+		name: "Test_between_Validator", err: nil,
+	}, {
 		name: "Test_ERR_RANGE_TYPE_1_Validator",
 		err: &Error{C: ERR_RANGE_TYPE, a: T._ast, sfv: T._var,
 			sf: &gotype.StructField{

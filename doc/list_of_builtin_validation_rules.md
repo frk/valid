@@ -15,6 +15,7 @@
 - [`lte`](#is-less-than-or-equal-to) (is less than or equal to)
 - [`max`](#max) (alias for `lte`)
 - [`rng`](#is-in-range) (is in range / is between)
+- [`between`](#is-between) (alias for `rng`)
 - [`len`](#has-length) (has length)
 - [`enum`](#enum) (is one of)
 - [`isvalid`](#isvalid-interface) (the `IsValid` interface)
@@ -587,6 +588,40 @@ if v.F3 == nil || *v.F3 == 0 {
 </td></tr>
 </tbody></table>
 
+## Is Between
+
+The `between` rule is an alias for `rng`.
+
+<table><thead><tr><th>Rule Tag</th><th>Generated Output</th></tr></thead><tbody>
+<tr><td>
+
+```go
+type Validator struct {
+	F1 float64 `is:"between:3.14:42"`
+	F2 *int    `is:"between:-8:256"`
+	F3 *uint8  `is:"between:1:2,required"`
+}
+```
+
+</td><td>
+
+```go
+if v.F1 < 3.14 || v.F1 > 42 {
+	return errors.New("...")
+}
+if v.F2 != nil && (*v.F2 < -8 || *v.F2 > 256) {
+	return errors.New("...")
+}
+if v.F3 == nil || *v.F3 == 0 {
+	return errors.New("...")
+} else if *v.F3 < 1 || *v.F3 > 2 {
+	return errors.New("...")
+}
+```
+
+</td></tr>
+</tbody></table>
+
 ## Has Length
 
 The `len` rule checks a field value's length. This rule takes either one integer
@@ -718,8 +753,7 @@ if v.F != foo && v.F != bar && v.F != baz {
 
 The `enum` rule can also be used with types declared in imported packages.
 
-<table><tbody>
-<tr><th>Rule Tag</th></tr>
+<table><thead><tr><th>Rule Tag</th><th>Generated Output</th></tr></thead><tbody>
 <tr><td>
 
 ```go
@@ -730,10 +764,7 @@ type Validator struct {
 }
 ```
 
-</td></tr>
-
-<tr><th>Generated Output</th></tr>
-<tr><td>
+</td><td>
 
 ```go
 if v.F != ast.Bad && v.F != ast.Pkg && v.F != ast.Con && v.F != ast.Typ && v.F != ast.Var && v.F != ast.Fun && v.F != ast.Lbl {
