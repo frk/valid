@@ -9,8 +9,6 @@ func printUsage() {
 	fmt.Fprint(os.Stderr, usage)
 }
 
-// TODO(mkopriva): write out a more comprehensive usage description
-
 const usage = `usage: valid [-c] [-wd] [-r] [-f] [-rx] [-o] [-fk.tag] [-fk.join] [-fk.sep]
 
 validgen generates validation code for Go structs.
@@ -33,12 +31,12 @@ only those files that match the -f and -rx values.
 
 The -f flag specifies a file to be used as input for the tool. The file must be
 located in the working directory. The flag can be used more than once to specify
-multiple files.
+a list of files.
 
 
 The -rx flag specifies a regular expressions to match input files that the tool should
 process. The regular expressions must match files located in the working directory.
-The flag can be used more than once to specify multiple regular expressions.
+The flag can be used more than once to specify a list of regular expressions.
 
 
 The -o flag specifies the format to be used for generating the name of the output files.
@@ -66,12 +64,23 @@ The -fk.sep flag specifies the separator to be used for joining fields' tags/nam
 when producing the field keys. The separator can be at most one byte long.
 If left unspecified, the separator "." will be used by default.
 
+
 The -error.constructor flag specifies the custom error constructor function that
 the generated code should use to handle errors. The value must be a package-path
 qualified identifier, e.g. "github.com/me/mod/pkg.NewError".
+The function's signature MUST be the following:
+
+	func(key string, val any, rule string, args ...any) error
+
 
 The -error.aggregator flag specifies the custom error aggregator type that
 the generated code should use to handle errors. The value must be a package-path
 qualified identifier, e.g. "github.com/me/mod/pkg.ErrorList".
+The type MUST implement the following interface:
+
+     interface {
+         Error(key string, val any, rule string, args ...any)
+         Out() error
+     }
 
 ` //`

@@ -1,26 +1,26 @@
 # List of Standard Library Preprocessor Rules
 
-- [`lower`](#to-lower)
-- [`upper`](#to-upper)
-- [`title`](#to-title)
-- [`trim`](#trim-white-space)
-- [`ltrim`](#trim-left)
-- [`rtrim`](#trim-right)
-- [`trimprefix`](#trim-prefix)
-- [`trimsuffix`](#trim-suffix)
-- [`replace`](#replace)
-- [`repeat`](#repeat)
-- [`validutf8`](#to-valid-utf8)
-- [`quote`](#quote)
-- [`quoteascii`](#quote-to-ascii)
-- [`quotegraphic`](#quote-to-graphic)
-- [`urlqueryesc`](#url-query-escape)
-- [`urlpathesc`](#url-path-escape)
-- [`htmlesc`](#html-escape)
-- [`htmlunesc`](#html-unescape)
-- [`round`](#round)
-- [`ceil`](#ceil)
-- [`floor`](#floor)
+- [`lower`](#to-lower): convert to lower case
+- [`upper`](#to-upper): convert to upper case
+- [`title`](#to-title): convert to title case
+- [`trim`](#trim-white-space): trim white space
+- [`ltrim`](#trim-left): trim left cutset
+- [`rtrim`](#trim-right): trim right cutset
+- [`trimprefix`](#trim-prefix): trim prefix
+- [`trimsuffix`](#trim-suffix): trim suffix
+- [`replace`](#replace): replace substring
+- [`repeat`](#repeat): repeat string
+- [`validutf8`](#to-valid-utf8): convert to valid utf8
+- [`quote`](#quote): quote string
+- [`quoteascii`](#quote-to-ascii): quote to ascii
+- [`quotegraphic`](#quote-to-graphic): quote to graphic
+- [`urlqueryesc`](#url-query-escape): escape url query
+- [`urlpathesc`](#url-path-escape): escape url path
+- [`htmlesc`](#html-escape): escape html
+- [`htmlunesc`](#html-unescape): unescape html
+- [`round`](#round): round number
+- [`ceil`](#ceil): ceil number
+- [`floor`](#floor): floor number
 
 ## To Lower
 

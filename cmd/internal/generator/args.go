@@ -50,8 +50,8 @@ func (g *gg) fieldArg(a *rules.Arg, t *gotype.Type) GO.ExprNode {
 	if t.PtrOf(last.Type) {
 		return GO.UnaryExpr{Op: GO.UnaryAmp, X: x}
 	}
-	if t.NeedsConversion(last.Type) {
-		T := GO.Ident{last.Type.TypeString(nil)}
+	if last.Type.NeedsConversion(t) {
+		T := GO.Ident{t.TypeString(nil)}
 		return GO.CallExpr{Fun: T, Args: GO.ArgsList{List: x}}
 	}
 	return x

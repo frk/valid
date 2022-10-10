@@ -212,6 +212,9 @@ func TestGenerator(t *testing.T) {
 		"included/upper/v",
 		"included/vat/v",
 		"included/zip/v",
+
+		// examples
+		"example/basic/v",
 	}
 
 	var AST search.AST

@@ -1,9 +1,9 @@
 # List of Standard Library Validation Rules
 
-- [`runecount`](#has-rune-count) (has number of characters)
-- [`contains`](#has-substring) (contains / has substring)
-- [`prefix`](#has-prefix) (has prefix)
-- [`suffix`](#has-suffix) (has suffix)
+- [`runecount`](#has-rune-count): has number of characters
+- [`contains`](#has-substring): contains / has substring
+- [`prefix`](#has-prefix): has prefix
+- [`suffix`](#has-suffix): has suffix
 
 ## Rune Count
 

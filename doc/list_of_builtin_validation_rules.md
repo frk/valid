@@ -1,23 +1,23 @@
 # List of Builtin Validation Rules
 
-- [`required`](#required) (is required)
-- [`notnil`](#not-nil) (is not `nil`)
-- [`optional`](#optional) (is optional)
-- [`omitnil`](#omit-nil) (omit `nil`)
-- [`noguard`](#no-guard) (no guard)
-- [`eq`](#is-equal-to) (is equal to)
-- [`ne`](#is-not-equal-to) (is not equal to)
-- [`gt`](#is-greater-than) (is greater than)
-- [`lt`](#is-less-than) (is less than)
-- [`gte`](#is-greater-than-or-equal-to) (is greater than or equal to)
-- [`min`](#min) (alias for `gte`)
-- [`lte`](#is-less-than-or-equal-to) (is less than or equal to)
-- [`max`](#max) (alias for `lte`)
-- [`rng`](#is-in-range) (is in range / is between)
-- [`between`](#is-between) (alias for `rng`)
-- [`len`](#has-length) (has length)
-- [`enum`](#enum) (is one of)
-- [`isvalid`](#isvalid-interface) (the `IsValid` interface)
+- [`required`](#required): is required
+- [`notnil`](#not-nil): is not `nil`
+- [`optional`](#optional): is optional
+- [`omitnil`](#omit-nil): omit `nil`
+- [`noguard`](#no-guard): no guard
+- [`eq`](#is-equal-to): is equal to
+- [`ne`](#is-not-equal-to): is not equal to
+- [`gt`](#is-greater-than): is greater than
+- [`lt`](#is-less-than): is less than
+- [`gte`](#is-greater-than-or-equal-to): is greater than or equal to
+- [`min`](#min): alias for `gte`
+- [`lte`](#is-less-than-or-equal-to): is less than or equal to
+- [`max`](#max): alias for `lte`
+- [`rng`](#is-in-range): is in range / is between
+- [`between`](#is-between): alias for `rng`
+- [`len`](#has-length): has length
+- [`enum`](#enum): is one of
+- [`isvalid`](#isvalid-interface): the `IsValid` interface
 
 ## Required
 
