@@ -72,7 +72,6 @@ func TestCheckerCheck(t *testing.T) {
 			},
 			ra: &Arg{Type: ARG_FIELD, Value: "num"},
 		},
-		show: true,
 	}, {
 		name: "Test_ERR_FIELD_UNKNOWN_2_Validator",
 		err: &Error{
@@ -92,7 +91,6 @@ func TestCheckerCheck(t *testing.T) {
 			},
 			ra: &Arg{Type: ARG_FIELD, Value: "num"},
 		},
-		show: true,
 	}, {
 		name: "Test_ERR_RULE_ARGMIN_1_Validator",
 		err: &Error{
@@ -107,7 +105,6 @@ func TestCheckerCheck(t *testing.T) {
 			ty: T.int,
 			r:  &Rule{Name: "gt", Spec: GetSpec("gt")},
 		},
-		show: true,
 	}, {
 		name: "Test_ERR_RULE_ARGMIN_2_Validator",
 		err: &Error{
@@ -122,7 +119,6 @@ func TestCheckerCheck(t *testing.T) {
 			ty: T.string,
 			r:  &Rule{Name: "p4", Spec: GetSpec("pre:p4")},
 		},
-		show: true,
 	}, {
 		name: "Test_ERR_RULE_ARGMAX_1_Validator",
 		err: &Error{
@@ -144,7 +140,6 @@ func TestCheckerCheck(t *testing.T) {
 				Spec: GetSpec("gt"),
 			},
 		},
-		show: true,
 	}, {
 		name: "Test_ERR_RULE_ARGMAX_2_Validator",
 		err: &Error{
@@ -167,7 +162,6 @@ func TestCheckerCheck(t *testing.T) {
 				Spec: GetSpec("pre:p4"),
 			},
 		},
-		show: true,
 	}, {
 		name: "Test_ERR_PREPROC_INNVALID_1_Validator",
 		err: &Error{
@@ -182,7 +176,6 @@ func TestCheckerCheck(t *testing.T) {
 			ty: T.string,
 			r:  &Rule{Name: "p0", Spec: GetSpec("pre:p0")},
 		},
-		show: true,
 	}}
 
 	compare := compare.Config{ObserveFieldTag: "cmp"}

@@ -1,3 +1,7 @@
 rules:
   - func: github.com/frk/valid/cmd/internal/rules/testdata.RuleFunc8
     rule: { name: r8 }
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.MyValidator1
+    rule: { name: my_vtor1 }
+  - func: github.com/frk/valid/cmd/internal/rules/testdata.MyValidator2
+    rule: { name: my_vtor2 }

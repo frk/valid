@@ -231,6 +231,18 @@ func (t *Type) NeedsConversion(u *Type) bool {
 	return true
 }
 
+// CanError reports that the type, if it *is* a K_FUNC type,
+// has error as its last return value type.
+func (t *Type) CanError() bool {
+	if t.Kind != K_FUNC {
+		return false
+	}
+	if n := len(t.Out); n > 0 && t.Out[n-1].Type.IsGoError() {
+		return true
+	}
+	return false
+}
+
 // String retruns a string representation of the t Type.
 func (t Type) TypeString(pkg *Pkg) string {
 	if len(t.Name) > 0 {

@@ -1,22 +1,26 @@
 package mypkg
 
-// valid:rule.yaml
-//	name: myrule
 func MyRule(v string) bool {
 	// ...
 	return false
 }
 
-// valid:rule.yaml
-//	name: myrule2
 func MyRule2(v ...string) bool {
 	// ...
 	return false
 }
 
-// valid:rule.yaml
-//	name: myrule3
 func MyRule3(v int64, i int, f float64, s string, b bool) bool {
 	// ...
 	return false
+}
+
+func RuleWithErr1(v string) (ok bool, err error) {
+	// ...
+	return false, nil
+}
+
+func RuleWithErr2(v string, x, y int) (ok bool, err error) {
+	// ...
+	return false, nil
 }

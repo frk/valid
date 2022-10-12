@@ -494,8 +494,10 @@ var error_template = `
 {{ ERROR }} Invalid function signature {{R .FuncType}} for custom "{{wb .CfgRuleName}}" rule.
   > FILE: {{W .FuncPos}}
   > FUNC: {{W .FuncIdent}}
-  > HINT: A custom rule function MUST have {{wb "at least one"}} parameter value and
-          it MUST have {{wb "exactly one"}} result value which MUST be of type {{wb "bool"}}.
+  > HINT: A custom rule function MUST have {{wb "at least one"}} parameter value and it MUST have either:
+	- {{wb "one"}} result value of type {{wb "bool"}}, e.g. {{wb "func(v string) (ok bool)"}}.
+	- or {{wb "two"}} result values where the first one is of type {{wb "bool"}} and the second one
+	  is of type {{wb "error"}}, e.g. {{wb "func(v string) (ok bool, err error)"}}.
 {{ end }}
 
 {{ define "` + ERR_CONFIG_PREFUNCTYPE.ident() + `" -}}

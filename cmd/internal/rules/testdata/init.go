@@ -45,6 +45,14 @@ func RuleFunc8(s string, h CheckHelper) bool {
 	return h.Check(s)
 }
 
+func MyValidator1(v string) (ok bool) {
+	return true
+}
+
+func MyValidator2(v string) (ok bool, err error) {
+	return true, nil
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // valid pre-processors
 

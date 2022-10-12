@@ -211,7 +211,10 @@ func specFromFunc(a *search.AST, f *types.Func, rs *config.RuleSpec) (*Spec, err
 	switch specKind {
 	case FUNCTION:
 		// Make sure the function's signature is alright.
-		if len(ty.In) < 1 || (len(ty.Out) != 1 || ty.Out[0].Type.Kind != gotype.K_BOOL) {
+		if len(ty.In) < 1 || (len(ty.Out) != 1 && len(ty.Out) != 2) {
+			return nil, &Error{C: ERR_CONFIG_FUNCTYPE, a: a, ft: f, rs: rs}
+		}
+		if ty.Out[0].Type.Kind != gotype.K_BOOL || (len(ty.Out) > 1 && !ty.Out[1].Type.IsGoError()) {
 			return nil, &Error{C: ERR_CONFIG_FUNCTYPE, a: a, ft: f, rs: rs}
 		}
 	case PREPROC:

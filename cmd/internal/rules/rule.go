@@ -28,6 +28,14 @@ func (r Rule) String() (out string) {
 	return out
 }
 
+// IsBasic reports whether or not the rule is a basic rule.
+// What "basic" means at this point is that the rule is NOT a
+// function that returns an error as its second return value.
+func (r Rule) IsBasic() bool {
+	return r.Spec.Kind != FUNCTION ||
+		!r.Spec.FType.CanError()
+}
+
 // Arg represents an argument for a rule.
 type Arg struct {
 	// The type of the argument.

@@ -26,6 +26,7 @@ func (b *bb) isruleStmt(n *rules.Node) {
 
 	rr := n.IsRules
 	n.IsRules = nil
+	basicOnly := true
 
 	ifs := &GO.IfStmt{}
 	cur := ifs
@@ -35,12 +36,36 @@ func (b *bb) isruleStmt(n *rules.Node) {
 			cur.Else = elif
 			cur = elif
 		}
-		cur.Cond = b.condExpr(n, r)
-		b.err(n, r, &cur.Body)
+
+		if r.IsBasic() {
+			cur.Cond = b.condExpr(n, r)
+			b.err(n, r, &cur.Body)
+		} else {
+			basicOnly = false
+
+			// if ok, err := <call_expr>; err != nil {
+			//	return err
+			// } else if !ok {
+			//	return <custom_error>
+			// }
+			cur.Init = GO.AssignStmt{
+				Token: GO.AssignDefine,
+				Lhs:   GO.IdentList{OK, ERR},
+				Rhs:   b.functionCallExpr(n, r),
+			}
+			cur.Cond = GO.BinaryExpr{Op: GO.BinaryNeq, X: ERR, Y: NIL}
+			cur.Body = GO.BlockStmt{[]GO.StmtNode{GO.ReturnStmt{ERR}}}
+
+			elif := &GO.IfStmt{}
+			cur.Else = elif
+			cur = elif
+			cur.Cond = GO.UnaryExpr{Op: GO.UnaryNot, X: OK}
+			b.err(n, r, &cur.Body)
+		}
 	}
 
 	switch {
-	case b.optIfs != nil && len(rr) < 2:
+	case b.optIfs != nil && len(rr) < 2 && basicOnly:
 		cond := ifs.Cond
 		if wantsParens(rr[0]) {
 			cond = GO.ParenExpr{cond}

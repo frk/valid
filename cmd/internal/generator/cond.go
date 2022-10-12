@@ -226,6 +226,9 @@ func (b *bb) enumCondExpr(n *rules.Node, r *rules.Rule) (x GO.ExprNode) {
 
 // builds an expression that checks the value using the rule spec's function.
 func (b *bb) functionCondExpr(n *rules.Node, r *rules.Rule) (x GO.ExprNode) {
+	// NOTE(mkopriva): if the logic here changes, make sure to
+	// mirror those changes in functionCallExpr if necessary.
+
 	pkg := b.g.addImport(r.Spec.FType.Pkg)
 	args := b.g.argmap[r]
 
@@ -297,4 +300,41 @@ func (b *bb) methodCondExpr(n *rules.Node, r *rules.Rule) GO.ExprNode {
 	// the method directly is shorthand for (*x).M()...
 	call := GO.CallExpr{Fun: GO.SelectorExpr{X: x, Sel: GO.Ident{r.Spec.FName}}}
 	return GO.UnaryExpr{Op: GO.UnaryNot, X: call}
+}
+
+// builds an expression that calls the rule spec's function.
+func (b *bb) functionCallExpr(n *rules.Node, r *rules.Rule) (x GO.ExprNode) {
+	if len(r.Args) > 0 {
+		b.g.prepArgs(n, r)
+	}
+	if r.Spec.Kind == rules.ENUM {
+		b.g.prepEnums(n, r)
+	}
+
+	// NOTE(mkopriva): if the logic here changes, make sure to
+	// mirror those changes in functionCondExpr if necessary.
+
+	pkg := b.g.addImport(r.Spec.FType.Pkg)
+	args := b.g.argmap[r]
+
+	// If this is the included regexp rule, then add
+	// a registry call statement for the init function.
+	if r.Spec.Name == "re" && r.Spec.FType.IsIncluded() {
+		b.g.init = append(b.g.init, r)
+	}
+
+	// If the node's type isn't identical to the target
+	// check if it needs to be converted or not.
+	v, t := b.val, r.Spec.FType.In[0].Type
+	if r.Spec.FType.IsVariadic && len(r.Spec.FType.In) == 1 {
+		t = t.Elem
+	}
+	if n.Type.NeedsConversion(t) {
+		T := GO.Ident{t.TypeString(nil)}
+		v = GO.CallExpr{Fun: T, Args: GO.ArgsList{List: v}}
+	}
+
+	cx := GO.CallExpr{Fun: GO.QualifiedIdent{pkg.name, r.Spec.FName}}
+	cx.Args.List = append(GO.ExprList{v}, args...)
+	return cx
 }

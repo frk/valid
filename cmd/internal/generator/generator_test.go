@@ -213,6 +213,9 @@ func TestGenerator(t *testing.T) {
 		"included/vat/v",
 		"included/zip/v",
 
+		// error
+		"error/error_returning_rule_func/v",
+
 		// examples
 		"example/basic/v",
 	}
@@ -226,10 +229,6 @@ func TestGenerator(t *testing.T) {
 		&AST,
 	)
 	if err != nil {
-		t.Fatal(err)
-	}
-
-	if err := initRuleTypes(&AST); err != nil {
 		t.Fatal(err)
 	}
 
@@ -265,6 +264,11 @@ func TestGenerator(t *testing.T) {
 				t.Fatal(err)
 			}
 		},
+	}
+
+	cfg := loadConfig("testdata/config.yaml")
+	if err := rules.InitSpecs(cfg, &AST); err != nil {
+		t.Fatal(err)
 	}
 
 	fkCfg := &config.FieldKeyConfig{
@@ -342,18 +346,13 @@ func formatBytes(code []byte) []byte {
 	return src
 }
 
-func initRuleTypes(a *search.AST) error {
-	// custom rule types for tests
-	custom := []config.RuleConfig{{
-		Func: config.ObjectIdent{Pkg: "github.com/frk/valid/cmd/internal/generator/testdata/mypkg", Name: "MyRule"},
-		Rule: &config.RuleSpec{Name: "myrule"},
-	}, {
-		Func: config.ObjectIdent{Pkg: "github.com/frk/valid/cmd/internal/generator/testdata/mypkg", Name: "MyRule2"},
-		Rule: &config.RuleSpec{Name: "myrule2"},
-	}, {
-		Func: config.ObjectIdent{Pkg: "github.com/frk/valid/cmd/internal/generator/testdata/mypkg", Name: "MyRule3"},
-		Rule: &config.RuleSpec{Name: "myrule3"},
-	}}
-
-	return rules.InitSpecs(config.Config{Rules: custom}, a)
+func loadConfig(file string) (c config.Config) {
+	file, err := filepath.Abs(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := config.DecodeFile(file, &c); err != nil {
+		log.Fatal(err)
+	}
+	return c
 }

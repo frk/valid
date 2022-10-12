@@ -13,9 +13,11 @@ comments, was ported over from https://github.com/validatorjs/validator.js
 
 # Table of Contents
 
-- [An introductory example](#an-introductory-example)
-- [The configuration of `validgen`](#the-configuration-of-validgen)
-- [The generator rules](#the-generator-rules)
+- [An Example](#an-example)
+- [Configuration](#configuration)
+- [Rules](#rules)
+	- [Custom Rules](#custom-rules)
+	- [Rule Syntax](#rule-syntax)
 - TODO adding custom validation functions
 - TODO configuring custom validation functions from file
 - TODO configuring custom validation functions using comments
@@ -86,7 +88,7 @@ func (v UserCreateParamsValidator) Validate() error {
 </td></tr>
 </tbody></table>
 
-## The Configuration of Validgen
+## Configuration
 
 The `validgen` tool can be configured in two ways. Either by using CLI arguments
 (this is a limited approach), or with a YAML config file (this is the recommended
@@ -107,7 +109,7 @@ directory of the current working directory for a file named `.valid.yaml`. If su
 a file is found the tool will use that to configure itself. The complete documentation
 of the config yaml file can be found [here](./doc/configuration.md).
 
-## The Generator Rules
+## Rules
 
 The `validgen` tool looks for particular struct tags that are then used as the instructions
 for what code the tool should generate. These instructions are referred to as *rules* and
@@ -136,3 +138,39 @@ Go standard library. For a full list (with examples) of available included valid
 rules, see: [stdlib preprocessor rules](./doc/list_of_stdlib_preprocessor_rules.md).
 6. *"custom" preprocessor rules*: These rules are implemented with functions that are
 sourced from the configuration file's `"rules"` entry.
+
+#### CUSTOM RULES
+
+To be able to generate code that uses custom functions for validation and preprocessing
+you first need to declare and configure custom validation and preprocessor rules in the
+tool's yaml config file. The custom rules need to be declared in the config's `"rules"`
+entry. For details on how to configure custom rules, please read the documentation on
+[`rule_config`][rule_config_yaml_doc] and [`config.RuleConfig`][rule_config_go_doc].
+
+[rule_config_yaml_doc]: ./doc/configuration.md#rule_config
+[rule_config_go_doc]: https://pkg.go.dev/github.com/frk/valid/cmd/internal/config#RuleConfig
+
+#### RULE SYNTAX
+
+Following is a description of the rule syntax using EBNF:
+
+```ebnf
+node      = rule | [ "[" [ node ] "]" ] [ ( node | rule "," node ) ] .
+rule      = rule_name [ { ":" rule_arg } ] { "," rule } .
+rule_name = identifier .
+rule_arg  = | boolean_lit | integer_lit | float_lit | string_lit | quoted_string_lit | field_reference .
+
+boolean_lit       = "true" | "false" .
+integer_lit       = "0" | [ "-" ] "1"…"9" { "0"…"9" } .
+float_lit         = [ "-" ] ( "0" | "1"…"9" { "0"…"9" } ) "." "0"…"9" { "0"…"9" } .
+string_lit        = .
+quoted_string_lit = `"` `"` .
+
+field_reference     = "&" field_key .
+field_key           = identifier { field_key_separator identifier } .
+field_key_separator = "." | (* optionally specified by the user *)
+
+identifier = letter { letter } .
+letter     = "A"…"Z" | "a"…"z" | "_" .
+```
+
