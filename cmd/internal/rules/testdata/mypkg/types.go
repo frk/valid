@@ -14,3 +14,9 @@ type CheckHelper struct{}
 func (h *CheckHelper) Check(v string) bool {
 	return true
 }
+
+type CheckWithErrorHelper struct{}
+
+func (h *CheckWithErrorHelper) Check(v string) (bool, error) {
+	return true, nil
+}

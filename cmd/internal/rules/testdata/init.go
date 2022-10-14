@@ -41,7 +41,15 @@ type CheckHelper interface {
 	Check(v string) bool
 }
 
+type Check2Helper interface {
+	Check(v string) (bool, error)
+}
+
 func RuleFunc8(s string, h CheckHelper) bool {
+	return h.Check(s)
+}
+
+func RuleFunc9(s string, h Check2Helper) (bool, error) {
 	return h.Check(s)
 }
 

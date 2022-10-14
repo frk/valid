@@ -89,6 +89,8 @@ type Test_function_Validator struct {
 	UUID7 string `is:"uuid:v5"`
 
 	R8 string `is:"r8:&helper"`
+	R9 string `is:"r9:&helper2"`
 
-	helper *mypkg.CheckHelper
+	helper  *mypkg.CheckHelper
+	helper2 *mypkg.CheckWithErrorHelper
 }

@@ -154,7 +154,7 @@ func (t *Type) PtrOf(u *Type) bool {
 // does not handle unnamed struct, interface (non-empty), func, and channel types.
 func (t *Type) IsIdentical(u *Type) bool {
 	// named with same name and same package, accept
-	if t.Name != "" && t.Pkg.Path != "" {
+	if t.Name != "" {
 		if t.Name == u.Name && t.Pkg.Path == u.Pkg.Path {
 			return true
 		}
