@@ -72,7 +72,6 @@ func TestGenerator(t *testing.T) {
 		"validation/52_slice",
 		"validation/53_map",
 		"validation/54_map_and_slice",
-		"validation/55_struct_nested",
 		"validation/56_struct_nilguard",
 		"validation/57_struct_notnil",
 		"validation/58_struct_required",
@@ -212,6 +211,12 @@ func TestGenerator(t *testing.T) {
 		"included/upper/v",
 		"included/vat/v",
 		"included/zip/v",
+
+		// nested
+		"nested/basic/v",
+		"nested/complex/v",
+		"nested/fieldabs/v",
+		"nested/fieldrel/v",
 
 		// error
 		"error/error_returning_rule_func/v",

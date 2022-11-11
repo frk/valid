@@ -349,14 +349,14 @@ func (e *Error) RuleArgValue() string {
 }
 
 func (e *Error) RuleArgType() string {
-	if e.ra.Type == ARG_FIELD {
+	if e.ra.Type == ARG_FIELD_ABS || e.ra.Type == ARG_FIELD_REL {
 		return e.raf.Type.TypeString(nil)
 	}
 	return e.ra.Type.String()
 }
 
 func (e *Error) RuleArgIsField() bool {
-	return e.ra.Type == ARG_FIELD
+	return e.ra.Type == ARG_FIELD_ABS || e.ra.Type == ARG_FIELD_REL
 }
 
 func (e *Error) RuleArgFieldType() string {

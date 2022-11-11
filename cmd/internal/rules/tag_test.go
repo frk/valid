@@ -89,6 +89,18 @@ func TestParse(t *testing.T) {
 			{Value: "b \\\"a\\\" z", Type: ARG_STRING},
 		}}}},
 	}, {
+		// rule with abs field
+		tag: `is:"rule:&F1.F2.F3"`,
+		want: &Tag{Rules: []*Rule{{Name: "rule", Args: []*Arg{
+			{Value: "F1.F2.F3", Type: ARG_FIELD_ABS},
+		}}}},
+	}, {
+		// rule with rel field
+		tag: `is:"rule:.f1.f2"`,
+		want: &Tag{Rules: []*Rule{{Name: "rule", Args: []*Arg{
+			{Value: "f1.f2", Type: ARG_FIELD_REL},
+		}}}},
+	}, {
 		// multiple plain rules
 		tag: `is:"ra,re,ri,ru,ro"`,
 		want: &Tag{Rules: []*Rule{
@@ -294,7 +306,7 @@ func TestParse(t *testing.T) {
 					Key: &Tag{
 						Rules: []*Rule{
 							{Name: "ri", Args: []*Arg{
-								{Value: "MyField", Type: ARG_FIELD},
+								{Value: "MyField", Type: ARG_FIELD_ABS},
 								{Value: "", Type: ARG_UNKNOWN},
 								{Value: "", Type: ARG_UNKNOWN},
 								{Value: "-321", Type: ARG_INT},
@@ -326,7 +338,7 @@ func TestParse(t *testing.T) {
 								{Value: "foo", Type: ARG_STRING},
 								{Value: "123", Type: ARG_INT},
 								{Value: "", Type: ARG_UNKNOWN},
-								{Value: "MyOtherField", Type: ARG_FIELD},
+								{Value: "MyOtherField", Type: ARG_FIELD_ABS},
 								{Value: "", Type: ARG_UNKNOWN},
 							}},
 						},
@@ -350,7 +362,7 @@ func TestParse(t *testing.T) {
 						{Value: "", Type: ARG_UNKNOWN},
 					}},
 					{Name: "re", Args: []*Arg{
-						{Value: "mykey", Type: ARG_FIELD},
+						{Value: "mykey", Type: ARG_FIELD_ABS},
 					}},
 				},
 				Key: &Tag{
