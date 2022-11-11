@@ -46,12 +46,12 @@ type FieldNode struct {
 func (c *Checker) makeNode(t *gotype.Type, is, pre *Tag, fs gotype.FieldSelector) (_ *Node, err error) {
 	var root, base *Node
 	if t.Kind == gotype.K_PTR {
-		root, base, err = c.makeNodeFromPtr(t, is, pre)
+		root, base, err = c.makeNodeFromPtr(t, is, pre, fs)
 		if err != nil {
 			return nil, c.err(err, errOpts{sf: fs.Last()})
 		}
 	} else {
-		isList, preList, err := c.makeRuleLists(is, pre)
+		isList, preList, err := c.makeRuleLists(is, pre, fs)
 		if err != nil {
 			return nil, c.err(err, errOpts{sf: fs.Last(), ty: t})
 		}
@@ -118,7 +118,7 @@ func (c *Checker) makeNode(t *gotype.Type, is, pre *Tag, fs gotype.FieldSelector
 	return root, nil
 }
 
-func (c *Checker) makeNodeFromPtr(t *gotype.Type, is, pre *Tag) (root, base *Node, err error) {
+func (c *Checker) makeNodeFromPtr(t *gotype.Type, is, pre *Tag, fs gotype.FieldSelector) (root, base *Node, err error) {
 	root = &Node{Type: t}
 	base = root
 
@@ -167,6 +167,12 @@ func (c *Checker) makeNodeFromPtr(t *gotype.Type, is, pre *Tag) (root, base *Nod
 			noguard = r
 		default:
 			rr = append(rr, r)
+		}
+
+		for _, a := range r.Args {
+			if a.Type == ARG_FIELD_REL && len(fs) > 1 {
+				a.Value = c.fieldKey(fs[:len(fs)-1], true) + "." + a.Value
+			}
 		}
 	}
 
@@ -227,13 +233,19 @@ func (c *Checker) makeNodeFromPtr(t *gotype.Type, is, pre *Tag) (root, base *Nod
 			return nil, nil, &Error{C: ERR_RULE_UNDEFINED, ty: t, tag: pre, r: r}
 		}
 		base.PreRules = append(base.PreRules, r)
+
+		for _, a := range r.Args {
+			if a.Type == ARG_FIELD_REL && len(fs) > 1 {
+				a.Value = c.fieldKey(fs[:len(fs)-1], true) + "." + a.Value
+			}
+		}
 	}
 
 	return root, base, nil
 }
 
 // makeRuleLists creates RuleLists from the given Tags.
-func (c *Checker) makeRuleLists(is, pre *Tag) (isList, preList RuleList, err error) {
+func (c *Checker) makeRuleLists(is, pre *Tag, fs gotype.FieldSelector) (isList, preList RuleList, err error) {
 	// Load the specs for validation the rules
 	// and sort the rules according to "priority".
 	var (
@@ -254,6 +266,12 @@ func (c *Checker) makeRuleLists(is, pre *Tag) (isList, preList RuleList, err err
 		default:
 			rr = append(rr, r)
 		}
+
+		for _, a := range r.Args {
+			if a.Type == ARG_FIELD_REL && len(fs) > 1 {
+				a.Value = c.fieldKey(fs[:len(fs)-1], true) + "." + a.Value
+			}
+		}
 	}
 	isList = append(r0, rr...)
 
@@ -263,6 +281,12 @@ func (c *Checker) makeRuleLists(is, pre *Tag) (isList, preList RuleList, err err
 			return nil, nil, &Error{C: ERR_RULE_UNDEFINED, tag: pre, r: r}
 		}
 		preList = append(preList, r)
+
+		for _, a := range r.Args {
+			if a.Type == ARG_FIELD_REL && len(fs) > 1 {
+				a.Value = c.fieldKey(fs[:len(fs)-1], true) + "." + a.Value
+			}
+		}
 	}
 
 	return isList, preList, nil
@@ -272,7 +296,7 @@ func (c *Checker) makeRuleLists(is, pre *Tag) (isList, preList RuleList, err err
 func (c *Checker) makeFieldNode(f *gotype.StructField, fs gotype.FieldSelector) (n *FieldNode, err error) {
 	n = &FieldNode{Field: f}
 	n.Selector = fs.CopyWith(f)
-	n.Key = c.fieldKey(n.Selector)
+	n.Key = c.fieldKey(n.Selector, false)
 
 	is, pre := parseTag(f.Tag, "is"), parseTag(f.Tag, "pre")
 	if n.Type, err = c.makeNode(f.Type, is, pre, n.Selector); err != nil {

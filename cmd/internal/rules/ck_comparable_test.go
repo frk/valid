@@ -55,11 +55,11 @@ func TestChecker_comparableCheck(t *testing.T) {
 				Name: "eq",
 				Args: []*Arg{
 					{Type: ARG_INT, Value: "123"},
-					{Type: ARG_FIELD, Value: "S.G"},
+					{Type: ARG_FIELD_ABS, Value: "S.G"},
 				},
 				Spec: GetSpec("eq"),
 			},
-			ra:  &Arg{Type: ARG_FIELD, Value: "S.G"},
+			ra:  &Arg{Type: ARG_FIELD_ABS, Value: "S.G"},
 			raf: T._sf(),
 		},
 	}, {

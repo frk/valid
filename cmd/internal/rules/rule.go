@@ -20,8 +20,11 @@ func (r Rule) String() (out string) {
 	out = r.Name
 	for i := range r.Args {
 		out += ":"
-		if r.Args[i].Type == ARG_FIELD {
+		switch r.Args[i].Type {
+		case ARG_FIELD_ABS:
 			out += "&"
+		case ARG_FIELD_REL:
+			out += "."
 		}
 		out += r.Args[i].Value
 	}
@@ -62,7 +65,7 @@ func (a *Arg) IsNumeric() bool {
 // CanAssignTo reports whether or not the Arg can be assigned to the Go type
 // represented by t. The keyMap, if provided, is used to resolve ARG_FIELD args.
 func (a *Arg) CanAssignTo(t *gotype.Type, keyMap map[string]*FieldNode) bool {
-	if a.Type == ARG_FIELD {
+	if a.Type == ARG_FIELD_ABS || a.Type == ARG_FIELD_REL {
 		if f, ok := keyMap[a.Value]; ok && f != nil {
 			// can use the addr, accept
 			if t.PtrOf(f.Type.Type) {
@@ -128,16 +131,18 @@ const (
 	ARG_INT
 	ARG_FLOAT
 	ARG_STRING
-	ARG_FIELD
+	ARG_FIELD_ABS
+	ARG_FIELD_REL
 )
 
 var _argtypestring = [...]string{
-	ARG_UNKNOWN: "<unknown>",
-	ARG_BOOL:    "bool",
-	ARG_INT:     "int",
-	ARG_FLOAT:   "float",
-	ARG_STRING:  "string",
-	ARG_FIELD:   "<field>",
+	ARG_UNKNOWN:   "<unknown>",
+	ARG_BOOL:      "bool",
+	ARG_INT:       "int",
+	ARG_FLOAT:     "float",
+	ARG_STRING:    "string",
+	ARG_FIELD_ABS: "<field_abs>",
+	ARG_FIELD_REL: "<field_rel>",
 }
 
 var _scalarargs = [...]ArgType{

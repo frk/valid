@@ -1,7 +1,6 @@
 package testdata
 
-type T55Validator struct {
-	// nested field with rules
+type Validator struct {
 	G1 struct {
 		F4 string `is:"email"`
 		GA struct {

@@ -352,10 +352,10 @@ func TestChecker_lengthCheck(t *testing.T) {
 			},
 			r: &Rule{
 				Name: "runecount",
-				Args: []*Arg{{Type: ARG_FIELD, Value: "S.F"}},
+				Args: []*Arg{{Type: ARG_FIELD_ABS, Value: "S.F"}},
 				Spec: GetSpec("runecount"),
 			},
-			ra:  &Arg{Type: ARG_FIELD, Value: "S.F"},
+			ra:  &Arg{Type: ARG_FIELD_ABS, Value: "S.F"},
 			raf: T._sf(),
 		},
 	}}

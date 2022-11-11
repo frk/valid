@@ -52,6 +52,9 @@ func TestCheckerCheck(t *testing.T) {
 		err  error
 		show bool
 	}{{
+		name: "Test_checker_Validator",
+		show: true,
+	}, {
 		name: "Test_ERR_FIELD_UNKNOWN_1_Validator",
 		err: &Error{
 			C: ERR_FIELD_UNKNOWN, a: T._ast, sfv: T._var,
@@ -66,11 +69,11 @@ func TestCheckerCheck(t *testing.T) {
 			r: &Rule{
 				Name: "gt",
 				Args: []*Arg{
-					{Type: ARG_FIELD, Value: "num"},
+					{Type: ARG_FIELD_ABS, Value: "num"},
 				},
 				Spec: GetSpec("gt"),
 			},
-			ra: &Arg{Type: ARG_FIELD, Value: "num"},
+			ra: &Arg{Type: ARG_FIELD_ABS, Value: "num"},
 		},
 	}, {
 		name: "Test_ERR_FIELD_UNKNOWN_2_Validator",
@@ -86,11 +89,52 @@ func TestCheckerCheck(t *testing.T) {
 			ty: T.string,
 			r: &Rule{
 				Name: "p4",
-				Args: []*Arg{{Type: ARG_FIELD, Value: "num"}},
+				Args: []*Arg{{Type: ARG_FIELD_ABS, Value: "num"}},
 				Spec: GetSpec("pre:p4"),
 			},
-			ra: &Arg{Type: ARG_FIELD, Value: "num"},
+			ra: &Arg{Type: ARG_FIELD_ABS, Value: "num"},
 		},
+	}, {
+		name: "Test_ERR_FIELD_UNKNOWN_3_Validator",
+		err: &Error{
+			C: ERR_FIELD_UNKNOWN, a: T._ast, sfv: T._var,
+			sf: &gotype.StructField{
+				Pkg:  T.pkg,
+				Name: "F", IsExported: true,
+				Tag:  `is:"gt:.num"`,
+				Type: T.int,
+				Var:  T._var,
+			},
+			ty: T.int,
+			r: &Rule{
+				Name: "gt",
+				Args: []*Arg{
+					{Type: ARG_FIELD_REL, Value: "X.num"},
+				},
+				Spec: GetSpec("gt"),
+			},
+			ra: &Arg{Type: ARG_FIELD_REL, Value: "X.num"},
+		},
+	}, {
+		name: "Test_ERR_FIELD_UNKNOWN_4_Validator",
+		err: &Error{
+			C: ERR_FIELD_UNKNOWN, a: T._ast, sfv: T._var,
+			sf: &gotype.StructField{
+				Pkg:  T.pkg,
+				Name: "F", IsExported: true,
+				Tag:  `pre:"p4:.num"`,
+				Type: T.string,
+				Var:  T._var,
+			},
+			ty: T.string,
+			r: &Rule{
+				Name: "p4",
+				Args: []*Arg{{Type: ARG_FIELD_REL, Value: "X.num"}},
+				Spec: GetSpec("pre:p4"),
+			},
+			ra: &Arg{Type: ARG_FIELD_REL, Value: "X.num"},
+		},
+		show: true,
 	}, {
 		name: "Test_ERR_RULE_ARGMIN_1_Validator",
 		err: &Error{

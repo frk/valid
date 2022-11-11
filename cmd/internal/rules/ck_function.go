@@ -100,7 +100,7 @@ func (c *Checker) checkIncludedRuleArgValues(r *Rule) error {
 	// first argument checked, the rest will be handled on
 	// a per-rule basis.
 	var a0 *Arg
-	if len(r.Args) > 0 && r.Args[0].Type != ARG_FIELD {
+	if len(r.Args) > 0 && (r.Args[0].Type != ARG_FIELD_ABS && r.Args[0].Type != ARG_FIELD_REL) {
 		a0 = r.Args[0]
 	}
 

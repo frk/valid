@@ -162,9 +162,11 @@ func (t *Tag) IsEmpty() bool {
 //      string_lit        = .
 //      quoted_string_lit = `"` `"` .
 //
-//      field_reference     = "&" field_key .
-//      field_key           = identifier { field_key_separator identifier } .
-//      field_key_separator = "." | (* optionally specified by the user *)
+//      field_reference = field_ref_abs | field_ref_rel
+//      field_ref_abs   = "&" field_key .
+//      field_ref_rel   = "." field_key .
+//      field_key       = identifier { field_key_separator identifier } .
+//      field_key_sep   = "." | (* optionally specified by the user *)
 //
 //      identifier = letter { letter } .
 //      letter     = "A"…"Z" | "a"…"z" | "_" .
@@ -176,6 +178,8 @@ func parseTag(tag, key string) *Tag {
 	}
 	return parseRule(str, key)
 }
+
+// `is:".field.bar"`
 
 // parseRule parses the given rule string and returns the AST.
 func parseRule(str, stkey string) *Tag {
@@ -327,7 +331,10 @@ func parseArg(str string) (a *Arg) {
 	a = &Arg{}
 	if len(str) > 0 {
 		if str[0] == '&' {
-			a.Type = ARG_FIELD
+			a.Type = ARG_FIELD_ABS
+			a.Value = str[1:]
+		} else if str[0] == '.' {
+			a.Type = ARG_FIELD_REL
 			a.Value = str[1:]
 		} else {
 			switch {

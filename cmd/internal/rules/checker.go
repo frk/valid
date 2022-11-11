@@ -123,7 +123,7 @@ func (c *Checker) checkRules(n *Node) error {
 		// references a valid field key which will be indicated
 		// by a presence of a selector in the analyzer's KeyMap.
 		for _, a := range r.Args {
-			if a.Type == ARG_FIELD {
+			if a.Type == ARG_FIELD_ABS || a.Type == ARG_FIELD_REL {
 				if _, ok := c.Info.KeyMap[a.Value]; !ok {
 					return &Error{C: ERR_FIELD_UNKNOWN, ty: n.Type, r: r, ra: a}
 				}
@@ -198,7 +198,7 @@ func (c *Checker) checkPreproc(n *Node) error {
 		// references a valid field key which will be indicated
 		// by a presence of a selector in the analyzer's KeyMap.
 		for _, a := range r.Args {
-			if a.Type == ARG_FIELD {
+			if a.Type == ARG_FIELD_ABS || a.Type == ARG_FIELD_REL {
 				if _, ok := c.Info.KeyMap[a.Value]; !ok {
 					return &Error{C: ERR_FIELD_UNKNOWN, ty: n.Type, r: r, ra: a}
 				}
@@ -285,7 +285,7 @@ func (c *Checker) err(err error, opts errOpts) error {
 	if e.sf != nil {
 		e.sfv = e.sf.Var
 	}
-	if e.ra != nil && e.ra.Type == ARG_FIELD {
+	if e.ra != nil && (e.ra.Type == ARG_FIELD_ABS || e.ra.Type == ARG_FIELD_REL) {
 		if node, ok := c.KeyMap[e.ra.Value]; ok {
 			e.raf = node.Field
 		}
@@ -295,7 +295,9 @@ func (c *Checker) err(err error, opts errOpts) error {
 
 // FieldKeyFunc is the type of the function called by the Checker
 // for each field to generate a unique key from the FieldSelector.
-type FieldKeyFunc func(gotype.FieldSelector) (key string)
+//
+// If optuniq is true then the key uniqueness is optional.
+type FieldKeyFunc func(fs gotype.FieldSelector, optuniq bool) (key string)
 
 // fkFunc returns a function that, based on the given configuration,
 // generates a unique field key for a given FieldSelector.
@@ -303,7 +305,11 @@ func fkFunc(c *config.FieldKeyConfig) FieldKeyFunc {
 	// keyset & unique are used by the returned function
 	// to ensure that the generated key is unique.
 	keyset := make(map[string]uint)
-	unique := func(key string) string {
+	unique := func(key string, optuniq bool) string {
+		if optuniq {
+			return key
+		}
+
 		if num, ok := keyset[key]; ok {
 			keyset[key] = num + 1
 			key += "-" + strconv.FormatUint(uint64(num), 10)
@@ -318,7 +324,7 @@ func fkFunc(c *config.FieldKeyConfig) FieldKeyFunc {
 			// Returns the joined tag values of the fields in the given slice.
 			// If one of the fields does not have a tag value set, their name
 			// will be used in the join as default.
-			return func(fs gotype.FieldSelector) (key string) {
+			return func(fs gotype.FieldSelector, optuniq bool) (key string) {
 				tag := c.Tag.Value
 				sep := c.Separator.Value
 
@@ -335,20 +341,20 @@ func fkFunc(c *config.FieldKeyConfig) FieldKeyFunc {
 					key += v + sep
 				}
 				if len(sep) > 0 && len(key) > len(sep) {
-					return unique(key[:len(key)-len(sep)])
+					return unique(key[:len(key)-len(sep)], optuniq)
 				}
-				return unique(key)
+				return unique(key, optuniq)
 			}
 		}
 
 		// Returns the tag value of the last field, if no value was
 		// set the field's name will be returned instead.
-		return func(fs gotype.FieldSelector) string {
+		return func(fs gotype.FieldSelector, optuniq bool) string {
 			t := tagutil.New(fs[len(fs)-1].Tag)
 			if key := t.First(c.Tag.Value); len(key) > 0 {
-				return unique(key)
+				return unique(key, optuniq)
 			}
-			return unique(fs[len(fs)-1].Name)
+			return unique(fs[len(fs)-1].Name, optuniq)
 		}
 	}
 
@@ -356,7 +362,7 @@ func fkFunc(c *config.FieldKeyConfig) FieldKeyFunc {
 		sep := c.Separator.Value
 
 		// Returns the joined names of the fields in the given slice.
-		return func(fs gotype.FieldSelector) (key string) {
+		return func(fs gotype.FieldSelector, optuniq bool) (key string) {
 			for _, f := range fs {
 				t := tagutil.New(f.Tag)
 				if t.Contains("is", "omitkey") || f.IsEmbedded {
@@ -365,15 +371,15 @@ func fkFunc(c *config.FieldKeyConfig) FieldKeyFunc {
 				key += f.Name + sep
 			}
 			if len(sep) > 0 && len(key) > len(sep) {
-				return unique(key[:len(key)-len(sep)])
+				return unique(key[:len(key)-len(sep)], optuniq)
 			}
-			return unique(key)
+			return unique(key, optuniq)
 		}
 	}
 
 	// Returns the name of the last field.
-	return func(fs gotype.FieldSelector) string {
-		return unique(fs[len(fs)-1].Name)
+	return func(fs gotype.FieldSelector, optuniq bool) string {
+		return unique(fs[len(fs)-1].Name, optuniq)
 	}
 }
 
@@ -383,7 +389,7 @@ func fkFunc(c *config.FieldKeyConfig) FieldKeyFunc {
 // canConvertRuleArg reports whether or not the arg's literal
 // value can be converted to the Go type represented by t.
 func (c *Checker) canConvertRuleArg(t *gotype.Type, arg *Arg) bool {
-	if arg.Type == ARG_FIELD {
+	if arg.Type == ARG_FIELD_ABS || arg.Type == ARG_FIELD_REL {
 		typ := c.KeyMap[arg.Value].Type
 
 		// can use the addr, accept
@@ -477,7 +483,7 @@ func (c *Checker) fixRuleArgs(r *Rule) {
 			continue
 		}
 
-		if arg.Type != ARG_FIELD {
+		if arg.Type != ARG_FIELD_ABS && arg.Type != ARG_FIELD_REL {
 			// If a Arg's non-field Value matches an entry
 			// in the argOpts map, then update the Arg.
 			if opt, ok := argOpts[arg.Value]; ok {

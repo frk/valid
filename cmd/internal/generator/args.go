@@ -31,7 +31,7 @@ func (g *gg) ruleArg(n *rules.Node, r *rules.Rule, i int, a *rules.Arg) GO.ExprN
 		}
 	}
 
-	if a.Type == rules.ARG_FIELD {
+	if a.Type == rules.ARG_FIELD_ABS || a.Type == rules.ARG_FIELD_REL {
 		return g.fieldArg(a, tt)
 	}
 	return g.constArg(n, r, a, tt)

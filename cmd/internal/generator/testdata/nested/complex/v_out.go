@@ -9,7 +9,7 @@ import (
 	"github.com/frk/valid"
 )
 
-func (v T55Validator) Validate() error {
+func (v Validator) Validate() error {
 	if !valid.Email(v.G1.F4) {
 		return errors.New("G1.F4 must be a valid email address")
 	}
