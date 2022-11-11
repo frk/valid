@@ -54,7 +54,7 @@ func (c *Checker) lengthCheck(n *Node, r *Rule) error {
 		// If the argument is a field then make sure that that field's
 		// type can be converted to an int, which is the type of the
 		// return value of the `len` and `ut8.RuneCount` functions.
-		case a.Type == ARG_FIELD:
+		case a.Type == ARG_FIELD_ABS || a.Type == ARG_FIELD_REL:
 			tt := &gotype.Type{Kind: gotype.K_INT}
 			ft := c.KeyMap[a.Value].Type.Type // field's type
 			if !tt.CanConvert(ft) {

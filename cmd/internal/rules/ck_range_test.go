@@ -187,12 +187,12 @@ func TestChecker_rangeCheck(t *testing.T) {
 			r: &Rule{
 				Name: "rng",
 				Args: []*Arg{
-					{Type: ARG_FIELD, Value: "S.F"},
+					{Type: ARG_FIELD_ABS, Value: "S.F"},
 					{Type: ARG_INT, Value: "20"},
 				},
 				Spec: GetSpec("rng"),
 			},
-			ra:  &Arg{Type: ARG_FIELD, Value: "S.F"},
+			ra:  &Arg{Type: ARG_FIELD_ABS, Value: "S.F"},
 			raf: T._sf(),
 		},
 	}, {

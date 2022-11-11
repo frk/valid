@@ -166,9 +166,11 @@ float_lit         = [ "-" ] ( "0" | "1"…"9" { "0"…"9" } ) "." "0"…"9" { "0
 string_lit        = .
 quoted_string_lit = `"` `"` .
 
-field_reference     = "&" field_key .
-field_key           = identifier { field_key_separator identifier } .
-field_key_separator = "." | (* optionally specified by the user *)
+field_reference = field_ref_abs | field_ref_rel
+field_ref_abs   = "&" field_key .
+field_ref_rel   = "." field_key .
+field_key       = identifier { field_key_separator identifier } .
+field_key_sep   = "." | (* optionally specified by the user *)
 
 identifier = letter { letter } .
 letter     = "A"…"Z" | "a"…"z" | "_" .

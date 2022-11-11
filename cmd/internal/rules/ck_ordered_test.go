@@ -100,10 +100,10 @@ func TestChecker_orderedCheck(t *testing.T) {
 			ty: T.string,
 			r: &Rule{
 				Name: "lte",
-				Args: []*Arg{{Type: ARG_FIELD, Value: "S.F"}},
+				Args: []*Arg{{Type: ARG_FIELD_ABS, Value: "S.F"}},
 				Spec: GetSpec("lte"),
 			},
-			ra:  &Arg{Type: ARG_FIELD, Value: "S.F"},
+			ra:  &Arg{Type: ARG_FIELD_ABS, Value: "S.F"},
 			raf: T._sf(),
 		},
 	}}

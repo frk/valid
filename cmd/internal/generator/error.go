@@ -41,7 +41,7 @@ func (b *bb) errGlobalHandler(n *rules.Node, r *rules.Rule, body *GO.BlockStmt, 
 	} else {
 		for _, a := range r.Args {
 			switch a.Type {
-			case rules.ARG_FIELD:
+			case rules.ARG_FIELD_ABS, rules.ARG_FIELD_REL:
 				x := b.g.recv
 				for _, f := range b.g.info.KeyMap[a.Value].Selector {
 					x = GO.SelectorExpr{X: x, Sel: GO.Ident{f.Name}}
@@ -85,7 +85,7 @@ func (b *bb) errHandler(n *rules.Node, r *rules.Rule, body *GO.BlockStmt) {
 	} else {
 		for _, a := range r.Args {
 			switch a.Type {
-			case rules.ARG_FIELD:
+			case rules.ARG_FIELD_ABS, rules.ARG_FIELD_REL:
 				x := b.g.recv
 				for _, f := range b.g.info.KeyMap[a.Value].Selector {
 					x = GO.SelectorExpr{X: x, Sel: GO.Ident{f.Name}}
@@ -154,7 +154,7 @@ func (b *bb) errDefault(n *rules.Node, r *rules.Rule, body *GO.BlockStmt) {
 			}
 
 			switch arg.Type {
-			case rules.ARG_FIELD:
+			case rules.ARG_FIELD_ABS, rules.ARG_FIELD_REL:
 				x := b.g.recv
 				for _, f := range b.g.info.KeyMap[arg.Value].Selector {
 					x = GO.SelectorExpr{X: x, Sel: GO.Ident{f.Name}}
