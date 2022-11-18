@@ -31,8 +31,10 @@ func BenchmarkFrk(b *testing.B) {
 }
 
 func BenchmarkGoPlayground(b *testing.B) {
-	vv := goplayground.New()
 	value := goodGoPlayground()
+
+	vv := goplayground.New()
+	_ = vv.Struct(value) // cache the type
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {

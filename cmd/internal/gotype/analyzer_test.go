@@ -78,7 +78,7 @@ func TestAnalyzer_Analyze(t *testing.T) {
 	}, {
 		ty: test_type("strSlice"),
 		want: &Type{Pkg: p0, Name: "strSlice", Kind: K_SLICE,
-			Elem: &Type{Kind: K_STRING}},
+			Elem: T.string},
 	}, {
 		ty: test_type("byteSlice"),
 		want: &Type{Pkg: p0, Name: "byteSlice", Kind: K_SLICE,
@@ -98,16 +98,16 @@ func TestAnalyzer_Analyze(t *testing.T) {
 	}, {
 		ty: test_type("strArray"),
 		want: &Type{Pkg: p0, Name: "strArray", Kind: K_ARRAY, ArrayLen: 4,
-			Elem: &Type{Kind: K_STRING}},
+			Elem: T.string},
 	}, {
 		ty: test_type("Str2BoolMap"),
 		want: &Type{Pkg: p0, Name: "Str2BoolMap", Kind: K_MAP, IsExported: true,
 			Key:  &Type{Pkg: p0, Name: "StringType", Kind: K_STRING, IsExported: true},
-			Elem: &Type{Kind: K_BOOL}},
+			Elem: T.bool},
 	}, {
 		ty: test_type("str2BoolMap"),
 		want: &Type{Pkg: p0, Name: "str2BoolMap", Kind: K_MAP,
-			Key:  &Type{Kind: K_STRING},
+			Key:  T.string,
 			Elem: &Type{Pkg: p0, Name: "BoolType", Kind: K_BOOL, IsExported: true}},
 	}, {
 		ty: test_type("StrPointer"),
@@ -116,7 +116,7 @@ func TestAnalyzer_Analyze(t *testing.T) {
 	}, {
 		ty: test_type("strPointer"),
 		want: &Type{Pkg: p0, Name: "strPointer", Kind: K_PTR,
-			Elem: &Type{Kind: K_STRING}},
+			Elem: T.string},
 	}, {
 		ty: test_type("IfaceType"),
 		want: &Type{Pkg: p0, Name: "IfaceType", Kind: K_INTERFACE, IsExported: true,
@@ -131,37 +131,27 @@ func TestAnalyzer_Analyze(t *testing.T) {
 				Pkg:  p0,
 				Name: "Method", Type: &Type{
 					Kind: K_FUNC,
-					In:   []*Var{{Type: &Type{Kind: K_STRING}}},
-					Out:  []*Var{{Type: &Type{Kind: K_BOOL}}},
+					In:   []*Var{{Type: T.string}},
+					Out:  []*Var{{Type: T.bool}},
 				},
 				IsExported: true,
 			}}},
 	}, {
 		ty: test_type("FuncType"),
 		want: &Type{Pkg: p0, Name: "FuncType", Kind: K_FUNC, IsExported: true,
-			In:  []*Var{{Type: &Type{Kind: K_STRING}}},
-			Out: []*Var{{Type: &Type{Kind: K_BOOL}}}},
+			In:  []*Var{{Type: T.string}},
+			Out: []*Var{{Type: T.bool}}},
 	}, {
 		ty: test_type("funcType"),
 		want: &Type{Pkg: p0, Name: "funcType", Kind: K_FUNC,
 			In: []*Var{
-				{Type: &Type{Kind: K_INT}},
-				{Type: &Type{Kind: K_STRING}},
+				{Type: T.int},
+				{Type: T.string},
 				{Type: &Type{Pkg: p0, Name: "StringType", Kind: K_STRING, IsExported: true}},
 			},
 			Out: []*Var{
-				{Type: &Type{Kind: K_INT}},
-				{Type: &Type{
-					Kind: K_INTERFACE,
-					Name: "error",
-					Methods: []*Method{{
-						Name: "Error",
-						Type: &Type{Kind: K_FUNC, Out: []*Var{
-							{Type: &Type{Kind: K_STRING}},
-						}},
-						IsExported: true,
-					}},
-				}},
+				{Type: T.int},
+				{Type: T.error},
 			}},
 	}, {
 		ty:   test_type("ChanType"),
@@ -173,8 +163,8 @@ func TestAnalyzer_Analyze(t *testing.T) {
 		ty: test_type("StructType"),
 		want: &Type{Pkg: p0, Name: "StructType", Kind: K_STRUCT, IsExported: true,
 			Fields: []*StructField{
-				{Pkg: p0, Name: "F1", Type: &Type{Kind: K_STRING}, Tag: `is:"some_rule"`, IsExported: true, Var: &types.Var{}},
-				{Pkg: p0, Name: "f2", Type: &Type{Kind: K_BOOL}, Tag: `foo bar baz`, IsExported: false, Var: &types.Var{}},
+				{Pkg: p0, Name: "F1", Type: T.string, Tag: `is:"some_rule"`, IsExported: true, Var: &types.Var{}},
+				{Pkg: p0, Name: "f2", Type: T.bool, Tag: `foo bar baz`, IsExported: false, Var: &types.Var{}},
 			}},
 	}, {
 		ty: test_type("structType"),
@@ -194,7 +184,7 @@ func TestAnalyzer_Analyze(t *testing.T) {
 					Fields: []*StructField{{
 						Pkg:        p1,
 						Name:       "Field",
-						Type:       &Type{Kind: K_STRING},
+						Type:       T.string,
 						Tag:        `key:"value"`,
 						IsExported: true,
 						Var:        &types.Var{},
@@ -215,6 +205,81 @@ func TestAnalyzer_Analyze(t *testing.T) {
 			t.Fields = []*StructField{{Pkg: p0, Name: "F1", Type: &Type{Kind: K_PTR, Elem: t}, IsExported: true, Var: &types.Var{}}}
 			return t
 		}(),
+	}, {
+		ty: test_type("genMap1"),
+		want: &Type{Pkg: p0, Name: "genMap1", Kind: K_MAP,
+			Key:  &Type{Kind: K_INTERFACE, Name: "comparable"},
+			Elem: &Type{Kind: K_INTERFACE},
+			TypeParams: []*TypeParam{{
+				Pkg: p0, Name: "K",
+				Constraint: &Type{Kind: K_INTERFACE, Name: "comparable"},
+			}, {
+				Pkg: p0, Name: "V",
+				Constraint: &Type{Kind: K_INTERFACE},
+			}},
+		},
+	}, {
+		ty: test_type("genMap2"),
+		want: &Type{Pkg: p0, Name: "genMap2", Kind: K_MAP,
+			Key: &Type{Kind: K_INTERFACE, Embeddeds: []*Type{
+				{Kind: K_UNION, Terms: []*Term{
+					{Tilde: true, Type: T.string},
+				}},
+			}},
+			Elem: &Type{Kind: K_INTERFACE},
+			TypeParams: []*TypeParam{{
+				Pkg: p0, Name: "K",
+				Constraint: &Type{Kind: K_INTERFACE, Embeddeds: []*Type{
+					{Kind: K_UNION, Terms: []*Term{
+						{Tilde: true, Type: T.string},
+					}},
+				}},
+			}, {
+				Pkg: p0, Name: "V",
+				Constraint: &Type{Kind: K_INTERFACE},
+			}},
+		},
+	}, {
+		ty: test_type("genStruct1"),
+		want: &Type{Pkg: p0, Name: "genStruct1", Kind: K_STRUCT,
+			TypeParams: []*TypeParam{{
+				Pkg: p0, Name: "C", Constraint: &Type{
+					Kind: K_INTERFACE,
+					Methods: []*Method{{
+						Pkg:  Pkg{Name: "io", Path: "io"},
+						Name: "Read",
+						Type: &Type{
+							Kind: K_FUNC,
+							In:   []*Var{{Name: "p", Type: T.bytes}},
+							Out: []*Var{
+								{Name: "n", Type: T.int},
+								{Name: "err", Type: T.error},
+							},
+						},
+						IsExported: true,
+					}},
+					Embeddeds: []*Type{{
+						Pkg:        Pkg{Path: "io", Name: "io"},
+						Name:       "Reader",
+						Kind:       K_INTERFACE,
+						IsExported: true,
+						Methods: []*Method{{
+							Pkg:  Pkg{Name: "io", Path: "io"},
+							Name: "Read",
+							Type: &Type{
+								Kind: K_FUNC,
+								In:   []*Var{{Name: "p", Type: T.bytes}},
+								Out: []*Var{
+									{Name: "n", Type: T.int},
+									{Name: "err", Type: T.error},
+								},
+							},
+							IsExported: true,
+						}},
+					}},
+				},
+			}},
+		},
 	}}
 
 	compare := compare.Config{ObserveFieldTag: "cmp"}
@@ -244,25 +309,25 @@ func TestAnalyzer_Object(t *testing.T) {
 	}, {
 		obj: test_obj("Func2"),
 		want: &Type{Pkg: p0, Kind: K_FUNC,
-			In:  []*Var{{Type: &Type{Kind: K_STRING}}},
-			Out: []*Var{{Type: &Type{Kind: K_BOOL}}}},
+			In:  []*Var{{Type: T.string}},
+			Out: []*Var{{Type: T.bool}}},
 	}, {
 		obj: test_obj("Func3"),
 		want: &Type{Pkg: p0, Kind: K_FUNC,
 			In: []*Var{
-				{Type: &Type{Kind: K_INT}},
-				{Type: &Type{Kind: K_STRING}},
+				{Type: T.int},
+				{Type: T.string},
 				{Type: &Type{Pkg: p0, Name: "StringType", Kind: K_STRING, IsExported: true}},
 			},
 			Out: []*Var{
-				{Type: &Type{Kind: K_INT}},
+				{Type: T.int},
 				{Type: &Type{
 					Kind: K_INTERFACE,
 					Name: "error",
 					Methods: []*Method{{
 						Name: "Error",
 						Type: &Type{Kind: K_FUNC, Out: []*Var{
-							{Type: &Type{Kind: K_STRING}},
+							{Type: T.string},
 						}},
 						IsExported: true,
 					}},

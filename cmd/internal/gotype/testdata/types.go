@@ -1,6 +1,7 @@
 package testdata
 
 import (
+	"io"
 	"unsafe"
 
 	"github.com/frk/valid/cmd/internal/gotype/testdata/mypkg"
@@ -98,3 +99,8 @@ type (
 		F1 *RecursiveStruct
 	}
 )
+
+// generic types
+type genMap1[K comparable, V any] map[K]V
+type genMap2[K ~string, V any] map[K]V
+type genStruct1[C interface{ io.Reader }] struct{}
