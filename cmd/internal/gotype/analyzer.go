@@ -1,10 +1,13 @@
 package gotype
 
 import (
+	"fmt"
 	"go/types"
 
 	"github.com/frk/tagutil"
 )
+
+var _ = fmt.Println
 
 // Analyzer maintains the state of the analysis.
 type Analyzer struct {
@@ -68,6 +71,11 @@ func (a *Analyzer) Analyze(t types.Type) (u *Type) {
 		u.Name = named.Obj().Name()
 		u.IsExported = named.Obj().Exported()
 		u.Methods = a.analyzeMethods(named)
+		u.TypeArgs = a.analyzeTypeArgs(named)
+		u.TypeParams = a.analyzeTypeParams(named)
+		if o := named.Origin(); o != nil && o != t {
+			u.Origin = a.Analyze(o)
+		}
 		t = named.Underlying()
 	}
 
@@ -132,9 +140,11 @@ func (a *Analyzer) Analyze(t types.Type) (u *Type) {
 	case *types.Interface:
 		u.Kind = K_INTERFACE
 		u.Methods = a.analyzeMethods(T)
+		u.Embeddeds = a.analyzeEmbeddeds(T)
 	case *types.Signature:
 		u.Kind = K_FUNC
 		u.In, u.Out = a.analyzeSignature(T)
+		u.TypeParams = a.analyzeTypeParams(T)
 		u.IsVariadic = T.Variadic()
 	case *types.Chan:
 		u.Kind = K_CHAN
@@ -143,6 +153,12 @@ func (a *Analyzer) Analyze(t types.Type) (u *Type) {
 	case *types.Struct:
 		u.Kind = K_STRUCT
 		u.Fields = a.analyzeFields(T)
+	case *types.TypeParam:
+		p := a.Analyze(T.Constraint())
+		*u = *p
+	case *types.Union:
+		u.Kind = K_UNION
+		u.Terms = a.analyzeTerms(T)
 	}
 
 	return u
@@ -192,6 +208,63 @@ func (a *Analyzer) analyzeMethods(mm Methoder) (methods []*Method) {
 		methods = append(methods, m)
 	}
 	return methods
+}
+
+func (a *Analyzer) analyzeEmbeddeds(iface *types.Interface) (embeddeds []*Type) {
+	for i := 0; i < iface.NumEmbeddeds(); i++ {
+		t := a.Analyze(iface.EmbeddedType(i))
+		embeddeds = append(embeddeds, t)
+	}
+	return embeddeds
+}
+
+func (a *Analyzer) analyzeTerms(union *types.Union) (terms []*Term) {
+	for i := 0; i < union.Len(); i++ {
+		ut := union.Term(i)
+
+		t := new(Term)
+		t.Tilde = ut.Tilde()
+		t.Type = a.Analyze(ut.Type())
+		terms = append(terms, t)
+	}
+	return terms
+}
+
+func (a *Analyzer) analyzeTypeArgs(named *types.Named) (args []*Type) {
+	list := named.TypeArgs()
+	if list == nil {
+		return nil
+	}
+
+	for i := 0; i < list.Len(); i++ {
+		t := a.Analyze(list.At(i))
+		args = append(args, t)
+	}
+	return args
+}
+
+func (a *Analyzer) analyzeTypeParams(tt TypeParamer) (params []*TypeParam) {
+	list := tt.TypeParams()
+	if list == nil {
+		return nil
+	}
+
+	for i := 0; i < list.Len(); i++ {
+		tp := list.At(i)
+
+		p := new(TypeParam)
+		if typeName := tp.Obj(); typeName != nil {
+			p.Name = typeName.Name()
+			if pkg := typeName.Pkg(); pkg != nil {
+				p.Pkg.Path = pkg.Path()
+				p.Pkg.Name = pkg.Name()
+			}
+		}
+		p.Constraint = a.Analyze(tp.Constraint())
+
+		params = append(params, p)
+	}
+	return params
 }
 
 func (a *Analyzer) analyzeSignature(sig *types.Signature) (in, out []*Var) {
