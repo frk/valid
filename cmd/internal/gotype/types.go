@@ -32,18 +32,61 @@ type Type struct {
 	IsByte bool
 	// Indicates whether or not the type is the "rune" alias type.
 	IsRune bool
+
 	// If kind is map, Key will hold the info on the map's key type.
 	Key *Type
 	// If kind is map, Elem will hold the info on the map's value type.
 	// If kind is ptr, Elem will hold the info on pointed-to type.
 	// If kind is slice/array, Elem will hold the info on slice/array element type.
 	Elem *Type
-	// If kind is func, In & Out will hold the function's parameter and result types.
-	In, Out []*Var
-	// If kind is struct, Fields will hold the list of the struct's fields.
-	Fields []*StructField
+
 	// The method set of a named type or an interface type.
-	Methods []*Method
+	Methods   []*Method
+	Embeddeds []*Type
+
+	// If kind is func, In & Out will hold the
+	// function's parameter and result types.
+	In, Out []*Var
+
+	// If kind is struct, Fields will hold the
+	// list of the struct's fields.
+	Fields []*StructField
+
+	// If the Type is an instantiated named type then
+	// Origin points to the original generic type.
+	Origin *Type
+	// If the Type is an instantiated named type then
+	// TypeArgs is the list of type arguments.
+	TypeArgs []*Type
+
+	// If the Type is a generic named type or a generic function
+	// signature then TypeParams is the list of type parameters.
+	TypeParams []*TypeParam
+
+	// If the Type is a union then Terms holds
+	// the union's of terms.
+	Terms []*Term
+}
+
+type TypeParam struct {
+	// The type param's package.
+	Pkg Pkg
+	// The type name of the type param.
+	Name string
+	// The constraint specified for the type param.
+	Constraint *Type
+}
+
+type TypeParamer interface {
+	TypeParams() *types.TypeParamList
+}
+
+type Term struct {
+	// Indicates whether or not the term
+	// was declared with a tilde.
+	Tilde bool
+	// The term's type.
+	Type *Type
 }
 
 // Reports whether or not the type's kind is is one of the provided kinds.
@@ -456,6 +499,8 @@ const (
 	K_STRUCT    // try to validate the individual fields
 	K_CHAN      // don't validate
 	K_FUNC      // don't validate
+
+	K_UNION
 
 	// alisases (basic)
 	K_BYTE = K_UINT8
