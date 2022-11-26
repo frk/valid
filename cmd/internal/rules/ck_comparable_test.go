@@ -23,9 +23,9 @@ func TestChecker_comparableCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"eq:42:64:foo:-22"`,
-				Type: T.int,
-				Var:  T._var,
+				Tag:    `is:"eq:42:64:foo:-22"`,
+				Object: &gotype.Object{Type: T.int},
+				Var:    T._var,
 			},
 			ty: T.int,
 			r: &Rule{
@@ -46,9 +46,9 @@ func TestChecker_comparableCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"eq:123:&S.G"`,
-				Type: T.int,
-				Var:  T._var,
+				Tag:    `is:"eq:123:&S.G"`,
+				Object: &gotype.Object{Type: T.int},
+				Var:    T._var,
 			},
 			ty: T.int,
 			r: &Rule{
@@ -68,9 +68,9 @@ func TestChecker_comparableCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"eq:0.03"`,
-				Type: T.int,
-				Var:  T._var,
+				Tag:    `is:"eq:0.03"`,
+				Object: &gotype.Object{Type: T.int},
+				Var:    T._var,
 			},
 			ty: T.int,
 			r: &Rule{
@@ -86,9 +86,9 @@ func TestChecker_comparableCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"ne:-345"`,
-				Type: T.uint,
-				Var:  T._var,
+				Tag:    `is:"ne:-345"`,
+				Object: &gotype.Object{Type: T.uint},
+				Var:    T._var,
 			},
 			ty: T.uint,
 			r: &Rule{
@@ -104,9 +104,9 @@ func TestChecker_comparableCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"eq:1"`,
-				Type: T.bool,
-				Var:  T._var,
+				Tag:    `is:"eq:1"`,
+				Object: &gotype.Object{Type: T.bool},
+				Var:    T._var,
 			},
 			ty: T.bool,
 			r: &Rule{
@@ -122,9 +122,9 @@ func TestChecker_comparableCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"eq:true"`,
-				Type: T.int,
-				Var:  T._var,
+				Tag:    `is:"eq:true"`,
+				Object: &gotype.Object{Type: T.int},
+				Var:    T._var,
 			},
 			ty: T.int,
 			r: &Rule{

@@ -6,6 +6,10 @@ import (
 	"strings"
 )
 
+type Object struct {
+	Type *Type
+}
+
 // Pkg describes a type's package.
 type Pkg struct {
 	// The package import path.
@@ -34,11 +38,11 @@ type Type struct {
 	IsRune bool
 
 	// If kind is map, Key will hold the info on the map's key type.
-	Key *Type
+	Key *Object
 	// If kind is map, Elem will hold the info on the map's value type.
 	// If kind is ptr, Elem will hold the info on pointed-to type.
 	// If kind is slice/array, Elem will hold the info on slice/array element type.
-	Elem *Type
+	Elem *Object
 
 	// The method set of a named type or an interface type.
 	Methods   []*Method
@@ -129,7 +133,7 @@ func (t *Type) IsGoAny() bool {
 // IsGoAnySlice reports whether or not t is the Go builtin []any/[]interface{} type.
 func (t *Type) IsGoAnySlice() bool {
 	if t.Kind == K_SLICE {
-		return t.Elem.IsGoAny()
+		return t.Elem.Type.IsGoAny()
 	}
 	return false
 }
@@ -141,11 +145,11 @@ func (t *Type) IsComparable() bool {
 		return false
 	}
 	if t.Kind == K_ARRAY {
-		return t.Elem.IsComparable()
+		return t.Elem.Type.IsComparable()
 	}
 	if t.Kind == K_STRUCT {
 		for _, f := range t.Fields {
-			if !f.Type.IsComparable() {
+			if !f.Object.Type.IsComparable() {
 				return false
 			}
 		}
@@ -190,7 +194,7 @@ func (t *Type) HasIsValid() bool {
 
 // Reports whether or not the type t represents a pointer type of u.
 func (t *Type) PtrOf(u *Type) bool {
-	return t.Kind == K_PTR && t.Elem.IsIdentical(u)
+	return t.Kind == K_PTR && t.Elem.Type.IsIdentical(u)
 }
 
 // Reports whether the types represented by t and u are equal. Note that this
@@ -231,11 +235,11 @@ func (t *Type) IsIdentical(u *Type) bool {
 	// unnamed
 	switch t.Kind {
 	case K_ARRAY:
-		return t.ArrayLen == u.ArrayLen && t.Elem.IsIdentical(u.Elem)
+		return t.ArrayLen == u.ArrayLen && t.Elem.Type.IsIdentical(u.Elem.Type)
 	case K_MAP:
-		return t.Key.IsIdentical(u.Key) && t.Elem.IsIdentical(u.Elem)
+		return t.Key.Type.IsIdentical(u.Key.Type) && t.Elem.Type.IsIdentical(u.Elem.Type)
 	case K_SLICE, K_PTR:
-		return t.Elem.IsIdentical(u.Elem)
+		return t.Elem.Type.IsIdentical(u.Elem.Type)
 	case K_INTERFACE:
 		// TODO range over the methods and compare those
 		return t.IsEmptyInterface() && u.IsEmptyInterface()
@@ -305,18 +309,18 @@ func (t Type) TypeString(pkg *Pkg) string {
 
 	switch t.Kind {
 	case K_ARRAY:
-		return "[" + strconv.FormatInt(t.ArrayLen, 10) + "]" + t.Elem.TypeString(pkg)
+		return "[" + strconv.FormatInt(t.ArrayLen, 10) + "]" + t.Elem.Type.TypeString(pkg)
 	case K_INTERFACE:
 		if !t.IsEmptyInterface() {
 			return "interface{ ... }"
 		}
 		return "interface{}"
 	case K_MAP:
-		return "map[" + t.Key.TypeString(pkg) + "]" + t.Elem.TypeString(pkg)
+		return "map[" + t.Key.Type.TypeString(pkg) + "]" + t.Elem.Type.TypeString(pkg)
 	case K_PTR:
-		return "*" + t.Elem.TypeString(pkg)
+		return "*" + t.Elem.Type.TypeString(pkg)
 	case K_SLICE:
-		return "[]" + t.Elem.TypeString(pkg)
+		return "[]" + t.Elem.Type.TypeString(pkg)
 	case K_STRUCT:
 		if len(t.Fields) > 0 {
 			return "struct{ ... }"
@@ -381,7 +385,7 @@ type StructField struct {
 	// Name of the field.
 	Name string
 	// The field's type.
-	Type *Type
+	Object *Object
 	// The field's raw, uparsed struct tag.
 	Tag string
 	// Indicates that the tag `is:"-"` was used.
@@ -618,13 +622,13 @@ func (t *Type) CanAssign(u *Type) AssignmentStatus {
 	}
 
 	// string from []byte, []rune, []uint8, and []int32, accept
-	if t.Kind == K_STRING && u.Kind == K_SLICE && u.Elem.Name == "" &&
-		(u.Elem.Kind == K_UINT8 || u.Elem.Kind == K_INT32) {
+	if t.Kind == K_STRING && u.Kind == K_SLICE && u.Elem.Type.Name == "" &&
+		(u.Elem.Type.Kind == K_UINT8 || u.Elem.Type.Kind == K_INT32) {
 		return ASSIGNMENT_CONVERT
 	}
 	// string to []byte, []rune, []uint8, and []int32, accept
-	if u.Kind == K_STRING && t.Kind == K_SLICE && t.Elem.Name == "" &&
-		(t.Elem.Kind == K_UINT8 || t.Elem.Kind == K_INT32) {
+	if u.Kind == K_STRING && t.Kind == K_SLICE && t.Elem.Type.Name == "" &&
+		(t.Elem.Type.Kind == K_UINT8 || t.Elem.Type.Kind == K_INT32) {
 		return ASSIGNMENT_CONVERT
 	}
 
@@ -632,15 +636,15 @@ func (t *Type) CanAssign(u *Type) AssignmentStatus {
 	if t.Kind == u.Kind && !t.Kind.IsBasic() {
 		switch t.Kind {
 		case K_ARRAY:
-			if t.ArrayLen == u.ArrayLen && t.Elem.IsIdentical(u.Elem) {
+			if t.ArrayLen == u.ArrayLen && t.Elem.Type.IsIdentical(u.Elem.Type) {
 				return ASSIGNMENT_CONVERT
 			}
 		case K_MAP:
-			if t.Key.IsIdentical(u.Key) && t.Elem.IsIdentical(u.Elem) {
+			if t.Key.Type.IsIdentical(u.Key.Type) && t.Elem.Type.IsIdentical(u.Elem.Type) {
 				return ASSIGNMENT_CONVERT
 			}
 		case K_SLICE, K_PTR:
-			if t.Elem.IsIdentical(u.Elem) {
+			if t.Elem.Type.IsIdentical(u.Elem.Type) {
 				return ASSIGNMENT_CONVERT
 			}
 		}
@@ -654,7 +658,7 @@ func (t *Type) Implements(u *Type) bool {
 	}
 
 	if t.Kind == K_PTR {
-		t = t.Elem
+		t = t.Elem.Type
 	}
 
 methodLoop:
@@ -695,7 +699,7 @@ func (t *Type) VisibleFields() []*StructField {
 	x := t
 
 	if x.Kind == K_PTR {
-		x = x.Elem
+		x = x.Elem.Type
 	}
 	if x.Kind != K_STRUCT {
 		return nil
@@ -775,9 +779,9 @@ func (w *visibleFieldsWalker) walk(t *Type, depth int) {
 		}
 
 		if f.IsEmbedded {
-			t := f.Type
+			t := f.Object.Type
 			if t.Kind == K_PTR {
-				t = t.Elem
+				t = t.Elem.Type
 			}
 			if t.Kind == K_STRUCT {
 				w.walk(t, depth+1)

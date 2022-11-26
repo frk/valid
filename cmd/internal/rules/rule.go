@@ -108,7 +108,7 @@ func (a *Arg) CanAssignTo(t *gotype.Type, keyMap map[string]*FieldNode) bool {
 
 	// arg is string & string can be converted to t, accept
 	if a.Type == ARG_STRING && (t.Kind == gotype.K_STRING || (t.Kind == gotype.K_SLICE &&
-		t.Elem.Name == "" && (t.Elem.Kind == gotype.K_UINT8 || t.Elem.Kind == gotype.K_INT32))) {
+		t.Elem.Type.Name == "" && (t.Elem.Type.Kind == gotype.K_UINT8 || t.Elem.Type.Kind == gotype.K_INT32))) {
 		return true
 	}
 

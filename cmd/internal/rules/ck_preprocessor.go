@@ -9,7 +9,7 @@ func (c *Checker) preprocessorCheck(n *Node, r *Rule) error {
 	// to the function as its first argument.
 	paramType := r.Spec.FType.In[0].Type
 	if r.Spec.FType.IsVariadic && len(r.Spec.FType.In) == 1 {
-		paramType = paramType.Elem
+		paramType = paramType.Elem.Type
 	}
 	if paramType.CanAssign(n.Type) == gotype.ASSIGNMENT_INVALID {
 		return &Error{C: ERR_PREPROC_INTYPE, ty: n.Type, r: r}

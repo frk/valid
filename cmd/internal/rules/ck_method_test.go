@@ -23,9 +23,9 @@ func TestChecker_methodCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"isvalid"`,
-				Type: T.int,
-				Var:  T._var,
+				Tag:    `is:"isvalid"`,
+				Object: &gotype.Object{Type: T.int},
+				Var:    T._var,
 			},
 			ty: T.int,
 			r:  &Rule{Name: "isvalid", Spec: GetSpec("isvalid")},

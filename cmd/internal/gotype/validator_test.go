@@ -42,7 +42,7 @@ func TestAnalyzer_Validator(t *testing.T) {
 				Fields: []*StructField{{
 					Pkg:  pkg0,
 					Name: "err",
-					Type: &Type{Pkg: pkg0, Name: "errorConstructor", Kind: K_STRUCT, Methods: []*Method{{
+					Object: &Object{Type: &Type{Pkg: pkg0, Name: "errorConstructor", Kind: K_STRUCT, Methods: []*Method{{
 						Pkg:  pkg0,
 						Name: "Error",
 						Type: &Type{
@@ -52,12 +52,12 @@ func TestAnalyzer_Validator(t *testing.T) {
 								{Name: "key", Type: &Type{Kind: K_STRING}},
 								{Name: "val", Type: &Type{Kind: K_INTERFACE}},
 								{Name: "rule", Type: &Type{Kind: K_STRING}},
-								{Name: "args", Type: &Type{Kind: K_SLICE, Elem: &Type{Kind: K_INTERFACE}}},
+								{Name: "args", Type: &Type{Kind: K_SLICE, Elem: &Object{Type: &Type{Kind: K_INTERFACE}}}},
 							},
 							Out: []*Var{{Type: errorType}},
 						},
 						IsExported: true,
-					}}},
+					}}}},
 					Var: &types.Var{},
 				}},
 			},
@@ -74,7 +74,7 @@ func TestAnalyzer_Validator(t *testing.T) {
 				Fields: []*StructField{{
 					Pkg:  pkg0,
 					Name: "err",
-					Type: &Type{Pkg: pkg0, Name: "errorAggregator", Kind: K_STRUCT, Methods: []*Method{{
+					Object: &Object{Type: &Type{Pkg: pkg0, Name: "errorAggregator", Kind: K_STRUCT, Methods: []*Method{{
 						Pkg:  pkg0,
 						Name: "Error",
 						Type: &Type{
@@ -84,7 +84,7 @@ func TestAnalyzer_Validator(t *testing.T) {
 								{Name: "key", Type: &Type{Kind: K_STRING}},
 								{Name: "val", Type: &Type{Kind: K_INTERFACE}},
 								{Name: "rule", Type: &Type{Kind: K_STRING}},
-								{Name: "args", Type: &Type{Kind: K_SLICE, Elem: &Type{Kind: K_INTERFACE}}},
+								{Name: "args", Type: &Type{Kind: K_SLICE, Elem: &Object{Type: &Type{Kind: K_INTERFACE}}}},
 							},
 						},
 						IsExported: true,
@@ -96,7 +96,7 @@ func TestAnalyzer_Validator(t *testing.T) {
 							Out:  []*Var{{Type: errorType}},
 						},
 						IsExported: true,
-					}}},
+					}}}},
 					Var: &types.Var{},
 				}},
 			},

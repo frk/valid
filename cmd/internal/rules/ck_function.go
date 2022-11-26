@@ -15,7 +15,7 @@ func (c *Checker) functionCheck(n *Node, r *Rule) error {
 	// to the function as its first argument.
 	p := r.Spec.FType.In[0].Type
 	if r.Spec.FType.IsVariadic && len(r.Spec.FType.In) == 1 {
-		p = p.Elem
+		p = p.Elem.Type
 	}
 	if p.CanAssign(n.Type) == gotype.ASSIGNMENT_INVALID {
 		return &Error{C: ERR_FUNCTION_INTYPE, ty: n.Type, r: r}
@@ -64,7 +64,7 @@ func (c *Checker) checkRuleArgsAsFuncParams(r *Rule) error {
 			j = last
 			p = &gotype.Var{
 				Name: params[j].Name,
-				Type: params[j].Type.Elem,
+				Type: params[j].Type.Elem.Type,
 			}
 
 		case i > last && r.Spec.JoinOp > 0:

@@ -56,10 +56,10 @@ func (an *Analyzer) Validator(named *types.Named) *Validator {
 		v.AfterValidateMethod = &MethodInfo{Name: name}
 	}
 	for _, f := range v.Type.Fields {
-		if IsErrorConstructor(f.Type) {
+		if IsErrorConstructor(f.Object.Type) {
 			v.ErrorHandlerField = new(ErrorHandlerField)
 			v.ErrorHandlerField.Name = f.Name
-		} else if IsErrorAggregator(f.Type) {
+		} else if IsErrorAggregator(f.Object.Type) {
 			v.ErrorHandlerField = new(ErrorHandlerField)
 			v.ErrorHandlerField.Name = f.Name
 			v.ErrorHandlerField.IsAggregator = true

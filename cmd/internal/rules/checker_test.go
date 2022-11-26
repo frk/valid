@@ -53,7 +53,6 @@ func TestCheckerCheck(t *testing.T) {
 		show bool
 	}{{
 		name: "Test_checker_Validator",
-		show: true,
 	}, {
 		name: "Test_ERR_FIELD_UNKNOWN_1_Validator",
 		err: &Error{
@@ -61,9 +60,9 @@ func TestCheckerCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"gt:&num"`,
-				Type: T.int,
-				Var:  T._var,
+				Tag:    `is:"gt:&num"`,
+				Object: &gotype.Object{Type: T.int},
+				Var:    T._var,
 			},
 			ty: T.int,
 			r: &Rule{
@@ -82,9 +81,9 @@ func TestCheckerCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `pre:"p4:&num"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `pre:"p4:&num"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -101,9 +100,9 @@ func TestCheckerCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"gt:.num"`,
-				Type: T.int,
-				Var:  T._var,
+				Tag:    `is:"gt:.num"`,
+				Object: &gotype.Object{Type: T.int},
+				Var:    T._var,
 			},
 			ty: T.int,
 			r: &Rule{
@@ -122,9 +121,9 @@ func TestCheckerCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `pre:"p4:.num"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `pre:"p4:.num"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -134,7 +133,6 @@ func TestCheckerCheck(t *testing.T) {
 			},
 			ra: &Arg{Type: ARG_FIELD_REL, Value: "X.num"},
 		},
-		show: true,
 	}, {
 		name: "Test_ERR_RULE_ARGMIN_1_Validator",
 		err: &Error{
@@ -142,9 +140,9 @@ func TestCheckerCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"gt"`,
-				Type: T.int,
-				Var:  T._var,
+				Tag:    `is:"gt"`,
+				Object: &gotype.Object{Type: T.int},
+				Var:    T._var,
 			},
 			ty: T.int,
 			r:  &Rule{Name: "gt", Spec: GetSpec("gt")},
@@ -156,9 +154,9 @@ func TestCheckerCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `pre:"p4"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `pre:"p4"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r:  &Rule{Name: "p4", Spec: GetSpec("pre:p4")},
@@ -170,9 +168,9 @@ func TestCheckerCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"gt:4:5"`,
-				Type: T.int,
-				Var:  T._var,
+				Tag:    `is:"gt:4:5"`,
+				Object: &gotype.Object{Type: T.int},
+				Var:    T._var,
 			},
 			ty: T.int,
 			r: &Rule{
@@ -191,9 +189,9 @@ func TestCheckerCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `pre:"p4:1:2:3"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `pre:"p4:1:2:3"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -213,9 +211,9 @@ func TestCheckerCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `pre:"p0"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `pre:"p0"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r:  &Rule{Name: "p0", Spec: GetSpec("pre:p0")},
@@ -303,19 +301,19 @@ func (test_values) iptr(i int) *int {
 }
 
 func (test_values) Slice(e *gotype.Type) *gotype.Type {
-	return &gotype.Type{Kind: gotype.K_SLICE, Elem: e}
+	return &gotype.Type{Kind: gotype.K_SLICE, Elem: &gotype.Object{Type: e}}
 }
 
 func (test_values) Array(n int64, e *gotype.Type) *gotype.Type {
-	return &gotype.Type{Kind: gotype.K_ARRAY, ArrayLen: n, Elem: e}
+	return &gotype.Type{Kind: gotype.K_ARRAY, ArrayLen: n, Elem: &gotype.Object{Type: e}}
 }
 
 func (test_values) Ptr(e *gotype.Type) *gotype.Type {
-	return &gotype.Type{Kind: gotype.K_PTR, Elem: e}
+	return &gotype.Type{Kind: gotype.K_PTR, Elem: &gotype.Object{Type: e}}
 }
 
 func (test_values) Map(k, e *gotype.Type) *gotype.Type {
-	return &gotype.Type{Kind: gotype.K_MAP, Key: k, Elem: e}
+	return &gotype.Type{Kind: gotype.K_MAP, Key: &gotype.Object{Type: k}, Elem: &gotype.Object{Type: e}}
 }
 
 var T = test_values{

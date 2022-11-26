@@ -24,22 +24,22 @@ func TestChecker_lengthCheck(t *testing.T) {
 		Kind: gotype.K_STRUCT,
 		Name: "Time",
 		Fields: []*gotype.StructField{{
-			Pkg:  timepkg,
-			Name: "wall",
-			Type: T.uint64,
-			Var:  T._var,
+			Pkg:    timepkg,
+			Name:   "wall",
+			Object: &gotype.Object{Type: T.uint64},
+			Var:    T._var,
 		}, {
-			Pkg:  timepkg,
-			Name: "ext",
-			Type: T.int64,
-			Var:  T._var,
+			Pkg:    timepkg,
+			Name:   "ext",
+			Object: &gotype.Object{Type: T.int64},
+			Var:    T._var,
 		}, {
 			Pkg:  timepkg,
 			Name: "loc",
-			Type: &gotype.Type{
+			Object: &gotype.Object{Type: &gotype.Type{
 				Kind: gotype.K_PTR,
-				Elem: T.loc,
-			},
+				Elem: &gotype.Object{Type: T.loc},
+			}},
 			Var: T._var,
 		}},
 		IsExported: true,
@@ -57,9 +57,9 @@ func TestChecker_lengthCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"len:10"`,
-				Type: T.uint,
-				Var:  T._var,
+				Tag:    `is:"len:10"`,
+				Object: &gotype.Object{Type: T.uint},
+				Var:    T._var,
 			},
 			ty: T.uint,
 			r: &Rule{
@@ -74,9 +74,9 @@ func TestChecker_lengthCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"len:10"`,
-				Type: mytime,
-				Var:  T._var,
+				Tag:    `is:"len:10"`,
+				Object: &gotype.Object{Type: mytime},
+				Var:    T._var,
 			},
 			ty: mytime,
 			r: &Rule{
@@ -91,9 +91,9 @@ func TestChecker_lengthCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"runecount:10"`,
-				Type: T.uint,
-				Var:  T._var,
+				Tag:    `is:"runecount:10"`,
+				Object: &gotype.Object{Type: T.uint},
+				Var:    T._var,
 			},
 			ty: T.uint,
 			r: &Rule{
@@ -108,9 +108,9 @@ func TestChecker_lengthCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"runecount:10"`,
-				Type: mytime,
-				Var:  T._var,
+				Tag:    `is:"runecount:10"`,
+				Object: &gotype.Object{Type: mytime},
+				Var:    T._var,
 			},
 			ty: mytime,
 			r: &Rule{
@@ -125,9 +125,9 @@ func TestChecker_lengthCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"runecount:10"`,
-				Type: T.Slice(T.rune),
-				Var:  T._var,
+				Tag:    `is:"runecount:10"`,
+				Object: &gotype.Object{Type: T.Slice(T.rune)},
+				Var:    T._var,
 			},
 			ty: T.Slice(T.rune),
 			r: &Rule{
@@ -142,9 +142,9 @@ func TestChecker_lengthCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"runecount:10"`,
-				Type: T.Slice(T.int32),
-				Var:  T._var,
+				Tag:    `is:"runecount:10"`,
+				Object: &gotype.Object{Type: T.Slice(T.int32)},
+				Var:    T._var,
 			},
 			ty: T.Slice(T.int32),
 			r: &Rule{
@@ -159,9 +159,9 @@ func TestChecker_lengthCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"runecount:10"`,
-				Type: T.Slice(T.uint),
-				Var:  T._var,
+				Tag:    `is:"runecount:10"`,
+				Object: &gotype.Object{Type: T.Slice(T.uint)},
+				Var:    T._var,
 			},
 			ty: T.Slice(T.uint),
 			r: &Rule{
@@ -176,9 +176,9 @@ func TestChecker_lengthCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"runecount:10"`,
-				Type: T.Array(21, T.byte),
-				Var:  T._var,
+				Tag:    `is:"runecount:10"`,
+				Object: &gotype.Object{Type: T.Array(21, T.byte)},
+				Var:    T._var,
 			},
 			ty: T.Array(21, T.byte),
 			r: &Rule{
@@ -193,9 +193,9 @@ func TestChecker_lengthCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"len:"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"len:"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -210,9 +210,9 @@ func TestChecker_lengthCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"len::"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"len::"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -227,9 +227,9 @@ func TestChecker_lengthCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"runecount::"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"runecount::"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -244,9 +244,9 @@ func TestChecker_lengthCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"len:10:5"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"len:10:5"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -261,9 +261,9 @@ func TestChecker_lengthCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"runecount:100:99"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"runecount:100:99"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -278,9 +278,9 @@ func TestChecker_lengthCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"len:42:42"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"len:42:42"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -295,9 +295,9 @@ func TestChecker_lengthCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"len:foo"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"len:foo"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			r: &Rule{
 				Name: "len",
@@ -312,9 +312,9 @@ func TestChecker_lengthCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"runecount:123.987"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"runecount:123.987"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			r: &Rule{
 				Name: "runecount",
@@ -329,9 +329,9 @@ func TestChecker_lengthCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"len:-123"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"len:-123"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			r: &Rule{
 				Name: "len",
@@ -346,9 +346,9 @@ func TestChecker_lengthCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"runecount:&S.F"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"runecount:&S.F"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			r: &Rule{
 				Name: "runecount",

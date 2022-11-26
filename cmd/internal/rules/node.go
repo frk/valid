@@ -87,18 +87,18 @@ func (c *Checker) makeNode(t *gotype.Type, is, pre *Tag, fs gotype.FieldSelector
 	// descend the type hierarchy
 	switch t.Kind {
 	case gotype.K_ARRAY:
-		if base.Elem, err = c.makeNode(t.Elem, is.GetElem(), pre.GetElem(), fs); err != nil {
+		if base.Elem, err = c.makeNode(t.Elem.Type, is.GetElem(), pre.GetElem(), fs); err != nil {
 			return nil, err
 		}
 	case gotype.K_SLICE:
-		if base.Elem, err = c.makeNode(t.Elem, is.GetElem(), pre.GetElem(), fs); err != nil {
+		if base.Elem, err = c.makeNode(t.Elem.Type, is.GetElem(), pre.GetElem(), fs); err != nil {
 			return nil, err
 		}
 	case gotype.K_MAP:
-		if base.Key, err = c.makeNode(t.Key, is.GetKey(), pre.GetKey(), fs); err != nil {
+		if base.Key, err = c.makeNode(t.Key.Type, is.GetKey(), pre.GetKey(), fs); err != nil {
 			return nil, err
 		}
-		if base.Elem, err = c.makeNode(t.Elem, is.GetElem(), pre.GetElem(), fs); err != nil {
+		if base.Elem, err = c.makeNode(t.Elem.Type, is.GetElem(), pre.GetElem(), fs); err != nil {
 			return nil, err
 		}
 	case gotype.K_STRUCT:
@@ -207,9 +207,9 @@ func (c *Checker) makeNodeFromPtr(t *gotype.Type, is, pre *Tag, fs gotype.FieldS
 
 		// resolve base
 		ptr := *base
-		base.Elem = &Node{Type: t.Elem, Ptr: &ptr}
+		base.Elem = &Node{Type: t.Elem.Type, Ptr: &ptr}
 		base = base.Elem
-		t = t.Elem
+		t = t.Elem.Type
 	}
 
 	// apply base specific rules
@@ -299,7 +299,7 @@ func (c *Checker) makeFieldNode(f *gotype.StructField, fs gotype.FieldSelector) 
 	n.Key = c.fieldKey(n.Selector, false)
 
 	is, pre := parseTag(f.Tag, "is"), parseTag(f.Tag, "pre")
-	if n.Type, err = c.makeNode(f.Type, is, pre, n.Selector); err != nil {
+	if n.Type, err = c.makeNode(f.Object.Type, is, pre, n.Selector); err != nil {
 		return nil, err
 	}
 

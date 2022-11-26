@@ -23,9 +23,9 @@ func TestChecker_functionCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"contains:foo"`,
-				Type: T.int,
-				Var:  T._var,
+				Tag:    `is:"contains:foo"`,
+				Object: &gotype.Object{Type: T.int},
+				Var:    T._var,
 			},
 			ty: T.int,
 			r: &Rule{
@@ -42,9 +42,9 @@ func TestChecker_functionCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"uuid:v6"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"uuid:v6"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -64,9 +64,9 @@ func TestChecker_functionCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"alpha:foo"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"alpha:foo"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -86,9 +86,9 @@ func TestChecker_functionCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"alnum:foo"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"alnum:foo"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -108,9 +108,9 @@ func TestChecker_functionCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"ccy:foo"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"ccy:foo"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -131,9 +131,9 @@ func TestChecker_functionCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"decimal:foo"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"decimal:foo"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -153,9 +153,9 @@ func TestChecker_functionCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"hash:foo"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"hash:foo"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -175,9 +175,9 @@ func TestChecker_functionCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"ip:5"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"ip:5"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -197,9 +197,9 @@ func TestChecker_functionCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"isbn:12"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"isbn:12"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -219,9 +219,9 @@ func TestChecker_functionCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"iso639:3"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"iso639:3"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -241,9 +241,9 @@ func TestChecker_functionCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"iso31661a:1"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"iso31661a:1"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -263,9 +263,9 @@ func TestChecker_functionCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"mac:7"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"mac:7"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -285,9 +285,9 @@ func TestChecker_functionCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"re:[0-9)?"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"re:[0-9)?"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -308,9 +308,9 @@ func TestChecker_functionCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"uuid:6"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"uuid:6"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -330,9 +330,9 @@ func TestChecker_functionCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"phone:foo"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"phone:foo"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -352,9 +352,9 @@ func TestChecker_functionCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"vat:foo"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"vat:foo"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -374,9 +374,9 @@ func TestChecker_functionCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"zip:foo"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"zip:foo"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{

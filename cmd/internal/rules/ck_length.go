@@ -17,7 +17,7 @@ func (c *Checker) lengthCheck(n *Node, r *Rule) error {
 		}
 	case "runecount":
 		// tn must be string kind or byte slice
-		if n.Type.Kind != gotype.K_STRING && (n.Type.Kind != gotype.K_SLICE || !n.Type.Elem.IsByte) {
+		if n.Type.Kind != gotype.K_STRING && (n.Type.Kind != gotype.K_SLICE || !n.Type.Elem.Type.IsByte) {
 			return &Error{C: ERR_LENGTH_NORUNE, ty: n.Type, r: r}
 		}
 	}

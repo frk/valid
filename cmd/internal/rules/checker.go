@@ -432,7 +432,7 @@ func (c *Checker) canConvertRuleArg(t *gotype.Type, arg *Arg) bool {
 
 	// arg is string & string can be converted to t, accept
 	if arg.Type == ARG_STRING && (t.Kind == gotype.K_STRING || (t.Kind == gotype.K_SLICE &&
-		t.Elem.Name == "" && (t.Elem.Kind == gotype.K_UINT8 || t.Elem.Kind == gotype.K_INT32))) {
+		t.Elem.Type.Name == "" && (t.Elem.Type.Kind == gotype.K_UINT8 || t.Elem.Type.Kind == gotype.K_INT32))) {
 		return true
 	}
 

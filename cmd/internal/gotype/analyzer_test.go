@@ -74,49 +74,49 @@ func TestAnalyzer_Analyze(t *testing.T) {
 	}, {
 		ty: test_type("IntSlice"),
 		want: &Type{Pkg: p0, Name: "IntSlice", Kind: K_SLICE, IsExported: true,
-			Elem: &Type{Pkg: p0, Name: "IntType", Kind: K_INT, IsExported: true}},
+			Elem: &Object{Type: &Type{Pkg: p0, Name: "IntType", Kind: K_INT, IsExported: true}}},
 	}, {
 		ty: test_type("strSlice"),
 		want: &Type{Pkg: p0, Name: "strSlice", Kind: K_SLICE,
-			Elem: T.string},
+			Elem: &Object{Type: T.string}},
 	}, {
 		ty: test_type("byteSlice"),
 		want: &Type{Pkg: p0, Name: "byteSlice", Kind: K_SLICE,
-			Elem: &Type{Kind: K_BYTE, IsByte: true}},
+			Elem: &Object{Type: &Type{Kind: K_BYTE, IsByte: true}}},
 	}, {
 		ty: test_type("runeSlice"),
 		want: &Type{Pkg: p0, Name: "runeSlice", Kind: K_SLICE,
-			Elem: &Type{Kind: K_RUNE, IsRune: true}},
+			Elem: &Object{Type: &Type{Kind: K_RUNE, IsRune: true}}},
 	}, {
 		ty: test_type("unsafePointerSlice"),
 		want: &Type{Pkg: p0, Name: "unsafePointerSlice", Kind: K_SLICE,
-			Elem: &Type{Kind: K_UNSAFEPOINTER}},
+			Elem: &Object{Type: &Type{Kind: K_UNSAFEPOINTER}}},
 	}, {
 		ty: test_type("IntArray"),
 		want: &Type{Pkg: p0, Name: "IntArray", Kind: K_ARRAY, ArrayLen: 10, IsExported: true,
-			Elem: &Type{Pkg: p0, Name: "IntType", Kind: K_INT, IsExported: true}},
+			Elem: &Object{Type: &Type{Pkg: p0, Name: "IntType", Kind: K_INT, IsExported: true}}},
 	}, {
 		ty: test_type("strArray"),
 		want: &Type{Pkg: p0, Name: "strArray", Kind: K_ARRAY, ArrayLen: 4,
-			Elem: T.string},
+			Elem: &Object{Type: T.string}},
 	}, {
 		ty: test_type("Str2BoolMap"),
 		want: &Type{Pkg: p0, Name: "Str2BoolMap", Kind: K_MAP, IsExported: true,
-			Key:  &Type{Pkg: p0, Name: "StringType", Kind: K_STRING, IsExported: true},
-			Elem: T.bool},
+			Key:  &Object{Type: &Type{Pkg: p0, Name: "StringType", Kind: K_STRING, IsExported: true}},
+			Elem: &Object{Type: T.bool}},
 	}, {
 		ty: test_type("str2BoolMap"),
 		want: &Type{Pkg: p0, Name: "str2BoolMap", Kind: K_MAP,
-			Key:  T.string,
-			Elem: &Type{Pkg: p0, Name: "BoolType", Kind: K_BOOL, IsExported: true}},
+			Key:  &Object{Type: T.string},
+			Elem: &Object{Type: &Type{Pkg: p0, Name: "BoolType", Kind: K_BOOL, IsExported: true}}},
 	}, {
 		ty: test_type("StrPointer"),
 		want: &Type{Pkg: p0, Name: "StrPointer", Kind: K_PTR, IsExported: true,
-			Elem: &Type{Pkg: p0, Name: "StringType", Kind: K_STRING, IsExported: true}},
+			Elem: &Object{Type: &Type{Pkg: p0, Name: "StringType", Kind: K_STRING, IsExported: true}}},
 	}, {
 		ty: test_type("strPointer"),
 		want: &Type{Pkg: p0, Name: "strPointer", Kind: K_PTR,
-			Elem: T.string},
+			Elem: &Object{Type: T.string}},
 	}, {
 		ty: test_type("IfaceType"),
 		want: &Type{Pkg: p0, Name: "IfaceType", Kind: K_INTERFACE, IsExported: true,
@@ -163,20 +163,20 @@ func TestAnalyzer_Analyze(t *testing.T) {
 		ty: test_type("StructType"),
 		want: &Type{Pkg: p0, Name: "StructType", Kind: K_STRUCT, IsExported: true,
 			Fields: []*StructField{
-				{Pkg: p0, Name: "F1", Type: T.string, Tag: `is:"some_rule"`, IsExported: true, Var: &types.Var{}},
-				{Pkg: p0, Name: "f2", Type: T.bool, Tag: `foo bar baz`, IsExported: false, Var: &types.Var{}},
+				{Pkg: p0, Name: "F1", Object: &Object{Type: T.string}, Tag: `is:"some_rule"`, IsExported: true, Var: &types.Var{}},
+				{Pkg: p0, Name: "f2", Object: &Object{Type: T.bool}, Tag: `foo bar baz`, IsExported: false, Var: &types.Var{}},
 			}},
 	}, {
 		ty: test_type("structType"),
 		want: &Type{Pkg: p0, Name: "structType", Kind: K_STRUCT,
 			Fields: []*StructField{
-				{Pkg: p0, Name: "f1", Type: &Type{
+				{Pkg: p0, Name: "f1", Object: &Object{Type: &Type{
 					Pkg:        p1,
 					Name:       "ConstType1",
 					Kind:       K_UINT,
 					IsExported: true,
-				}, Tag: `is:"some_rule"`, Var: &types.Var{}},
-				{Pkg: p0, Name: "f2", Type: &Type{
+				}}, Tag: `is:"some_rule"`, Var: &types.Var{}},
+				{Pkg: p0, Name: "f2", Object: &Object{Type: &Type{
 					Pkg:        p1,
 					Name:       "Struct",
 					Kind:       K_STRUCT,
@@ -184,32 +184,34 @@ func TestAnalyzer_Analyze(t *testing.T) {
 					Fields: []*StructField{{
 						Pkg:        p1,
 						Name:       "Field",
-						Type:       T.string,
+						Object:     &Object{Type: T.string},
 						Tag:        `key:"value"`,
 						IsExported: true,
 						Var:        &types.Var{},
 					}},
-				}, Tag: `is:"some_rule"`, Var: &types.Var{}},
+				}}, Tag: `is:"some_rule"`, Var: &types.Var{}},
 			}},
 	}, {
 		ty: test_type("recursiveSlice"),
 		want: func() *Type {
 			t := &Type{Pkg: p0, Name: "recursiveSlice", Kind: K_SLICE}
-			t.Elem = t
+			t.Elem = &Object{Type: t}
 			return t
 		}(),
 	}, {
 		ty: test_type("RecursiveStruct"),
 		want: func() *Type {
 			t := &Type{Pkg: p0, Name: "RecursiveStruct", Kind: K_STRUCT, IsExported: true}
-			t.Fields = []*StructField{{Pkg: p0, Name: "F1", Type: &Type{Kind: K_PTR, Elem: t}, IsExported: true, Var: &types.Var{}}}
+			t.Fields = []*StructField{{Pkg: p0, Name: "F1",
+				Object:     &Object{Type: &Type{Kind: K_PTR, Elem: &Object{Type: t}}},
+				IsExported: true, Var: &types.Var{}}}
 			return t
 		}(),
 	}, {
 		ty: test_type("genMap1"),
 		want: &Type{Pkg: p0, Name: "genMap1", Kind: K_MAP,
-			Key:  &Type{Kind: K_INTERFACE, Name: "comparable"},
-			Elem: &Type{Kind: K_INTERFACE},
+			Key:  &Object{Type: &Type{Kind: K_INTERFACE, Name: "comparable"}},
+			Elem: &Object{Type: &Type{Kind: K_INTERFACE}},
 			TypeParams: []*TypeParam{{
 				Pkg: p0, Name: "K",
 				Constraint: &Type{Kind: K_INTERFACE, Name: "comparable"},
@@ -221,12 +223,12 @@ func TestAnalyzer_Analyze(t *testing.T) {
 	}, {
 		ty: test_type("genMap2"),
 		want: &Type{Pkg: p0, Name: "genMap2", Kind: K_MAP,
-			Key: &Type{Kind: K_INTERFACE, Embeddeds: []*Type{
+			Key: &Object{Type: &Type{Kind: K_INTERFACE, Embeddeds: []*Type{
 				{Kind: K_UNION, Terms: []*Term{
 					{Tilde: true, Type: T.string},
 				}},
-			}},
-			Elem: &Type{Kind: K_INTERFACE},
+			}}},
+			Elem: &Object{Type: &Type{Kind: K_INTERFACE}},
 			TypeParams: []*TypeParam{{
 				Pkg: p0, Name: "K",
 				Constraint: &Type{Kind: K_INTERFACE, Embeddeds: []*Type{

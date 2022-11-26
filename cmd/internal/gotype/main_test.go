@@ -90,7 +90,7 @@ var T = test_values{
 	bool:    &Type{Kind: K_BOOL},
 	rune:    &Type{Kind: K_INT32, IsRune: true},
 	byte:    &Type{Kind: K_UINT8, IsByte: true},
-	bytes:   &Type{Kind: K_SLICE, Elem: &Type{Kind: K_UINT8, IsByte: true}},
+	bytes:   &Type{Kind: K_SLICE, Elem: &Object{Type: &Type{Kind: K_UINT8, IsByte: true}}},
 	error: &Type{Kind: K_INTERFACE, Name: "error",
 		Methods: []*Method{{Name: "Error", IsExported: true,
 			Type: &Type{Kind: K_FUNC, Out: []*Var{{Type: &Type{Kind: K_STRING}}}},

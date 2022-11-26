@@ -23,9 +23,9 @@ func TestChecker_orderedCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"min:8"`,
-				Type: T.Slice(T.string),
-				Var:  T._var,
+				Tag:    `is:"min:8"`,
+				Object: &gotype.Object{Type: T.Slice(T.string)},
+				Var:    T._var,
 			},
 			ty: T.Slice(T.string),
 			r: &Rule{
@@ -40,9 +40,9 @@ func TestChecker_orderedCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"gt:8"`,
-				Type: T.Slice(T.int),
-				Var:  T._var,
+				Tag:    `is:"gt:8"`,
+				Object: &gotype.Object{Type: T.Slice(T.int)},
+				Var:    T._var,
 			},
 			ty: T.Slice(T.int),
 			r: &Rule{
@@ -57,9 +57,9 @@ func TestChecker_orderedCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"gte:0.8"`,
-				Type: T.int,
-				Var:  T._var,
+				Tag:    `is:"gte:0.8"`,
+				Object: &gotype.Object{Type: T.int},
+				Var:    T._var,
 			},
 			ty: T.int,
 			r: &Rule{
@@ -75,9 +75,9 @@ func TestChecker_orderedCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"gte:foo"`,
-				Type: T.float64,
-				Var:  T._var,
+				Tag:    `is:"gte:foo"`,
+				Object: &gotype.Object{Type: T.float64},
+				Var:    T._var,
 			},
 			ty: T.float64,
 			r: &Rule{
@@ -93,9 +93,9 @@ func TestChecker_orderedCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"lte:&S.F"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"lte:&S.F"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{

@@ -198,7 +198,7 @@ func (e *Error) FieldPos() string {
 }
 
 func (e *Error) Field() string {
-	return fmt.Sprintf("%s %s `%s`", e.sf.Name, e.sf.Type.TypeString(nil), e.sf.Tag)
+	return fmt.Sprintf("%s %s `%s`", e.sf.Name, e.sf.Object.Type.TypeString(nil), e.sf.Tag)
 }
 
 func (e *Error) FieldName() string {
@@ -206,19 +206,19 @@ func (e *Error) FieldName() string {
 }
 
 func (e *Error) FieldType() string {
-	return e.sf.Type.TypeString(nil)
+	return e.sf.Object.Type.TypeString(nil)
 }
 
 func (e *Error) FieldTypeFamily() string {
 	switch {
-	case e.sf.Type.Kind.IsFloat():
+	case e.sf.Object.Type.Kind.IsFloat():
 		return "float"
-	case e.sf.Type.Kind.IsUnsigned():
+	case e.sf.Object.Type.Kind.IsUnsigned():
 		return "uint"
-	case e.sf.Type.Kind.IsInteger():
+	case e.sf.Object.Type.Kind.IsInteger():
 		return "int"
 	}
-	return e.sf.Type.TypeString(nil)
+	return e.sf.Object.Type.TypeString(nil)
 }
 
 func (e *Error) Tag() string {
@@ -350,7 +350,7 @@ func (e *Error) RuleArgValue() string {
 
 func (e *Error) RuleArgType() string {
 	if e.ra.Type == ARG_FIELD_ABS || e.ra.Type == ARG_FIELD_REL {
-		return e.raf.Type.TypeString(nil)
+		return e.raf.Object.Type.TypeString(nil)
 	}
 	return e.ra.Type.String()
 }
@@ -360,7 +360,7 @@ func (e *Error) RuleArgIsField() bool {
 }
 
 func (e *Error) RuleArgFieldType() string {
-	return e.raf.Type.TypeString(nil)
+	return e.raf.Object.Type.TypeString(nil)
 }
 
 type ErrorCode uint

@@ -125,18 +125,18 @@ func (a *Analyzer) Analyze(t types.Type) (u *Type) {
 		u.IsByte = T.Name() == "byte"
 	case *types.Slice:
 		u.Kind = K_SLICE
-		u.Elem = a.Analyze(T.Elem())
+		u.Elem = &Object{Type: a.Analyze(T.Elem())}
 	case *types.Array:
 		u.Kind = K_ARRAY
-		u.Elem = a.Analyze(T.Elem())
+		u.Elem = &Object{Type: a.Analyze(T.Elem())}
 		u.ArrayLen = T.Len()
 	case *types.Map:
 		u.Kind = K_MAP
-		u.Key = a.Analyze(T.Key())
-		u.Elem = a.Analyze(T.Elem())
+		u.Key = &Object{Type: a.Analyze(T.Key())}
+		u.Elem = &Object{Type: a.Analyze(T.Elem())}
 	case *types.Pointer:
 		u.Kind = K_PTR
-		u.Elem = a.Analyze(T.Elem())
+		u.Elem = &Object{Type: a.Analyze(T.Elem())}
 	case *types.Interface:
 		u.Kind = K_INTERFACE
 		u.Methods = a.analyzeMethods(T)
@@ -176,7 +176,7 @@ func (a *Analyzer) analyzeFields(stype *types.Struct) (fields []*StructField) {
 		f.CanIgnore = (tag.First("is") == "-")
 		f.IsEmbedded = fvar.Embedded()
 		f.IsExported = fvar.Exported()
-		f.Type = a.Analyze(fvar.Type())
+		f.Object = &Object{Type: a.Analyze(fvar.Type())}
 		f.Var = fvar
 
 		if pkg := fvar.Pkg(); pkg != nil {

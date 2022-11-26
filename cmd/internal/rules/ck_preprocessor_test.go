@@ -91,9 +91,9 @@ func TestChecker_preprocessorCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `pre:"p1"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `pre:"p1"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -107,9 +107,9 @@ func TestChecker_preprocessorCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `pre:"p2"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `pre:"p2"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -123,9 +123,9 @@ func TestChecker_preprocessorCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `pre:"p4:foo"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `pre:"p4:foo"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{

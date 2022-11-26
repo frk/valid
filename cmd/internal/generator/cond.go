@@ -180,7 +180,7 @@ func (b *bb) lengthCondExpr(n *rules.Node, r *rules.Rule) GO.ExprNode {
 		expr := GO.CallExpr{Args: GO.ArgsList{List: b.val}}
 		if n.Type.Kind == gotype.K_STRING {
 			expr.Fun = GO.QualifiedIdent{pkg.name, "RuneCountInString"}
-		} else if n.Type.Kind == gotype.K_SLICE && n.Type.Elem.IsByte {
+		} else if n.Type.Kind == gotype.K_SLICE && n.Type.Elem.Type.IsByte {
 			expr.Fun = GO.QualifiedIdent{pkg.name, "RuneCount"}
 		} else {
 			panic("shouldn't reach")
@@ -242,7 +242,7 @@ func (b *bb) functionCondExpr(n *rules.Node, r *rules.Rule) (x GO.ExprNode) {
 	// check if it needs to be converted or not.
 	v, t := b.val, r.Spec.FType.In[0].Type
 	if r.Spec.FType.IsVariadic && len(r.Spec.FType.In) == 1 {
-		t = t.Elem
+		t = t.Elem.Type
 	}
 	if n.Type.NeedsConversion(t) {
 		T := GO.Ident{t.TypeString(nil)}
@@ -327,7 +327,7 @@ func (b *bb) functionCallExpr(n *rules.Node, r *rules.Rule) (x GO.ExprNode) {
 	// check if it needs to be converted or not.
 	v, t := b.val, r.Spec.FType.In[0].Type
 	if r.Spec.FType.IsVariadic && len(r.Spec.FType.In) == 1 {
-		t = t.Elem
+		t = t.Elem.Type
 	}
 	if n.Type.NeedsConversion(t) {
 		T := GO.Ident{t.TypeString(nil)}

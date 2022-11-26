@@ -25,9 +25,9 @@ func TestChecker_rangeCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"rng:10:20"`,
-				Type: T.string,
-				Var:  T._var,
+				Tag:    `is:"rng:10:20"`,
+				Object: &gotype.Object{Type: T.string},
+				Var:    T._var,
 			},
 			ty: T.string,
 			r: &Rule{
@@ -45,9 +45,9 @@ func TestChecker_rangeCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"rng:10:20"`,
-				Type: T.Slice(T.int),
-				Var:  T._var,
+				Tag:    `is:"rng:10:20"`,
+				Object: &gotype.Object{Type: T.Slice(T.int)},
+				Var:    T._var,
 			},
 			ty: T.Slice(T.int),
 			r: &Rule{
@@ -65,9 +65,9 @@ func TestChecker_rangeCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"rng::"`,
-				Type: T.int,
-				Var:  T._var,
+				Tag:    `is:"rng::"`,
+				Object: &gotype.Object{Type: T.int},
+				Var:    T._var,
 			},
 			ty: T.int,
 			r: &Rule{
@@ -82,9 +82,9 @@ func TestChecker_rangeCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"rng:10:"`,
-				Type: T.int,
-				Var:  T._var,
+				Tag:    `is:"rng:10:"`,
+				Object: &gotype.Object{Type: T.int},
+				Var:    T._var,
 			},
 			ty: T.int,
 			r: &Rule{
@@ -99,9 +99,9 @@ func TestChecker_rangeCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"rng::20"`,
-				Type: T.int,
-				Var:  T._var,
+				Tag:    `is:"rng::20"`,
+				Object: &gotype.Object{Type: T.int},
+				Var:    T._var,
 			},
 			ty: T.int,
 			r: &Rule{
@@ -116,9 +116,9 @@ func TestChecker_rangeCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"rng:foo:20"`,
-				Type: T.int,
-				Var:  T._var,
+				Tag:    `is:"rng:foo:20"`,
+				Object: &gotype.Object{Type: T.int},
+				Var:    T._var,
 			},
 			ty: T.int,
 			r: &Rule{
@@ -137,9 +137,9 @@ func TestChecker_rangeCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"rng:3.14:20"`,
-				Type: T.int,
-				Var:  T._var,
+				Tag:    `is:"rng:3.14:20"`,
+				Object: &gotype.Object{Type: T.int},
+				Var:    T._var,
 			},
 			ty: T.int,
 			r: &Rule{
@@ -158,9 +158,9 @@ func TestChecker_rangeCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"rng:-10:20"`,
-				Type: T.uint16,
-				Var:  T._var,
+				Tag:    `is:"rng:-10:20"`,
+				Object: &gotype.Object{Type: T.uint16},
+				Var:    T._var,
 			},
 			ty: T.uint16,
 			r: &Rule{
@@ -179,9 +179,9 @@ func TestChecker_rangeCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"rng:&S.F:20"`,
-				Type: T.int,
-				Var:  T._var,
+				Tag:    `is:"rng:&S.F:20"`,
+				Object: &gotype.Object{Type: T.int},
+				Var:    T._var,
 			},
 			ty: T.int,
 			r: &Rule{
@@ -201,9 +201,9 @@ func TestChecker_rangeCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"rng:20:10"`,
-				Type: T.int,
-				Var:  T._var,
+				Tag:    `is:"rng:20:10"`,
+				Object: &gotype.Object{Type: T.int},
+				Var:    T._var,
 			},
 			ty: T.int,
 			r: &Rule{
@@ -221,9 +221,9 @@ func TestChecker_rangeCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"rng:10:10"`,
-				Type: T.int,
-				Var:  T._var,
+				Tag:    `is:"rng:10:10"`,
+				Object: &gotype.Object{Type: T.int},
+				Var:    T._var,
 			},
 			ty: T.int,
 			r: &Rule{
@@ -241,9 +241,9 @@ func TestChecker_rangeCheck(t *testing.T) {
 			sf: &gotype.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
-				Tag:  `is:"rng:10:-20"`,
-				Type: T.int,
-				Var:  T._var,
+				Tag:    `is:"rng:10:-20"`,
+				Object: &gotype.Object{Type: T.int},
+				Var:    T._var,
 			},
 			ty: T.int,
 			r: &Rule{

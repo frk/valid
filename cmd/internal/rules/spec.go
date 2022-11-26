@@ -364,7 +364,7 @@ func validateArgOptsAsFuncParams(s *Spec) error {
 			j = last
 			p = &gotype.Var{
 				Name: params[j].Name,
-				Type: params[j].Type.Elem,
+				Type: params[j].Type.Elem.Type,
 			}
 
 		case i > last && s.JoinOp > 0:
@@ -410,7 +410,7 @@ func (s *Spec) getFuncParamByArgIndex(i int) (p *gotype.Var, pi int) {
 
 	case i >= last && s.FType.IsVariadic:
 		p := params[last]
-		return &gotype.Var{Name: p.Name, Type: p.Type.Elem}, last
+		return &gotype.Var{Name: p.Name, Type: p.Type.Elem.Type}, last
 
 	case i > last && s.JoinOp > 0:
 		if len(s.ArgOpts)-i >= len(params) {
