@@ -1,4 +1,4 @@
-package gotype
+package xtypes
 
 import (
 	"testing"
@@ -8,11 +8,11 @@ import (
 
 func TestConsts(t *testing.T) {
 	pkg0 := Pkg{
-		Path: "github.com/frk/valid/cmd/internal/gotype/testdata",
+		Path: "github.com/frk/valid/cmd/internal/xtypes/testdata",
 		Name: "testdata",
 	}
 	pkg1 := Pkg{
-		Path: "github.com/frk/valid/cmd/internal/gotype/testdata/mypkg",
+		Path: "github.com/frk/valid/cmd/internal/xtypes/testdata/mypkg",
 		Name: "mypkg",
 	}
 

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/frk/valid/cmd/internal/config"
-	"github.com/frk/valid/cmd/internal/gotype"
+	"github.com/frk/valid/cmd/internal/xtypes"
 
 	"github.com/frk/compare"
 )
@@ -20,11 +20,11 @@ func TestChecker_orderedCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_ORDERED_TYPE_1_Validator",
 		err: &Error{C: ERR_ORDERED_TYPE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"min:8"`,
-				Object: &gotype.Object{Type: T.Slice(T.string)},
+				Object: &xtypes.Object{Type: T.Slice(T.string)},
 				Var:    T._var,
 			},
 			ty: T.Slice(T.string),
@@ -37,11 +37,11 @@ func TestChecker_orderedCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_ORDERED_TYPE_2_Validator",
 		err: &Error{C: ERR_ORDERED_TYPE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"gt:8"`,
-				Object: &gotype.Object{Type: T.Slice(T.int)},
+				Object: &xtypes.Object{Type: T.Slice(T.int)},
 				Var:    T._var,
 			},
 			ty: T.Slice(T.int),
@@ -54,11 +54,11 @@ func TestChecker_orderedCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_ORDERED_ARGTYPE_1_Validator",
 		err: &Error{C: ERR_ORDERED_ARGTYPE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"gte:0.8"`,
-				Object: &gotype.Object{Type: T.int},
+				Object: &xtypes.Object{Type: T.int},
 				Var:    T._var,
 			},
 			ty: T.int,
@@ -72,11 +72,11 @@ func TestChecker_orderedCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_ORDERED_ARGTYPE_2_Validator",
 		err: &Error{C: ERR_ORDERED_ARGTYPE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"gte:foo"`,
-				Object: &gotype.Object{Type: T.float64},
+				Object: &xtypes.Object{Type: T.float64},
 				Var:    T._var,
 			},
 			ty: T.float64,
@@ -90,11 +90,11 @@ func TestChecker_orderedCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_ORDERED_ARGTYPE_3_Validator",
 		err: &Error{C: ERR_ORDERED_ARGTYPE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"lte:&S.F"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,

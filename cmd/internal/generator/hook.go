@@ -1,12 +1,12 @@
 package generator
 
 import (
-	"github.com/frk/valid/cmd/internal/gotype"
+	"github.com/frk/valid/cmd/internal/xtypes"
 
 	GO "github.com/frk/ast/golang"
 )
 
-func hookAST(h *gotype.MethodInfo, b bb) {
+func hookAST(h *xtypes.MethodInfo, b bb) {
 	call := GO.CallExpr{}
 	call.Fun = GO.SelectorExpr{X: b.g.recv, Sel: GO.Ident{h.Name}}
 

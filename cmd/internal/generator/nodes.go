@@ -3,8 +3,8 @@ package generator
 import (
 	"fmt"
 
-	"github.com/frk/valid/cmd/internal/gotype"
 	"github.com/frk/valid/cmd/internal/rules"
+	"github.com/frk/valid/cmd/internal/xtypes"
 )
 
 var _ = fmt.Println
@@ -89,16 +89,16 @@ func nodesAST(n *rules.Node, b bb) {
 		b.isruleStmt(n)
 		nodesAST(n, b.new())
 
-	case n.Type.Is(gotype.K_ARRAY, gotype.K_SLICE):
+	case n.Type.Is(xtypes.K_ARRAY, xtypes.K_SLICE):
 		rc := b.arrayForStmt(n)
 		nodesAST(n.Elem, b.with(rc.Value))
 
-	case n.Type.Is(gotype.K_MAP):
+	case n.Type.Is(xtypes.K_MAP):
 		rc := b.mapForStmt(n)
 		nodesAST(n.Key, b.with(rc.Key))
 		nodesAST(n.Elem, b.with(rc.Value))
 
-	case n.Type.Is(gotype.K_STRUCT):
+	case n.Type.Is(xtypes.K_STRUCT):
 		for _, f := range n.Fields {
 			nodesAST(f.Type, b.field(f))
 		}

@@ -1,4 +1,4 @@
-package gotype
+package xtypes
 
 import (
 	"go/types"
@@ -9,11 +9,11 @@ import (
 
 func TestAnalyzer_Analyze(t *testing.T) {
 	p0 := Pkg{
-		Path: "github.com/frk/valid/cmd/internal/gotype/testdata",
+		Path: "github.com/frk/valid/cmd/internal/xtypes/testdata",
 		Name: "testdata",
 	}
 	p1 := Pkg{
-		Path: "github.com/frk/valid/cmd/internal/gotype/testdata/mypkg",
+		Path: "github.com/frk/valid/cmd/internal/xtypes/testdata/mypkg",
 		Name: "mypkg",
 	}
 
@@ -298,7 +298,7 @@ func TestAnalyzer_Analyze(t *testing.T) {
 
 func TestAnalyzer_Object(t *testing.T) {
 	p0 := Pkg{
-		Path: "github.com/frk/valid/cmd/internal/gotype/testdata",
+		Path: "github.com/frk/valid/cmd/internal/xtypes/testdata",
 		Name: "testdata",
 	}
 

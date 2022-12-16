@@ -3,8 +3,8 @@ package generator
 import (
 	"fmt"
 
-	"github.com/frk/valid/cmd/internal/gotype"
 	"github.com/frk/valid/cmd/internal/rules"
+	"github.com/frk/valid/cmd/internal/xtypes"
 
 	GO "github.com/frk/ast/golang"
 )
@@ -90,7 +90,7 @@ func (b *bb) isruleStmt(n *rules.Node) {
 
 func (b *bb) ptrOptionalStmt(n *rules.Node) (base *rules.Node) {
 	ifs := &GO.IfStmt{}
-	for base = n; base.Type.Kind == gotype.K_PTR; {
+	for base = n; base.Type.Kind == xtypes.K_PTR; {
 		if !base.IsOptional() {
 			panic("shouldn't happen")
 		}
@@ -119,7 +119,7 @@ func (b *bb) ptrOptionalStmt(n *rules.Node) (base *rules.Node) {
 }
 
 func (b *bb) ptrNoGuardStmt(n *rules.Node) (base *rules.Node) {
-	for base = n; base.Type.Kind == gotype.K_PTR; {
+	for base = n; base.Type.Kind == xtypes.K_PTR; {
 		if !base.IsNoGuard() {
 			panic("shouldn't happen")
 		}
@@ -134,7 +134,7 @@ func (b *bb) ptrRequiredStmt(n *rules.Node) (base *rules.Node) {
 	r0 := n.IsRules[0]
 
 	ifs := &GO.IfStmt{}
-	for base = n; base.Type.Kind == gotype.K_PTR; {
+	for base = n; base.Type.Kind == xtypes.K_PTR; {
 		if !base.IsRequired() {
 			panic("shouldn't happen")
 		}

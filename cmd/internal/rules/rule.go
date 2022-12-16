@@ -2,7 +2,7 @@ package rules
 
 import (
 	"github.com/frk/valid/cmd/internal/config"
-	"github.com/frk/valid/cmd/internal/gotype"
+	"github.com/frk/valid/cmd/internal/xtypes"
 )
 
 // Rule represents the rule as parsed from a struct tag.
@@ -64,20 +64,20 @@ func (a *Arg) IsNumeric() bool {
 
 // CanAssignTo reports whether or not the Arg can be assigned to the Go type
 // represented by t. The keyMap, if provided, is used to resolve ARG_FIELD args.
-func (a *Arg) CanAssignTo(t *gotype.Type, keyMap map[string]*FieldNode) bool {
+func (a *Arg) CanAssignTo(t *xtypes.Type, keyMap map[string]*FieldNode) bool {
 	if a.Type == ARG_FIELD_ABS || a.Type == ARG_FIELD_REL {
 		if f, ok := keyMap[a.Value]; ok && f != nil {
 			// can use the addr, accept
 			if t.PtrOf(f.Type.Type) {
 				return true
 			}
-			return t.CanAssign(f.Type.Type) != gotype.ASSIGNMENT_INVALID
+			return t.CanAssign(f.Type.Type) != xtypes.ASSIGNMENT_INVALID
 		}
 		return false
 	}
 
 	// t is interface{} or string, accept
-	if t.IsEmptyInterface() || t.Kind == gotype.K_STRING {
+	if t.IsEmptyInterface() || t.Kind == xtypes.K_STRING {
 		return true
 	}
 
@@ -87,7 +87,7 @@ func (a *Arg) CanAssignTo(t *gotype.Type, keyMap map[string]*FieldNode) bool {
 	}
 
 	// both are booleans, accept
-	if t.Kind == gotype.K_BOOL && a.Type == ARG_BOOL {
+	if t.Kind == xtypes.K_BOOL && a.Type == ARG_BOOL {
 		return true
 	}
 
@@ -107,8 +107,8 @@ func (a *Arg) CanAssignTo(t *gotype.Type, keyMap map[string]*FieldNode) bool {
 	}
 
 	// arg is string & string can be converted to t, accept
-	if a.Type == ARG_STRING && (t.Kind == gotype.K_STRING || (t.Kind == gotype.K_SLICE &&
-		t.Elem.Type.Name == "" && (t.Elem.Type.Kind == gotype.K_UINT8 || t.Elem.Type.Kind == gotype.K_INT32))) {
+	if a.Type == ARG_STRING && (t.Kind == xtypes.K_STRING || (t.Kind == xtypes.K_SLICE &&
+		t.Elem.Type.Name == "" && (t.Elem.Type.Kind == xtypes.K_UINT8 || t.Elem.Type.Kind == xtypes.K_INT32))) {
 		return true
 	}
 

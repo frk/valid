@@ -3,8 +3,8 @@ package generator
 import (
 	"fmt"
 
-	"github.com/frk/valid/cmd/internal/gotype"
 	"github.com/frk/valid/cmd/internal/rules"
+	"github.com/frk/valid/cmd/internal/xtypes"
 
 	GO "github.com/frk/ast/golang"
 )
@@ -16,7 +16,7 @@ func (b *bb) arrayForStmt(n *rules.Node) GO.ForRangeClause {
 	rc := b.arrayRangeClause(E)
 	loop := &GO.ForStmt{Clause: rc}
 
-	if E.Type.Kind != gotype.K_PTR && len(E.PreRules) > 0 {
+	if E.Type.Kind != xtypes.K_PTR && len(E.PreRules) > 0 {
 		b.idx = GO.IndexExpr{X: rc.X, Index: rc.Key}
 	} else {
 		b.idx = nil
@@ -34,7 +34,7 @@ func (b *bb) arrayRangeClause(E *rules.Node) GO.ForRangeClause {
 	if E.HasRules() {
 		v = GO.Ident{"e"}
 	}
-	if E.Type.Kind != gotype.K_PTR && len(E.PreRules) > 0 {
+	if E.Type.Kind != xtypes.K_PTR && len(E.PreRules) > 0 {
 		k = GO.Ident{"i"}
 	} else if v.Name != "" {
 		k = GO.Ident{"_"}
@@ -63,7 +63,7 @@ func (b *bb) mapForStmt(n *rules.Node) GO.ForRangeClause {
 	rc := b.mapRangeClause(K, E)
 	loop := &GO.ForStmt{Clause: rc}
 
-	if E.Type.Kind != gotype.K_PTR && len(E.PreRules) > 0 {
+	if E.Type.Kind != xtypes.K_PTR && len(E.PreRules) > 0 {
 		b.idx = GO.IndexExpr{X: rc.X, Index: rc.Key}
 	} else {
 		b.idx = nil
@@ -81,7 +81,7 @@ func (b *bb) mapRangeClause(K, E *rules.Node) GO.ForRangeClause {
 	if E.HasRules() {
 		v = GO.Ident{"e"}
 	}
-	if K.HasRules() || (E.Type.Kind != gotype.K_PTR && len(E.PreRules) > 0) {
+	if K.HasRules() || (E.Type.Kind != xtypes.K_PTR && len(E.PreRules) > 0) {
 		k = GO.Ident{"k"}
 	} else if v.Name != "" {
 		k = GO.Ident{"_"}

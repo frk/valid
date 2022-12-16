@@ -4,7 +4,7 @@ import (
 	"regexp"
 
 	"github.com/frk/valid"
-	"github.com/frk/valid/cmd/internal/gotype"
+	"github.com/frk/valid/cmd/internal/xtypes"
 	"github.com/frk/valid/internal/cldr"
 	"github.com/frk/valid/internal/tables"
 )
@@ -17,7 +17,7 @@ func (c *Checker) functionCheck(n *Node, r *Rule) error {
 	if r.Spec.FType.IsVariadic && len(r.Spec.FType.In) == 1 {
 		p = p.Elem.Type
 	}
-	if p.CanAssign(n.Type) == gotype.ASSIGNMENT_INVALID {
+	if p.CanAssign(n.Type) == xtypes.ASSIGNMENT_INVALID {
 		return &Error{C: ERR_FUNCTION_INTYPE, ty: n.Type, r: r}
 	}
 
@@ -53,7 +53,7 @@ func (c *Checker) checkRuleArgsAsFuncParams(r *Rule) error {
 
 	for i := range r.Args {
 		var j int
-		var p *gotype.Var
+		var p *xtypes.Var
 
 		switch last := len(params) - 1; {
 		case i < last || (i == last && !r.Spec.FType.IsVariadic):
@@ -62,7 +62,7 @@ func (c *Checker) checkRuleArgsAsFuncParams(r *Rule) error {
 
 		case i >= last && r.Spec.FType.IsVariadic:
 			j = last
-			p = &gotype.Var{
+			p = &xtypes.Var{
 				Name: params[j].Name,
 				Type: params[j].Type.Elem.Type,
 			}

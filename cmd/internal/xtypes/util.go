@@ -1,4 +1,4 @@
-package gotype
+package xtypes
 
 import (
 	"github.com/frk/valid/cmd/internal/search"

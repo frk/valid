@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/frk/valid/cmd/internal/gotype"
 	"github.com/frk/valid/cmd/internal/rules"
+	"github.com/frk/valid/cmd/internal/xtypes"
 
 	GO "github.com/frk/ast/golang"
 )
@@ -19,9 +19,9 @@ func (b *bb) err(n *rules.Node, r *rules.Rule, body *GO.BlockStmt) {
 	switch {
 	case b.g.info.Validator.ErrorHandlerField != nil:
 		b.errHandler(n, r, body)
-	case gotype.Globals.ErrorAggregator != nil:
+	case xtypes.Globals.ErrorAggregator != nil:
 		b.errGlobalHandler(n, r, body, true)
-	case gotype.Globals.ErrorConstructor != nil:
+	case xtypes.Globals.ErrorConstructor != nil:
 		b.errGlobalHandler(n, r, body, false)
 	default:
 		b.errDefault(n, r, body)
@@ -62,7 +62,7 @@ func (b *bb) errGlobalHandler(n *rules.Node, r *rules.Rule, body *GO.BlockStmt, 
 		x = GO.CallExpr{Fun: x, Args: GO.ArgsList{List: args}}
 		body.Add(GO.ExprStmt{x})
 	} else {
-		ctor := gotype.Globals.ErrorConstructor
+		ctor := xtypes.Globals.ErrorConstructor
 		pkg := b.g.addImport(ctor.Type.Pkg)
 
 		x := GO.ExprNode(nil)
@@ -176,11 +176,11 @@ func (b *bb) errDefault(n *rules.Node, r *rules.Rule, body *GO.BlockStmt) {
 	textExpr := GO.ValueLit(strconv.Quote(text))
 
 	if len(refs) > 0 {
-		pkg := b.g.addImport(gotype.Pkg{Path: "fmt"})
+		pkg := b.g.addImport(xtypes.Pkg{Path: "fmt"})
 		body.Add(GO.ReturnStmt{GO.CallExpr{Fun: GO.QualifiedIdent{pkg.name, "Errorf"},
 			Args: GO.ArgsList{List: append(GO.ExprList{textExpr}, refs...)}}})
 	} else {
-		pkg := b.g.addImport(gotype.Pkg{Path: "errors"})
+		pkg := b.g.addImport(xtypes.Pkg{Path: "errors"})
 		body.Add(GO.ReturnStmt{GO.CallExpr{Fun: GO.QualifiedIdent{pkg.name, "New"},
 			Args: GO.ArgsList{List: GO.ExprList{textExpr}}}})
 	}

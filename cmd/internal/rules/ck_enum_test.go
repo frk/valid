@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/frk/valid/cmd/internal/config"
-	"github.com/frk/valid/cmd/internal/gotype"
+	"github.com/frk/valid/cmd/internal/xtypes"
 
 	"github.com/frk/compare"
 )
@@ -20,11 +20,11 @@ func TestChecker_enumCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_ENUM_NONAME_1_Validator",
 		err: &Error{C: ERR_ENUM_NONAME, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"enum"`,
-				Object: &gotype.Object{Type: T.uint},
+				Object: &xtypes.Object{Type: T.uint},
 				Var:    T._var,
 			},
 			ty: T.uint,
@@ -33,27 +33,27 @@ func TestChecker_enumCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_ENUM_KIND_1_Validator",
 		err: &Error{C: ERR_ENUM_KIND, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"enum"`,
-				Object: &gotype.Object{Type: &gotype.Type{Kind: gotype.K_STRUCT, Name: "enum_kind", Pkg: T.pkg}},
+				Object: &xtypes.Object{Type: &xtypes.Type{Kind: xtypes.K_STRUCT, Name: "enum_kind", Pkg: T.pkg}},
 				Var:    T._var,
 			},
-			ty: &gotype.Type{Kind: gotype.K_STRUCT, Name: "enum_kind", Pkg: T.pkg},
+			ty: &xtypes.Type{Kind: xtypes.K_STRUCT, Name: "enum_kind", Pkg: T.pkg},
 			r:  &Rule{Name: "enum", Spec: GetSpec("enum")},
 		},
 	}, {
 		name: "Test_ERR_ENUM_NOCONST_1_Validator",
 		err: &Error{C: ERR_ENUM_NOCONST, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"enum"`,
-				Object: &gotype.Object{Type: &gotype.Type{Kind: gotype.K_UINT, Name: "enum_noconst", Pkg: T.pkg}},
+				Object: &xtypes.Object{Type: &xtypes.Type{Kind: xtypes.K_UINT, Name: "enum_noconst", Pkg: T.pkg}},
 				Var:    T._var,
 			},
-			ty: &gotype.Type{Kind: gotype.K_UINT, Name: "enum_noconst", Pkg: T.pkg},
+			ty: &xtypes.Type{Kind: xtypes.K_UINT, Name: "enum_noconst", Pkg: T.pkg},
 			r:  &Rule{Name: "enum", Spec: GetSpec("enum")},
 		},
 	}}

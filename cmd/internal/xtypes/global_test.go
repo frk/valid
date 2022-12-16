@@ -1,4 +1,4 @@
-package gotype
+package xtypes
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 )
 
 func TestInit(t *testing.T) {
-	_pkg := "github.com/frk/valid/cmd/internal/gotype/testdata"
+	_pkg := "github.com/frk/valid/cmd/internal/xtypes/testdata"
 	_err := fmt.Errorf("") // dummy to satisfy `cmp:"+"`
 	_ = _err
 

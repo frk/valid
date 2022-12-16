@@ -4,7 +4,7 @@ import (
 	"io"
 	"unsafe"
 
-	"github.com/frk/valid/cmd/internal/gotype/testdata/mypkg"
+	"github.com/frk/valid/cmd/internal/xtypes/testdata/mypkg"
 )
 
 // types of basic kinds

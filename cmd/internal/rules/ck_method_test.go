@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/frk/valid/cmd/internal/config"
-	"github.com/frk/valid/cmd/internal/gotype"
+	"github.com/frk/valid/cmd/internal/xtypes"
 
 	"github.com/frk/compare"
 )
@@ -20,11 +20,11 @@ func TestChecker_methodCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_METHOD_TYPE_1_Validator",
 		err: &Error{C: ERR_METHOD_TYPE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"isvalid"`,
-				Object: &gotype.Object{Type: T.int},
+				Object: &xtypes.Object{Type: T.int},
 				Var:    T._var,
 			},
 			ty: T.int,

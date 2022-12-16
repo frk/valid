@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/frk/valid/cmd/internal/config"
-	"github.com/frk/valid/cmd/internal/gotype"
+	"github.com/frk/valid/cmd/internal/xtypes"
 
 	"github.com/frk/compare"
 )
@@ -20,11 +20,11 @@ func TestChecker_optionalCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_OPTIONAL_CONFLICT_1_Validator",
 		err: &Error{C: ERR_OPTIONAL_CONFLICT, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"optional,required"`,
-				Object: &gotype.Object{Type: T.Ptr(T.string)},
+				Object: &xtypes.Object{Type: T.Ptr(T.string)},
 				Var:    T._var,
 			},
 			ty: T.Ptr(T.string),
@@ -34,11 +34,11 @@ func TestChecker_optionalCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_OPTIONAL_CONFLICT_2_Validator",
 		err: &Error{C: ERR_OPTIONAL_CONFLICT, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"required,optional"`,
-				Object: &gotype.Object{Type: T.Ptr(T.string)},
+				Object: &xtypes.Object{Type: T.Ptr(T.string)},
 				Var:    T._var,
 			},
 			ty: T.Ptr(T.string),
@@ -48,11 +48,11 @@ func TestChecker_optionalCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_OPTIONAL_CONFLICT_3_Validator",
 		err: &Error{C: ERR_OPTIONAL_CONFLICT, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"notnil,optional"`,
-				Object: &gotype.Object{Type: T.Ptr(T.string)},
+				Object: &xtypes.Object{Type: T.Ptr(T.string)},
 				Var:    T._var,
 			},
 			ty: T.Ptr(T.string),
@@ -62,11 +62,11 @@ func TestChecker_optionalCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_OPTIONAL_CONFLICT_4_Validator",
 		err: &Error{C: ERR_OPTIONAL_CONFLICT, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"omitnil,notnil"`,
-				Object: &gotype.Object{Type: T.Ptr(T.string)},
+				Object: &xtypes.Object{Type: T.Ptr(T.string)},
 				Var:    T._var,
 			},
 			ty: T.Ptr(T.string),

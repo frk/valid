@@ -1,4 +1,4 @@
-package gotype
+package xtypes
 
 import (
 	"go/types"
@@ -98,7 +98,7 @@ var T = test_values{
 	},
 
 	pkg: Pkg{
-		Path: "github.com/frk/valid/cmd/internal/gotype/testdata",
+		Path: "github.com/frk/valid/cmd/internal/xtypes/testdata",
 		Name: "testdata",
 	},
 }

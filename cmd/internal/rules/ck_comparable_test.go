@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/frk/valid/cmd/internal/config"
-	"github.com/frk/valid/cmd/internal/gotype"
+	"github.com/frk/valid/cmd/internal/xtypes"
 
 	"github.com/frk/compare"
 )
@@ -20,11 +20,11 @@ func TestChecker_comparableCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_ARG_BADCMP_1_Validator",
 		err: &Error{C: ERR_ARG_BADCMP, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"eq:42:64:foo:-22"`,
-				Object: &gotype.Object{Type: T.int},
+				Object: &xtypes.Object{Type: T.int},
 				Var:    T._var,
 			},
 			ty: T.int,
@@ -43,11 +43,11 @@ func TestChecker_comparableCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_ARG_BADCMP_2_Validator",
 		err: &Error{C: ERR_ARG_BADCMP, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"eq:123:&S.G"`,
-				Object: &gotype.Object{Type: T.int},
+				Object: &xtypes.Object{Type: T.int},
 				Var:    T._var,
 			},
 			ty: T.int,
@@ -65,11 +65,11 @@ func TestChecker_comparableCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_ARG_BADCMP_3_Validator",
 		err: &Error{C: ERR_ARG_BADCMP, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"eq:0.03"`,
-				Object: &gotype.Object{Type: T.int},
+				Object: &xtypes.Object{Type: T.int},
 				Var:    T._var,
 			},
 			ty: T.int,
@@ -83,11 +83,11 @@ func TestChecker_comparableCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_ARG_BADCMP_4_Validator",
 		err: &Error{C: ERR_ARG_BADCMP, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"ne:-345"`,
-				Object: &gotype.Object{Type: T.uint},
+				Object: &xtypes.Object{Type: T.uint},
 				Var:    T._var,
 			},
 			ty: T.uint,
@@ -101,11 +101,11 @@ func TestChecker_comparableCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_ARG_BADCMP_5_Validator",
 		err: &Error{C: ERR_ARG_BADCMP, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"eq:1"`,
-				Object: &gotype.Object{Type: T.bool},
+				Object: &xtypes.Object{Type: T.bool},
 				Var:    T._var,
 			},
 			ty: T.bool,
@@ -119,11 +119,11 @@ func TestChecker_comparableCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_ARG_BADCMP_6_Validator",
 		err: &Error{C: ERR_ARG_BADCMP, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"eq:true"`,
-				Object: &gotype.Object{Type: T.int},
+				Object: &xtypes.Object{Type: T.int},
 				Var:    T._var,
 			},
 			ty: T.int,

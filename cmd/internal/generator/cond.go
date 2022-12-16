@@ -3,8 +3,8 @@ package generator
 import (
 	"fmt"
 
-	"github.com/frk/valid/cmd/internal/gotype"
 	"github.com/frk/valid/cmd/internal/rules"
+	"github.com/frk/valid/cmd/internal/xtypes"
 
 	GO "github.com/frk/ast/golang"
 )
@@ -49,28 +49,28 @@ func (b *bb) optionalCondExpr(n *rules.Node, r *rules.Rule) GO.ExprNode {
 	switch r.Name {
 	case "omitnil":
 		switch n.Type.Kind {
-		case gotype.K_MAP, gotype.K_SLICE, gotype.K_INTERFACE:
+		case xtypes.K_MAP, xtypes.K_SLICE, xtypes.K_INTERFACE:
 			return GO.BinaryExpr{Op: GO.BinaryNeq, X: b.val, Y: NIL}
-		case gotype.K_PTR, gotype.K_FUNC, gotype.K_CHAN:
+		case xtypes.K_PTR, xtypes.K_FUNC, xtypes.K_CHAN:
 			return GO.BinaryExpr{Op: GO.BinaryNeq, X: b.val, Y: NIL}
 		}
 	case "optional":
 		switch n.Type.Kind {
-		case gotype.K_STRING:
+		case xtypes.K_STRING:
 			return GO.BinaryExpr{Op: GO.BinaryNeq, X: b.val, Y: GO.ValueLit(`""`)}
-		case gotype.K_MAP, gotype.K_SLICE:
+		case xtypes.K_MAP, xtypes.K_SLICE:
 			return GO.BinaryExpr{Op: GO.BinaryGtr, X: GO.CallLenExpr{b.val}, Y: GO.IntLit(0)}
-		case gotype.K_INT, gotype.K_INT8, gotype.K_INT16, gotype.K_INT32, gotype.K_INT64:
+		case xtypes.K_INT, xtypes.K_INT8, xtypes.K_INT16, xtypes.K_INT32, xtypes.K_INT64:
 			return GO.BinaryExpr{Op: GO.BinaryGtr, X: b.val, Y: GO.IntLit(0)}
-		case gotype.K_UINT, gotype.K_UINT8, gotype.K_UINT16, gotype.K_UINT32, gotype.K_UINT64:
+		case xtypes.K_UINT, xtypes.K_UINT8, xtypes.K_UINT16, xtypes.K_UINT32, xtypes.K_UINT64:
 			return GO.BinaryExpr{Op: GO.BinaryGtr, X: b.val, Y: GO.IntLit(0)}
-		case gotype.K_FLOAT32, gotype.K_FLOAT64:
+		case xtypes.K_FLOAT32, xtypes.K_FLOAT64:
 			return GO.BinaryExpr{Op: GO.BinaryGtr, X: b.val, Y: GO.ValueLit("0.0")}
-		case gotype.K_BOOL:
+		case xtypes.K_BOOL:
 			return GO.BinaryExpr{Op: GO.BinaryEql, X: b.val, Y: GO.ValueLit("true")}
-		case gotype.K_INTERFACE:
+		case xtypes.K_INTERFACE:
 			return GO.BinaryExpr{Op: GO.BinaryNeq, X: b.val, Y: NIL}
-		case gotype.K_PTR:
+		case xtypes.K_PTR:
 			return GO.BinaryExpr{Op: GO.BinaryNeq, X: b.val, Y: NIL}
 		}
 	}
@@ -84,30 +84,30 @@ func (b *bb) requiredCondExpr(n *rules.Node, r *rules.Rule) GO.ExprNode {
 	switch r.Name {
 	case "notnil":
 		switch n.Type.Kind {
-		case gotype.K_MAP, gotype.K_SLICE, gotype.K_INTERFACE:
+		case xtypes.K_MAP, xtypes.K_SLICE, xtypes.K_INTERFACE:
 			return GO.BinaryExpr{Op: GO.BinaryEql, X: b.val, Y: NIL}
-		case gotype.K_PTR, gotype.K_FUNC, gotype.K_CHAN:
+		case xtypes.K_PTR, xtypes.K_FUNC, xtypes.K_CHAN:
 			return GO.BinaryExpr{Op: GO.BinaryEql, X: b.val, Y: NIL}
 		}
 	case "required":
 		switch n.Type.Kind {
-		case gotype.K_STRING:
+		case xtypes.K_STRING:
 			return GO.BinaryExpr{Op: GO.BinaryEql, X: b.val, Y: GO.ValueLit(`""`)}
-		case gotype.K_MAP, gotype.K_SLICE:
+		case xtypes.K_MAP, xtypes.K_SLICE:
 			return GO.BinaryExpr{Op: GO.BinaryEql, X: GO.CallLenExpr{b.val}, Y: GO.IntLit(0)}
-		case gotype.K_INT, gotype.K_INT8, gotype.K_INT16, gotype.K_INT32, gotype.K_INT64:
+		case xtypes.K_INT, xtypes.K_INT8, xtypes.K_INT16, xtypes.K_INT32, xtypes.K_INT64:
 			return GO.BinaryExpr{Op: GO.BinaryEql, X: b.val, Y: GO.IntLit(0)}
-		case gotype.K_UINT, gotype.K_UINT8, gotype.K_UINT16, gotype.K_UINT32, gotype.K_UINT64:
+		case xtypes.K_UINT, xtypes.K_UINT8, xtypes.K_UINT16, xtypes.K_UINT32, xtypes.K_UINT64:
 			return GO.BinaryExpr{Op: GO.BinaryEql, X: b.val, Y: GO.IntLit(0)}
-		case gotype.K_FLOAT32, gotype.K_FLOAT64:
+		case xtypes.K_FLOAT32, xtypes.K_FLOAT64:
 			return GO.BinaryExpr{Op: GO.BinaryEql, X: b.val, Y: GO.ValueLit("0.0")}
-		case gotype.K_BOOL:
+		case xtypes.K_BOOL:
 			return GO.BinaryExpr{Op: GO.BinaryEql, X: b.val, Y: GO.ValueLit("false")}
-		case gotype.K_INTERFACE:
+		case xtypes.K_INTERFACE:
 			return GO.BinaryExpr{Op: GO.BinaryEql, X: b.val, Y: NIL}
-		case gotype.K_PTR:
+		case xtypes.K_PTR:
 			return GO.BinaryExpr{Op: GO.BinaryEql, X: b.val, Y: NIL}
-		case gotype.K_STRUCT:
+		case xtypes.K_STRUCT:
 			lit := GO.StructLit{Compact: true}
 			if n.Type.Pkg != b.g.pkg {
 				pkg := b.g.addImport(n.Type.Pkg)
@@ -167,7 +167,7 @@ func (b *bb) orderedCondExpr(n *rules.Node, r *rules.Rule) GO.ExprNode {
 }
 
 // used for adding pkgimport
-var utf8 = gotype.Pkg{Path: "unicode/utf8", Name: "utf8"}
+var utf8 = xtypes.Pkg{Path: "unicode/utf8", Name: "utf8"}
 
 // builds an expression that checks the value's length.
 func (b *bb) lengthCondExpr(n *rules.Node, r *rules.Rule) GO.ExprNode {
@@ -178,9 +178,9 @@ func (b *bb) lengthCondExpr(n *rules.Node, r *rules.Rule) GO.ExprNode {
 	case "runecount":
 		pkg := b.g.addImport(utf8)
 		expr := GO.CallExpr{Args: GO.ArgsList{List: b.val}}
-		if n.Type.Kind == gotype.K_STRING {
+		if n.Type.Kind == xtypes.K_STRING {
 			expr.Fun = GO.QualifiedIdent{pkg.name, "RuneCountInString"}
-		} else if n.Type.Kind == gotype.K_SLICE && n.Type.Elem.Type.IsByte {
+		} else if n.Type.Kind == xtypes.K_SLICE && n.Type.Elem.Type.IsByte {
 			expr.Fun = GO.QualifiedIdent{pkg.name, "RuneCount"}
 		} else {
 			panic("shouldn't reach")
@@ -287,11 +287,11 @@ func (b *bb) functionCondExpr(n *rules.Node, r *rules.Rule) (x GO.ExprNode) {
 // builds an expression that checks the value by invoking the designated method.
 func (b *bb) methodCondExpr(n *rules.Node, r *rules.Rule) GO.ExprNode {
 	x := b.val
-	if n.PtrDepth() > 1 || (n.PtrDepth() == 1 && n.Type.Kind == gotype.K_INTERFACE) {
+	if n.PtrDepth() > 1 || (n.PtrDepth() == 1 && n.Type.Kind == xtypes.K_INTERFACE) {
 		x = GO.ParenExpr{x}
 	}
 
-	if n.PtrDepth() == 1 && n.Type.Kind != gotype.K_INTERFACE {
+	if n.PtrDepth() == 1 && n.Type.Kind != xtypes.K_INTERFACE {
 		x = b.vals[len(b.vals)-1]
 	}
 

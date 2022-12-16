@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/frk/valid/cmd/internal/config"
-	"github.com/frk/valid/cmd/internal/gotype"
 	"github.com/frk/valid/cmd/internal/search"
+	"github.com/frk/valid/cmd/internal/xtypes"
 
 	"github.com/frk/compare"
 )
@@ -31,7 +31,7 @@ func TestMain(m *testing.M) {
 	test_pkg = *(pkgs[0])
 	//fmt.Println(pkgs)
 
-	T.loc = gotype.MustGetType("time", "Location", &test_ast)
+	T.loc = xtypes.MustGetType("time", "Location", &test_ast)
 
 	if err := loadIncludedSpecs(&test_ast); err != nil {
 		log.Fatal(err)
@@ -41,7 +41,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestCheckerCheck(t *testing.T) {
-	p0 := gotype.Pkg{
+	p0 := xtypes.Pkg{
 		Path: "github.com/frk/valid/cmd/internal/rules/testdata",
 		Name: "testdata",
 	}
@@ -57,11 +57,11 @@ func TestCheckerCheck(t *testing.T) {
 		name: "Test_ERR_FIELD_UNKNOWN_1_Validator",
 		err: &Error{
 			C: ERR_FIELD_UNKNOWN, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"gt:&num"`,
-				Object: &gotype.Object{Type: T.int},
+				Object: &xtypes.Object{Type: T.int},
 				Var:    T._var,
 			},
 			ty: T.int,
@@ -78,11 +78,11 @@ func TestCheckerCheck(t *testing.T) {
 		name: "Test_ERR_FIELD_UNKNOWN_2_Validator",
 		err: &Error{
 			C: ERR_FIELD_UNKNOWN, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `pre:"p4:&num"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -97,11 +97,11 @@ func TestCheckerCheck(t *testing.T) {
 		name: "Test_ERR_FIELD_UNKNOWN_3_Validator",
 		err: &Error{
 			C: ERR_FIELD_UNKNOWN, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"gt:.num"`,
-				Object: &gotype.Object{Type: T.int},
+				Object: &xtypes.Object{Type: T.int},
 				Var:    T._var,
 			},
 			ty: T.int,
@@ -118,11 +118,11 @@ func TestCheckerCheck(t *testing.T) {
 		name: "Test_ERR_FIELD_UNKNOWN_4_Validator",
 		err: &Error{
 			C: ERR_FIELD_UNKNOWN, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `pre:"p4:.num"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -137,11 +137,11 @@ func TestCheckerCheck(t *testing.T) {
 		name: "Test_ERR_RULE_ARGMIN_1_Validator",
 		err: &Error{
 			C: ERR_RULE_ARGMIN, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"gt"`,
-				Object: &gotype.Object{Type: T.int},
+				Object: &xtypes.Object{Type: T.int},
 				Var:    T._var,
 			},
 			ty: T.int,
@@ -151,11 +151,11 @@ func TestCheckerCheck(t *testing.T) {
 		name: "Test_ERR_RULE_ARGMIN_2_Validator",
 		err: &Error{
 			C: ERR_RULE_ARGMIN, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `pre:"p4"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -165,11 +165,11 @@ func TestCheckerCheck(t *testing.T) {
 		name: "Test_ERR_RULE_ARGMAX_1_Validator",
 		err: &Error{
 			C: ERR_RULE_ARGMAX, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"gt:4:5"`,
-				Object: &gotype.Object{Type: T.int},
+				Object: &xtypes.Object{Type: T.int},
 				Var:    T._var,
 			},
 			ty: T.int,
@@ -186,11 +186,11 @@ func TestCheckerCheck(t *testing.T) {
 		name: "Test_ERR_RULE_ARGMAX_2_Validator",
 		err: &Error{
 			C: ERR_RULE_ARGMAX, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `pre:"p4:1:2:3"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -208,11 +208,11 @@ func TestCheckerCheck(t *testing.T) {
 		name: "Test_ERR_PREPROC_INNVALID_1_Validator",
 		err: &Error{
 			C: ERR_PREPROC_INVALID, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `pre:"p0"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -267,25 +267,25 @@ type test_values struct {
 	_func *types.Func
 	_err  error
 
-	string  *gotype.Type
-	int     *gotype.Type
-	int32   *gotype.Type
-	int64   *gotype.Type
-	uint    *gotype.Type
-	uint8   *gotype.Type
-	uint16  *gotype.Type
-	uint64  *gotype.Type
-	bool    *gotype.Type
-	float64 *gotype.Type
-	rune    *gotype.Type
-	byte    *gotype.Type
-	loc     *gotype.Type
+	string  *xtypes.Type
+	int     *xtypes.Type
+	int32   *xtypes.Type
+	int64   *xtypes.Type
+	uint    *xtypes.Type
+	uint8   *xtypes.Type
+	uint16  *xtypes.Type
+	uint64  *xtypes.Type
+	bool    *xtypes.Type
+	float64 *xtypes.Type
+	rune    *xtypes.Type
+	byte    *xtypes.Type
+	loc     *xtypes.Type
 
-	pkg gotype.Pkg
+	pkg xtypes.Pkg
 }
 
-func (test_values) _sf() *gotype.StructField {
-	return &gotype.StructField{}
+func (test_values) _sf() *xtypes.StructField {
+	return &xtypes.StructField{}
 }
 
 func (test_values) sptr(s string) *string {
@@ -300,20 +300,20 @@ func (test_values) iptr(i int) *int {
 	return &i
 }
 
-func (test_values) Slice(e *gotype.Type) *gotype.Type {
-	return &gotype.Type{Kind: gotype.K_SLICE, Elem: &gotype.Object{Type: e}}
+func (test_values) Slice(e *xtypes.Type) *xtypes.Type {
+	return &xtypes.Type{Kind: xtypes.K_SLICE, Elem: &xtypes.Object{Type: e}}
 }
 
-func (test_values) Array(n int64, e *gotype.Type) *gotype.Type {
-	return &gotype.Type{Kind: gotype.K_ARRAY, ArrayLen: n, Elem: &gotype.Object{Type: e}}
+func (test_values) Array(n int64, e *xtypes.Type) *xtypes.Type {
+	return &xtypes.Type{Kind: xtypes.K_ARRAY, ArrayLen: n, Elem: &xtypes.Object{Type: e}}
 }
 
-func (test_values) Ptr(e *gotype.Type) *gotype.Type {
-	return &gotype.Type{Kind: gotype.K_PTR, Elem: &gotype.Object{Type: e}}
+func (test_values) Ptr(e *xtypes.Type) *xtypes.Type {
+	return &xtypes.Type{Kind: xtypes.K_PTR, Elem: &xtypes.Object{Type: e}}
 }
 
-func (test_values) Map(k, e *gotype.Type) *gotype.Type {
-	return &gotype.Type{Kind: gotype.K_MAP, Key: &gotype.Object{Type: k}, Elem: &gotype.Object{Type: e}}
+func (test_values) Map(k, e *xtypes.Type) *xtypes.Type {
+	return &xtypes.Type{Kind: xtypes.K_MAP, Key: &xtypes.Object{Type: k}, Elem: &xtypes.Object{Type: e}}
 }
 
 var T = test_values{
@@ -323,21 +323,21 @@ var T = test_values{
 	_func: &types.Func{},
 	_err:  fmt.Errorf(""),
 
-	string:  &gotype.Type{Kind: gotype.K_STRING},
-	int:     &gotype.Type{Kind: gotype.K_INT},
-	int32:   &gotype.Type{Kind: gotype.K_INT32},
-	int64:   &gotype.Type{Kind: gotype.K_INT64},
-	uint:    &gotype.Type{Kind: gotype.K_UINT},
-	uint8:   &gotype.Type{Kind: gotype.K_UINT8},
-	uint16:  &gotype.Type{Kind: gotype.K_UINT16},
-	uint64:  &gotype.Type{Kind: gotype.K_UINT64},
-	float64: &gotype.Type{Kind: gotype.K_FLOAT64},
-	bool:    &gotype.Type{Kind: gotype.K_BOOL},
-	rune:    &gotype.Type{Kind: gotype.K_INT32, IsRune: true},
-	byte:    &gotype.Type{Kind: gotype.K_UINT8, IsByte: true},
+	string:  &xtypes.Type{Kind: xtypes.K_STRING},
+	int:     &xtypes.Type{Kind: xtypes.K_INT},
+	int32:   &xtypes.Type{Kind: xtypes.K_INT32},
+	int64:   &xtypes.Type{Kind: xtypes.K_INT64},
+	uint:    &xtypes.Type{Kind: xtypes.K_UINT},
+	uint8:   &xtypes.Type{Kind: xtypes.K_UINT8},
+	uint16:  &xtypes.Type{Kind: xtypes.K_UINT16},
+	uint64:  &xtypes.Type{Kind: xtypes.K_UINT64},
+	float64: &xtypes.Type{Kind: xtypes.K_FLOAT64},
+	bool:    &xtypes.Type{Kind: xtypes.K_BOOL},
+	rune:    &xtypes.Type{Kind: xtypes.K_INT32, IsRune: true},
+	byte:    &xtypes.Type{Kind: xtypes.K_UINT8, IsByte: true},
 	loc:     nil,
 
-	pkg: gotype.Pkg{
+	pkg: xtypes.Pkg{
 		Path: "github.com/frk/valid/cmd/internal/rules/testdata",
 		Name: "testdata",
 	},

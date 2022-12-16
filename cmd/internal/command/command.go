@@ -12,9 +12,9 @@ import (
 
 	"github.com/frk/valid/cmd/internal/config"
 	"github.com/frk/valid/cmd/internal/generator"
-	"github.com/frk/valid/cmd/internal/gotype"
 	"github.com/frk/valid/cmd/internal/rules"
 	"github.com/frk/valid/cmd/internal/search"
+	"github.com/frk/valid/cmd/internal/xtypes"
 )
 
 type Command struct {
@@ -80,7 +80,7 @@ func (cmd *Command) Run() error {
 	}
 
 	// 2. initialize globals, if any were specified in the config
-	if err := gotype.Globals.Init(cmd.Cfg, &AST); err != nil {
+	if err := xtypes.Globals.Init(cmd.Cfg, &AST); err != nil {
 		return err
 	}
 

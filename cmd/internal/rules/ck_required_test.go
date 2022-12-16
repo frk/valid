@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/frk/valid/cmd/internal/config"
-	"github.com/frk/valid/cmd/internal/gotype"
+	"github.com/frk/valid/cmd/internal/xtypes"
 
 	"github.com/frk/compare"
 )
@@ -20,11 +20,11 @@ func TestChecker_requiredCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_NOTNIL_TYPE_1_Validator",
 		err: &Error{C: ERR_NOTNIL_TYPE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"notnil"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -33,11 +33,11 @@ func TestChecker_requiredCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_NOTNIL_TYPE_2_Validator",
 		err: &Error{C: ERR_NOTNIL_TYPE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"notnil"`,
-				Object: &gotype.Object{Type: T.bool},
+				Object: &xtypes.Object{Type: T.bool},
 				Var:    T._var,
 			},
 			ty: T.bool,
@@ -46,11 +46,11 @@ func TestChecker_requiredCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_NOTNIL_TYPE_3_Validator",
 		err: &Error{C: ERR_NOTNIL_TYPE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"notnil"`,
-				Object: &gotype.Object{Type: T.float64},
+				Object: &xtypes.Object{Type: T.float64},
 				Var:    T._var,
 			},
 			ty: T.float64,

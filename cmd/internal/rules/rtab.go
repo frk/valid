@@ -1,7 +1,7 @@
 package rules
 
 import (
-	"github.com/frk/valid/cmd/internal/gotype"
+	"github.com/frk/valid/cmd/internal/xtypes"
 )
 
 func GetSpec(name string) *Spec {
@@ -200,11 +200,11 @@ var _special_specs = []*Spec{{
 	Name:  "isvalid",
 	Kind:  METHOD,
 	FName: "IsValid",
-	FType: &gotype.Type{
-		Pkg:  gotype.Pkg{},
-		In:   []*gotype.Var{},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_BOOL}}},
-		Kind: gotype.K_FUNC,
+	FType: &xtypes.Type{
+		Pkg:  xtypes.Pkg{},
+		In:   []*xtypes.Var{},
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_BOOL}}},
+		Kind: xtypes.K_FUNC,
 	},
 	Err: ErrSpec{Text: "is not valid"},
 }, {
@@ -235,17 +235,17 @@ var _stdlib_specs = []*Spec{{
 	Name:  "prefix",
 	Kind:  FUNCTION,
 	FName: "HasPrefix",
-	FType: &gotype.Type{
-		Pkg: gotype.Pkg{
+	FType: &xtypes.Type{
+		Pkg: xtypes.Pkg{
 			Name: "strings",
 			Path: "strings",
 		},
-		In: []*gotype.Var{
-			{Type: &gotype.Type{Kind: gotype.K_STRING}},
-			{Type: &gotype.Type{Kind: gotype.K_STRING}},
+		In: []*xtypes.Var{
+			{Type: &xtypes.Type{Kind: xtypes.K_STRING}},
+			{Type: &xtypes.Type{Kind: xtypes.K_STRING}},
 		},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_BOOL}}},
-		Kind: gotype.K_FUNC,
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_BOOL}}},
+		Kind: xtypes.K_FUNC,
 	},
 	ArgMin: 1,
 	ArgMax: -1,
@@ -259,17 +259,17 @@ var _stdlib_specs = []*Spec{{
 	Name:  "suffix",
 	Kind:  FUNCTION,
 	FName: "HasSuffix",
-	FType: &gotype.Type{
-		Pkg: gotype.Pkg{
+	FType: &xtypes.Type{
+		Pkg: xtypes.Pkg{
 			Name: "strings",
 			Path: "strings",
 		},
-		In: []*gotype.Var{
-			{Type: &gotype.Type{Kind: gotype.K_STRING}},
-			{Type: &gotype.Type{Kind: gotype.K_STRING}},
+		In: []*xtypes.Var{
+			{Type: &xtypes.Type{Kind: xtypes.K_STRING}},
+			{Type: &xtypes.Type{Kind: xtypes.K_STRING}},
 		},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_BOOL}}},
-		Kind: gotype.K_FUNC,
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_BOOL}}},
+		Kind: xtypes.K_FUNC,
 	},
 	ArgMin: 1,
 	ArgMax: -1,
@@ -287,17 +287,17 @@ var _stdlib_specs = []*Spec{{
 	Name:  "contains",
 	Kind:  FUNCTION,
 	FName: "Contains",
-	FType: &gotype.Type{
-		Pkg: gotype.Pkg{
+	FType: &xtypes.Type{
+		Pkg: xtypes.Pkg{
 			Name: "strings",
 			Path: "strings",
 		},
-		In: []*gotype.Var{
-			{Type: &gotype.Type{Kind: gotype.K_STRING}},
-			{Type: &gotype.Type{Kind: gotype.K_STRING}},
+		In: []*xtypes.Var{
+			{Type: &xtypes.Type{Kind: xtypes.K_STRING}},
+			{Type: &xtypes.Type{Kind: xtypes.K_STRING}},
 		},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_BOOL}}},
-		Kind: gotype.K_FUNC,
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_BOOL}}},
+		Kind: xtypes.K_FUNC,
 	},
 	ArgMin: 1,
 	ArgMax: -1,
@@ -315,17 +315,17 @@ var _stdlib_pre_specs = []*Spec{{
 	Name:  "repeat",
 	Kind:  PREPROC,
 	FName: "Repeat",
-	FType: &gotype.Type{
-		Pkg: gotype.Pkg{
+	FType: &xtypes.Type{
+		Pkg: xtypes.Pkg{
 			Name: "strings",
 			Path: "strings",
 		},
-		In: []*gotype.Var{
-			{Type: &gotype.Type{Kind: gotype.K_STRING}},
-			{Type: &gotype.Type{Kind: gotype.K_INT}},
+		In: []*xtypes.Var{
+			{Type: &xtypes.Type{Kind: xtypes.K_STRING}},
+			{Type: &xtypes.Type{Kind: xtypes.K_INT}},
 		},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Kind: gotype.K_FUNC,
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Kind: xtypes.K_FUNC,
 	},
 	ArgMin: 1,
 	ArgMax: 1,
@@ -333,19 +333,19 @@ var _stdlib_pre_specs = []*Spec{{
 	Name:  "replace",
 	Kind:  PREPROC,
 	FName: "Replace",
-	FType: &gotype.Type{
-		Pkg: gotype.Pkg{
+	FType: &xtypes.Type{
+		Pkg: xtypes.Pkg{
 			Name: "strings",
 			Path: "strings",
 		},
-		In: []*gotype.Var{
-			{Type: &gotype.Type{Kind: gotype.K_STRING}},
-			{Type: &gotype.Type{Kind: gotype.K_STRING}},
-			{Type: &gotype.Type{Kind: gotype.K_STRING}},
-			{Type: &gotype.Type{Kind: gotype.K_INT}},
+		In: []*xtypes.Var{
+			{Type: &xtypes.Type{Kind: xtypes.K_STRING}},
+			{Type: &xtypes.Type{Kind: xtypes.K_STRING}},
+			{Type: &xtypes.Type{Kind: xtypes.K_STRING}},
+			{Type: &xtypes.Type{Kind: xtypes.K_INT}},
 		},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Kind: gotype.K_FUNC,
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Kind: xtypes.K_FUNC,
 	},
 	ArgMin:  2,
 	ArgMax:  3,
@@ -354,14 +354,14 @@ var _stdlib_pre_specs = []*Spec{{
 	Name:  "lower",
 	Kind:  PREPROC,
 	FName: "ToLower",
-	FType: &gotype.Type{
-		Pkg: gotype.Pkg{
+	FType: &xtypes.Type{
+		Pkg: xtypes.Pkg{
 			Name: "strings",
 			Path: "strings",
 		},
-		In:   []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Kind: gotype.K_FUNC,
+		In:   []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Kind: xtypes.K_FUNC,
 	},
 	ArgMin: 0,
 	ArgMax: 0,
@@ -369,14 +369,14 @@ var _stdlib_pre_specs = []*Spec{{
 	Name:  "upper",
 	Kind:  PREPROC,
 	FName: "ToUpper",
-	FType: &gotype.Type{
-		Pkg: gotype.Pkg{
+	FType: &xtypes.Type{
+		Pkg: xtypes.Pkg{
 			Name: "strings",
 			Path: "strings",
 		},
-		In:   []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Kind: gotype.K_FUNC,
+		In:   []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Kind: xtypes.K_FUNC,
 	},
 	ArgMin: 0,
 	ArgMax: 0,
@@ -384,14 +384,14 @@ var _stdlib_pre_specs = []*Spec{{
 	Name:  "title",
 	Kind:  PREPROC,
 	FName: "ToTitle",
-	FType: &gotype.Type{
-		Pkg: gotype.Pkg{
+	FType: &xtypes.Type{
+		Pkg: xtypes.Pkg{
 			Name: "strings",
 			Path: "strings",
 		},
-		In:   []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Kind: gotype.K_FUNC,
+		In:   []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Kind: xtypes.K_FUNC,
 	},
 	ArgMin: 0,
 	ArgMax: 0,
@@ -399,17 +399,17 @@ var _stdlib_pre_specs = []*Spec{{
 	Name:  "validutf8",
 	Kind:  PREPROC,
 	FName: "ToValidUTF8",
-	FType: &gotype.Type{
-		Pkg: gotype.Pkg{
+	FType: &xtypes.Type{
+		Pkg: xtypes.Pkg{
 			Name: "strings",
 			Path: "strings",
 		},
-		In: []*gotype.Var{
-			{Type: &gotype.Type{Kind: gotype.K_STRING}},
-			{Type: &gotype.Type{Kind: gotype.K_STRING}},
+		In: []*xtypes.Var{
+			{Type: &xtypes.Type{Kind: xtypes.K_STRING}},
+			{Type: &xtypes.Type{Kind: xtypes.K_STRING}},
 		},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Kind: gotype.K_FUNC,
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Kind: xtypes.K_FUNC,
 	},
 	ArgMin:  0,
 	ArgMax:  1,
@@ -418,14 +418,14 @@ var _stdlib_pre_specs = []*Spec{{
 	Name:  "trim",
 	Kind:  PREPROC,
 	FName: "TrimSpace",
-	FType: &gotype.Type{
-		Pkg: gotype.Pkg{
+	FType: &xtypes.Type{
+		Pkg: xtypes.Pkg{
 			Name: "strings",
 			Path: "strings",
 		},
-		In:   []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Kind: gotype.K_FUNC,
+		In:   []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Kind: xtypes.K_FUNC,
 	},
 	ArgMin: 0,
 	ArgMax: 0,
@@ -433,17 +433,17 @@ var _stdlib_pre_specs = []*Spec{{
 	Name:  "ltrim",
 	Kind:  PREPROC,
 	FName: "TrimLeft",
-	FType: &gotype.Type{
-		Pkg: gotype.Pkg{
+	FType: &xtypes.Type{
+		Pkg: xtypes.Pkg{
 			Name: "strings",
 			Path: "strings",
 		},
-		In: []*gotype.Var{
-			{Type: &gotype.Type{Kind: gotype.K_STRING}},
-			{Type: &gotype.Type{Kind: gotype.K_STRING}},
+		In: []*xtypes.Var{
+			{Type: &xtypes.Type{Kind: xtypes.K_STRING}},
+			{Type: &xtypes.Type{Kind: xtypes.K_STRING}},
 		},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Kind: gotype.K_FUNC,
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Kind: xtypes.K_FUNC,
 	},
 	ArgMin: 1,
 	ArgMax: 1,
@@ -451,17 +451,17 @@ var _stdlib_pre_specs = []*Spec{{
 	Name:  "rtrim",
 	Kind:  PREPROC,
 	FName: "TrimRight",
-	FType: &gotype.Type{
-		Pkg: gotype.Pkg{
+	FType: &xtypes.Type{
+		Pkg: xtypes.Pkg{
 			Name: "strings",
 			Path: "strings",
 		},
-		In: []*gotype.Var{
-			{Type: &gotype.Type{Kind: gotype.K_STRING}},
-			{Type: &gotype.Type{Kind: gotype.K_STRING}},
+		In: []*xtypes.Var{
+			{Type: &xtypes.Type{Kind: xtypes.K_STRING}},
+			{Type: &xtypes.Type{Kind: xtypes.K_STRING}},
 		},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Kind: gotype.K_FUNC,
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Kind: xtypes.K_FUNC,
 	},
 	ArgMin: 1,
 	ArgMax: 1,
@@ -469,17 +469,17 @@ var _stdlib_pre_specs = []*Spec{{
 	Name:  "trimprefix",
 	Kind:  PREPROC,
 	FName: "TrimPrefix",
-	FType: &gotype.Type{
-		Pkg: gotype.Pkg{
+	FType: &xtypes.Type{
+		Pkg: xtypes.Pkg{
 			Name: "strings",
 			Path: "strings",
 		},
-		In: []*gotype.Var{
-			{Type: &gotype.Type{Kind: gotype.K_STRING}},
-			{Type: &gotype.Type{Kind: gotype.K_STRING}},
+		In: []*xtypes.Var{
+			{Type: &xtypes.Type{Kind: xtypes.K_STRING}},
+			{Type: &xtypes.Type{Kind: xtypes.K_STRING}},
 		},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Kind: gotype.K_FUNC,
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Kind: xtypes.K_FUNC,
 	},
 	ArgMin: 1,
 	ArgMax: 1,
@@ -487,17 +487,17 @@ var _stdlib_pre_specs = []*Spec{{
 	Name:  "trimsuffix",
 	Kind:  PREPROC,
 	FName: "TrimSuffix",
-	FType: &gotype.Type{
-		Pkg: gotype.Pkg{
+	FType: &xtypes.Type{
+		Pkg: xtypes.Pkg{
 			Name: "strings",
 			Path: "strings",
 		},
-		In: []*gotype.Var{
-			{Type: &gotype.Type{Kind: gotype.K_STRING}},
-			{Type: &gotype.Type{Kind: gotype.K_STRING}},
+		In: []*xtypes.Var{
+			{Type: &xtypes.Type{Kind: xtypes.K_STRING}},
+			{Type: &xtypes.Type{Kind: xtypes.K_STRING}},
 		},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Kind: gotype.K_FUNC,
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Kind: xtypes.K_FUNC,
 	},
 	ArgMin: 1,
 	ArgMax: 1,
@@ -505,14 +505,14 @@ var _stdlib_pre_specs = []*Spec{{
 	Name:  "quote",
 	Kind:  PREPROC,
 	FName: "Quote",
-	FType: &gotype.Type{
-		Pkg: gotype.Pkg{
+	FType: &xtypes.Type{
+		Pkg: xtypes.Pkg{
 			Name: "strconv",
 			Path: "strconv",
 		},
-		In:   []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Kind: gotype.K_FUNC,
+		In:   []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Kind: xtypes.K_FUNC,
 	},
 	ArgMin: 0,
 	ArgMax: 0,
@@ -520,14 +520,14 @@ var _stdlib_pre_specs = []*Spec{{
 	Name:  "quoteascii",
 	Kind:  PREPROC,
 	FName: "QuoteToASCII",
-	FType: &gotype.Type{
-		Pkg: gotype.Pkg{
+	FType: &xtypes.Type{
+		Pkg: xtypes.Pkg{
 			Name: "strconv",
 			Path: "strconv",
 		},
-		In:   []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Kind: gotype.K_FUNC,
+		In:   []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Kind: xtypes.K_FUNC,
 	},
 	ArgMin: 0,
 	ArgMax: 0,
@@ -535,14 +535,14 @@ var _stdlib_pre_specs = []*Spec{{
 	Name:  "quotegraphic",
 	Kind:  PREPROC,
 	FName: "QuoteToGraphic",
-	FType: &gotype.Type{
-		Pkg: gotype.Pkg{
+	FType: &xtypes.Type{
+		Pkg: xtypes.Pkg{
 			Name: "strconv",
 			Path: "strconv",
 		},
-		In:   []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Kind: gotype.K_FUNC,
+		In:   []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Kind: xtypes.K_FUNC,
 	},
 	ArgMin: 0,
 	ArgMax: 0,
@@ -550,15 +550,15 @@ var _stdlib_pre_specs = []*Spec{{
 	Name:  "urlqueryesc",
 	Kind:  PREPROC,
 	FName: "QueryEscape",
-	FType: &gotype.Type{
-		Pkg: gotype.Pkg{
+	FType: &xtypes.Type{
+		Pkg: xtypes.Pkg{
 			Name: "url",
 			Path: "net/url",
 		},
 		// XXX
-		In:   []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Kind: gotype.K_FUNC,
+		In:   []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Kind: xtypes.K_FUNC,
 	},
 	ArgMin: 0,
 	ArgMax: 0,
@@ -566,14 +566,14 @@ var _stdlib_pre_specs = []*Spec{{
 	Name:  "urlpathesc",
 	Kind:  PREPROC,
 	FName: "PathEscape",
-	FType: &gotype.Type{
-		Pkg: gotype.Pkg{
+	FType: &xtypes.Type{
+		Pkg: xtypes.Pkg{
 			Name: "url",
 			Path: "net/url",
 		},
-		In:   []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Kind: gotype.K_FUNC,
+		In:   []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Kind: xtypes.K_FUNC,
 	},
 	ArgMin: 0,
 	ArgMax: 0,
@@ -581,14 +581,14 @@ var _stdlib_pre_specs = []*Spec{{
 	Name:  "htmlesc",
 	Kind:  PREPROC,
 	FName: "EscapeString",
-	FType: &gotype.Type{
-		Pkg: gotype.Pkg{
+	FType: &xtypes.Type{
+		Pkg: xtypes.Pkg{
 			Name: "html",
 			Path: "html",
 		},
-		In:   []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Kind: gotype.K_FUNC,
+		In:   []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Kind: xtypes.K_FUNC,
 	},
 	ArgMin: 0,
 	ArgMax: 0,
@@ -596,14 +596,14 @@ var _stdlib_pre_specs = []*Spec{{
 	Name:  "htmlunesc",
 	Kind:  PREPROC,
 	FName: "UnescapeString",
-	FType: &gotype.Type{
-		Pkg: gotype.Pkg{
+	FType: &xtypes.Type{
+		Pkg: xtypes.Pkg{
 			Name: "html",
 			Path: "html",
 		},
-		In:   []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-		Kind: gotype.K_FUNC,
+		In:   []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+		Kind: xtypes.K_FUNC,
 	},
 	ArgMin: 0,
 	ArgMax: 0,
@@ -611,14 +611,14 @@ var _stdlib_pre_specs = []*Spec{{
 	Name:  "round",
 	Kind:  PREPROC,
 	FName: "Round",
-	FType: &gotype.Type{
-		Pkg: gotype.Pkg{
+	FType: &xtypes.Type{
+		Pkg: xtypes.Pkg{
 			Name: "math",
 			Path: "math",
 		},
-		In:   []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_FLOAT64}}},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_FLOAT64}}},
-		Kind: gotype.K_FUNC,
+		In:   []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_FLOAT64}}},
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_FLOAT64}}},
+		Kind: xtypes.K_FUNC,
 	},
 	ArgMin: 0,
 	ArgMax: 0,
@@ -626,14 +626,14 @@ var _stdlib_pre_specs = []*Spec{{
 	Name:  "ceil",
 	Kind:  PREPROC,
 	FName: "Ceil",
-	FType: &gotype.Type{
-		Pkg: gotype.Pkg{
+	FType: &xtypes.Type{
+		Pkg: xtypes.Pkg{
 			Name: "math",
 			Path: "math",
 		},
-		In:   []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_FLOAT64}}},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_FLOAT64}}},
-		Kind: gotype.K_FUNC,
+		In:   []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_FLOAT64}}},
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_FLOAT64}}},
+		Kind: xtypes.K_FUNC,
 	},
 	ArgMin: 0,
 	ArgMax: 0,
@@ -641,14 +641,14 @@ var _stdlib_pre_specs = []*Spec{{
 	Name:  "floor",
 	Kind:  PREPROC,
 	FName: "Floor",
-	FType: &gotype.Type{
-		Pkg: gotype.Pkg{
+	FType: &xtypes.Type{
+		Pkg: xtypes.Pkg{
 			Name: "math",
 			Path: "math",
 		},
-		In:   []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_FLOAT64}}},
-		Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_FLOAT64}}},
-		Kind: gotype.K_FUNC,
+		In:   []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_FLOAT64}}},
+		Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_FLOAT64}}},
+		Kind: xtypes.K_FUNC,
 	},
 	ArgMin: 0,
 	ArgMax: 0,

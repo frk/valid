@@ -1,7 +1,7 @@
 package rules
 
 import (
-	"github.com/frk/valid/cmd/internal/gotype"
+	"github.com/frk/valid/cmd/internal/xtypes"
 )
 
 // orderedCheck checks that the Node's type is *ordered* and
@@ -9,7 +9,7 @@ import (
 // a type that is *comparable* with the Node's type.
 func (c *Checker) orderedCheck(n *Node, r *Rule) error {
 	// the type must be numeric or string
-	if !n.Type.Kind.IsNumeric() && n.Type.Kind != gotype.K_STRING {
+	if !n.Type.Kind.IsNumeric() && n.Type.Kind != xtypes.K_STRING {
 		return &Error{C: ERR_ORDERED_TYPE, ty: n.Type, r: r}
 	}
 

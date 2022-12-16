@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/frk/valid/cmd/internal/config"
-	"github.com/frk/valid/cmd/internal/gotype"
 	"github.com/frk/valid/cmd/internal/search"
+	"github.com/frk/valid/cmd/internal/xtypes"
 
 	"gopkg.in/yaml.v3"
 )
@@ -64,7 +64,7 @@ type Spec struct {
 	// Kind=FUNCTION only, the function's identifier.
 	FName string
 	// Kind=FUNCTION only, the function's type.
-	FType *gotype.Type
+	FType *xtypes.Type
 	// ArgMin and ArgMax define bounds of allowed
 	// number of arguments for the rule.
 	ArgMin, ArgMax int
@@ -199,7 +199,7 @@ func specFromFunc(a *search.AST, f *types.Func, rs *config.RuleSpec) (*Spec, err
 		return nil, &Error{C: ERR_CONFIG_RESERVED, a: a, ft: f, rs: rs}
 	}
 
-	an := gotype.NewAnalyzer(f.Pkg())
+	an := xtypes.NewAnalyzer(f.Pkg())
 	ty := an.Object(f)
 	jop := _joinOps[rs.JoinOp]
 
@@ -214,7 +214,7 @@ func specFromFunc(a *search.AST, f *types.Func, rs *config.RuleSpec) (*Spec, err
 		if len(ty.In) < 1 || (len(ty.Out) != 1 && len(ty.Out) != 2) {
 			return nil, &Error{C: ERR_CONFIG_FUNCTYPE, a: a, ft: f, rs: rs}
 		}
-		if ty.Out[0].Type.Kind != gotype.K_BOOL || (len(ty.Out) > 1 && !ty.Out[1].Type.IsGoError()) {
+		if ty.Out[0].Type.Kind != xtypes.K_BOOL || (len(ty.Out) > 1 && !ty.Out[1].Type.IsGoError()) {
 			return nil, &Error{C: ERR_CONFIG_FUNCTYPE, a: a, ft: f, rs: rs}
 		}
 	case PREPROC:
@@ -318,7 +318,7 @@ func specFromFunc(a *search.AST, f *types.Func, rs *config.RuleSpec) (*Spec, err
 	return spec, nil
 }
 
-func isValidNumberOfArgs(nargs int, ft *gotype.Type, joinOp JoinOp) bool {
+func isValidNumberOfArgs(nargs int, ft *xtypes.Type, joinOp JoinOp) bool {
 	nparams := len(ft.In) - 1 // -1 for the field argument
 
 	// If not variadic & not joinable, require exact match.
@@ -353,7 +353,7 @@ func validateArgOptsAsFuncParams(s *Spec) error {
 
 	for i, argOpts := range s.ArgOpts {
 		var j int
-		var p *gotype.Var
+		var p *xtypes.Var
 
 		switch last := len(params) - 1; {
 		case i < last || (i == last && !s.FType.IsVariadic):
@@ -362,7 +362,7 @@ func validateArgOptsAsFuncParams(s *Spec) error {
 
 		case i >= last && s.FType.IsVariadic:
 			j = last
-			p = &gotype.Var{
+			p = &xtypes.Var{
 				Name: params[j].Name,
 				Type: params[j].Type.Elem.Type,
 			}
@@ -394,7 +394,7 @@ func validateArgOptsAsFuncParams(s *Spec) error {
 	return nil
 }
 
-func (s *Spec) getFuncParamByArgIndex(i int) (p *gotype.Var, pi int) {
+func (s *Spec) getFuncParamByArgIndex(i int) (p *xtypes.Var, pi int) {
 	params := s.FType.In
 	firstParamIsField := (s.Kind != METHOD)
 
@@ -410,7 +410,7 @@ func (s *Spec) getFuncParamByArgIndex(i int) (p *gotype.Var, pi int) {
 
 	case i >= last && s.FType.IsVariadic:
 		p := params[last]
-		return &gotype.Var{Name: p.Name, Type: p.Type.Elem.Type}, last
+		return &xtypes.Var{Name: p.Name, Type: p.Type.Elem.Type}, last
 
 	case i > last && s.JoinOp > 0:
 		if len(s.ArgOpts)-i >= len(params) {

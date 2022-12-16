@@ -1,4 +1,4 @@
-package gotype
+package xtypes
 
 import (
 	"go/types"
@@ -9,7 +9,7 @@ import (
 
 func TestAnalyzer_Validator(t *testing.T) {
 	pkg0 := Pkg{
-		Path: "github.com/frk/valid/cmd/internal/gotype/testdata",
+		Path: "github.com/frk/valid/cmd/internal/xtypes/testdata",
 		Name: "testdata",
 	}
 
@@ -103,7 +103,7 @@ func TestAnalyzer_Validator(t *testing.T) {
 			ErrorHandlerField: &ErrorHandlerField{Name: "err", IsAggregator: true},
 		},
 	}, {
-		// (*gotype.Validator).Type.Methods[0].Type.Out[0].Type.Methods[0].Pkg.Name
+		// (*types.Validator).Type.Methods[0].Type.Out[0].Type.Methods[0].Pkg.Name
 		named: test_type("Test5Validator").(*types.Named),
 		want: &Validator{
 			Type: &Type{

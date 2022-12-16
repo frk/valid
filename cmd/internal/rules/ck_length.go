@@ -3,7 +3,7 @@ package rules
 import (
 	"strconv"
 
-	"github.com/frk/valid/cmd/internal/gotype"
+	"github.com/frk/valid/cmd/internal/xtypes"
 )
 
 // checkLength checks that the Node and Rule
@@ -17,7 +17,7 @@ func (c *Checker) lengthCheck(n *Node, r *Rule) error {
 		}
 	case "runecount":
 		// tn must be string kind or byte slice
-		if n.Type.Kind != gotype.K_STRING && (n.Type.Kind != gotype.K_SLICE || !n.Type.Elem.Type.IsByte) {
+		if n.Type.Kind != xtypes.K_STRING && (n.Type.Kind != xtypes.K_SLICE || !n.Type.Elem.Type.IsByte) {
 			return &Error{C: ERR_LENGTH_NORUNE, ty: n.Type, r: r}
 		}
 	}
@@ -55,7 +55,7 @@ func (c *Checker) lengthCheck(n *Node, r *Rule) error {
 		// type can be converted to an int, which is the type of the
 		// return value of the `len` and `ut8.RuneCount` functions.
 		case a.Type == ARG_FIELD_ABS || a.Type == ARG_FIELD_REL:
-			tt := &gotype.Type{Kind: gotype.K_INT}
+			tt := &xtypes.Type{Kind: xtypes.K_INT}
 			ft := c.KeyMap[a.Value].Type.Type // field's type
 			if !tt.CanConvert(ft) {
 				return &Error{C: ERR_LENGTH_ARGTYPE, r: r, ra: a}

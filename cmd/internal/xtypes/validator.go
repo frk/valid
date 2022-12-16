@@ -1,4 +1,4 @@
-package gotype
+package xtypes
 
 import (
 	"go/types"
@@ -36,7 +36,7 @@ type MethodInfo struct {
 }
 
 // Validator analyzes the named type and returns its
-// corresponding gotype.Validator representation.
+// corresponding xtypes.Validator representation.
 //
 // The method will panic if the named type is not a struct.
 func (an *Analyzer) Validator(named *types.Named) *Validator {

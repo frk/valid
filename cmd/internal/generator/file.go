@@ -3,13 +3,13 @@ package generator
 import (
 	"strings"
 
-	"github.com/frk/valid/cmd/internal/gotype"
 	"github.com/frk/valid/cmd/internal/rules"
+	"github.com/frk/valid/cmd/internal/xtypes"
 
 	GO "github.com/frk/ast/golang"
 )
 
-func fileAST(pkg gotype.Pkg, infos []*rules.Info) GO.File {
+func fileAST(pkg xtypes.Pkg, infos []*rules.Info) GO.File {
 	g := &gg{pkg: pkg}
 	g.argmap = make(map[*rules.Rule][]GO.ExprNode)
 	g.enumap = make(map[*rules.Rule][]GO.ExprNode)

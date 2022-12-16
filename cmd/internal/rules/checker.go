@@ -6,8 +6,8 @@ import (
 	"strconv"
 
 	"github.com/frk/valid/cmd/internal/config"
-	"github.com/frk/valid/cmd/internal/gotype"
 	"github.com/frk/valid/cmd/internal/search"
+	"github.com/frk/valid/cmd/internal/xtypes"
 
 	"github.com/frk/tagutil"
 )
@@ -17,14 +17,14 @@ var _ = fmt.Println
 // Info holds the result type information for rule-checking a Validator.
 type Info struct {
 	// The Validator being rule-checked.
-	Validator *gotype.Validator
+	Validator *xtypes.Validator
 	// The Node representation of the Validator
 	RootNode *Node
 	// KeyMap maps field keys to the corresponding type nodes.
 	KeyMap map[string]*FieldNode
 	// EnumMap maps types to a slice of
 	// constants declared with that type.
-	EnumMap map[*gotype.Type][]gotype.Const
+	EnumMap map[*xtypes.Type][]xtypes.Const
 }
 
 // Checker maintains the state of the rule checker.
@@ -33,13 +33,13 @@ type Checker struct {
 	// The set of go/ast packages associated with the type being checked.
 	ast *search.AST
 	// The package for which the code will be generated.
-	pkg gotype.Pkg
+	pkg xtypes.Pkg
 	// The file set with which the type being checked is associated.
 	fs *token.FileSet
 	// The analyzer used to analyze the matched type.
-	an *gotype.Analyzer
+	an *xtypes.Analyzer
 	// The Validtor struct being rule-checked.
-	vs *gotype.Validator
+	vs *xtypes.Validator
 	// The function used for generating unique field keys.
 	fieldKey FieldKeyFunc
 }
@@ -47,7 +47,7 @@ type Checker struct {
 // NewChecker returns a new Checker instance.
 // The optional info argument, will be populated during rule-checking.
 func NewChecker(ast *search.AST, pkg search.Pkg, fkCfg *config.FieldKeyConfig, info *Info) (c *Checker) {
-	c = &Checker{ast: ast, pkg: gotype.Pkg(pkg)}
+	c = &Checker{ast: ast, pkg: xtypes.Pkg(pkg)}
 	c.fieldKey = fkFunc(fkCfg)
 
 	c.Info = info
@@ -55,7 +55,7 @@ func NewChecker(ast *search.AST, pkg search.Pkg, fkCfg *config.FieldKeyConfig, i
 		c.Info = new(Info)
 	}
 	c.Info.KeyMap = make(map[string]*FieldNode)
-	c.Info.EnumMap = make(map[*gotype.Type][]gotype.Const)
+	c.Info.EnumMap = make(map[*xtypes.Type][]xtypes.Const)
 	return c
 }
 
@@ -63,7 +63,7 @@ func NewChecker(ast *search.AST, pkg search.Pkg, fkCfg *config.FieldKeyConfig, i
 // given *search.Match and returns the first error encountered.
 func (c *Checker) Check(match *search.Match) error {
 	// 1. analyze
-	c.an = gotype.NewAnalyzer(match.Named.Obj().Pkg())
+	c.an = xtypes.NewAnalyzer(match.Named.Obj().Pkg())
 	c.vs = c.an.Validator(match.Named)
 
 	// 2. convert to a Node tree
@@ -98,16 +98,16 @@ func (c *Checker) check(n *Node) error {
 	}
 
 	switch n.Type.Kind {
-	case gotype.K_PTR:
+	case xtypes.K_PTR:
 		return c.check(n.Elem)
-	case gotype.K_ARRAY, gotype.K_SLICE:
+	case xtypes.K_ARRAY, xtypes.K_SLICE:
 		return c.check(n.Elem)
-	case gotype.K_MAP:
+	case xtypes.K_MAP:
 		if err := c.check(n.Key); err != nil {
 			return err
 		}
 		return c.check(n.Elem)
-	case gotype.K_STRUCT:
+	case xtypes.K_STRUCT:
 		for _, f := range n.Fields {
 			if err := c.check(f.Type); err != nil {
 				return c.err(err, errOpts{sf: f.Field})
@@ -297,7 +297,7 @@ func (c *Checker) err(err error, opts errOpts) error {
 // for each field to generate a unique key from the FieldSelector.
 //
 // If optuniq is true then the key uniqueness is optional.
-type FieldKeyFunc func(fs gotype.FieldSelector, optuniq bool) (key string)
+type FieldKeyFunc func(fs xtypes.FieldSelector, optuniq bool) (key string)
 
 // fkFunc returns a function that, based on the given configuration,
 // generates a unique field key for a given FieldSelector.
@@ -324,7 +324,7 @@ func fkFunc(c *config.FieldKeyConfig) FieldKeyFunc {
 			// Returns the joined tag values of the fields in the given slice.
 			// If one of the fields does not have a tag value set, their name
 			// will be used in the join as default.
-			return func(fs gotype.FieldSelector, optuniq bool) (key string) {
+			return func(fs xtypes.FieldSelector, optuniq bool) (key string) {
 				tag := c.Tag.Value
 				sep := c.Separator.Value
 
@@ -349,7 +349,7 @@ func fkFunc(c *config.FieldKeyConfig) FieldKeyFunc {
 
 		// Returns the tag value of the last field, if no value was
 		// set the field's name will be returned instead.
-		return func(fs gotype.FieldSelector, optuniq bool) string {
+		return func(fs xtypes.FieldSelector, optuniq bool) string {
 			t := tagutil.New(fs[len(fs)-1].Tag)
 			if key := t.First(c.Tag.Value); len(key) > 0 {
 				return unique(key, optuniq)
@@ -362,7 +362,7 @@ func fkFunc(c *config.FieldKeyConfig) FieldKeyFunc {
 		sep := c.Separator.Value
 
 		// Returns the joined names of the fields in the given slice.
-		return func(fs gotype.FieldSelector, optuniq bool) (key string) {
+		return func(fs xtypes.FieldSelector, optuniq bool) (key string) {
 			for _, f := range fs {
 				t := tagutil.New(f.Tag)
 				if t.Contains("is", "omitkey") || f.IsEmbedded {
@@ -378,7 +378,7 @@ func fkFunc(c *config.FieldKeyConfig) FieldKeyFunc {
 	}
 
 	// Returns the name of the last field.
-	return func(fs gotype.FieldSelector, optuniq bool) string {
+	return func(fs xtypes.FieldSelector, optuniq bool) string {
 		return unique(fs[len(fs)-1].Name, optuniq)
 	}
 }
@@ -388,7 +388,7 @@ func fkFunc(c *config.FieldKeyConfig) FieldKeyFunc {
 
 // canConvertRuleArg reports whether or not the arg's literal
 // value can be converted to the Go type represented by t.
-func (c *Checker) canConvertRuleArg(t *gotype.Type, arg *Arg) bool {
+func (c *Checker) canConvertRuleArg(t *xtypes.Type, arg *Arg) bool {
 	if arg.Type == ARG_FIELD_ABS || arg.Type == ARG_FIELD_REL {
 		typ := c.KeyMap[arg.Value].Type
 
@@ -397,11 +397,11 @@ func (c *Checker) canConvertRuleArg(t *gotype.Type, arg *Arg) bool {
 			return true
 		}
 
-		return t.CanAssign(typ.Type) != gotype.ASSIGNMENT_INVALID
+		return t.CanAssign(typ.Type) != xtypes.ASSIGNMENT_INVALID
 	}
 
 	// t is interface{} or string, accept
-	if t.IsEmptyInterface() || t.Kind == gotype.K_STRING {
+	if t.IsEmptyInterface() || t.Kind == xtypes.K_STRING {
 		return true
 	}
 
@@ -411,7 +411,7 @@ func (c *Checker) canConvertRuleArg(t *gotype.Type, arg *Arg) bool {
 	}
 
 	// both are booleans, accept
-	if t.Kind == gotype.K_BOOL && arg.Type == ARG_BOOL {
+	if t.Kind == xtypes.K_BOOL && arg.Type == ARG_BOOL {
 		return true
 	}
 
@@ -431,8 +431,8 @@ func (c *Checker) canConvertRuleArg(t *gotype.Type, arg *Arg) bool {
 	}
 
 	// arg is string & string can be converted to t, accept
-	if arg.Type == ARG_STRING && (t.Kind == gotype.K_STRING || (t.Kind == gotype.K_SLICE &&
-		t.Elem.Type.Name == "" && (t.Elem.Type.Kind == gotype.K_UINT8 || t.Elem.Type.Kind == gotype.K_INT32))) {
+	if arg.Type == ARG_STRING && (t.Kind == xtypes.K_STRING || (t.Kind == xtypes.K_SLICE &&
+		t.Elem.Type.Name == "" && (t.Elem.Type.Kind == xtypes.K_UINT8 || t.Elem.Type.Kind == xtypes.K_INT32))) {
 		return true
 	}
 

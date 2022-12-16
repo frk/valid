@@ -3,8 +3,8 @@ package generator
 import (
 	"strconv"
 
-	"github.com/frk/valid/cmd/internal/gotype"
 	"github.com/frk/valid/cmd/internal/rules"
+	"github.com/frk/valid/cmd/internal/xtypes"
 
 	GO "github.com/frk/ast/golang"
 )
@@ -22,7 +22,7 @@ func (g *gg) ruleArg(n *rules.Node, r *rules.Rule, i int, a *rules.Arg) GO.ExprN
 
 	switch r.Spec.Kind {
 	case rules.LENGTH:
-		tt = &gotype.Type{Kind: gotype.K_INT}
+		tt = &xtypes.Type{Kind: xtypes.K_INT}
 	case rules.FUNCTION, rules.PREPROC:
 		if in := r.Spec.FType.In; len(in)-1 <= i {
 			tt = in[len(in)-1].Type
@@ -37,11 +37,11 @@ func (g *gg) ruleArg(n *rules.Node, r *rules.Rule, i int, a *rules.Arg) GO.ExprN
 	return g.constArg(n, r, a, tt)
 }
 
-func (g *gg) fieldArg(a *rules.Arg, t *gotype.Type) GO.ExprNode {
+func (g *gg) fieldArg(a *rules.Arg, t *xtypes.Type) GO.ExprNode {
 	f := g.info.KeyMap[a.Value]
 	x := g.recv
 
-	var last *gotype.StructField
+	var last *xtypes.StructField
 	for _, f := range f.Selector {
 		x = GO.SelectorExpr{X: x, Sel: GO.Ident{f.Name}}
 		last = f
@@ -57,7 +57,7 @@ func (g *gg) fieldArg(a *rules.Arg, t *gotype.Type) GO.ExprNode {
 	return x
 }
 
-func (g *gg) constArg(n *rules.Node, r *rules.Rule, a *rules.Arg, t *gotype.Type) (x GO.ExprNode) {
+func (g *gg) constArg(n *rules.Node, r *rules.Rule, a *rules.Arg, t *xtypes.Type) (x GO.ExprNode) {
 	if t.IsEmptyInterface() && a.Type != rules.ARG_STRING {
 		return GO.ValueLit(a.Value)
 	}
@@ -78,19 +78,19 @@ func (g *gg) constArg(n *rules.Node, r *rules.Rule, a *rules.Arg, t *gotype.Type
 	return nil
 }
 
-func zeroValue(t *gotype.Type) (x GO.ExprNode) {
+func zeroValue(t *xtypes.Type) (x GO.ExprNode) {
 	switch t.Kind {
-	case gotype.K_STRING:
+	case xtypes.K_STRING:
 		return GO.StringLit("")
-	case gotype.K_INT, gotype.K_INT8, gotype.K_INT16, gotype.K_INT32, gotype.K_INT64:
+	case xtypes.K_INT, xtypes.K_INT8, xtypes.K_INT16, xtypes.K_INT32, xtypes.K_INT64:
 		return GO.IntLit(0)
-	case gotype.K_UINT, gotype.K_UINT8, gotype.K_UINT16, gotype.K_UINT32, gotype.K_UINT64:
+	case xtypes.K_UINT, xtypes.K_UINT8, xtypes.K_UINT16, xtypes.K_UINT32, xtypes.K_UINT64:
 		return GO.IntLit(0)
-	case gotype.K_FLOAT32, gotype.K_FLOAT64:
+	case xtypes.K_FLOAT32, xtypes.K_FLOAT64:
 		return GO.ValueLit("0.0")
-	case gotype.K_BOOL:
+	case xtypes.K_BOOL:
 		return GO.ValueLit("false")
-	case gotype.K_PTR, gotype.K_SLICE, gotype.K_MAP, gotype.K_INTERFACE:
+	case xtypes.K_PTR, xtypes.K_SLICE, xtypes.K_MAP, xtypes.K_INTERFACE:
 		return NIL
 	}
 

@@ -11,14 +11,32 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+func DefaultConfig() Config {
+	return Config{
+		WorkDir:              String{Value: "."},
+		Recursive:            Bool{Value: false},
+		FileList:             StringSlice{},
+		FilePatternList:      StringSlice{},
+		OutNameFormat:        String{Value: "%_valid.go"},
+		ValidatorNamePattern: String{Value: `^(?i:\w*Validator)$`},
+		ErrorHandling: ErrorHandlingConfig{
+			FieldKey: FieldKeyConfig{
+				Tag:       String{Value: "json"},
+				Join:      Bool{Value: true},
+				Separator: String{Value: "."},
+			},
+		},
+	}
+}
+
 type Config struct {
 	// The file from which the config was decoded. Used for error reporting.
 	File String `yaml:"-"`
 	// The directory in which the tool will search for files to process.
 	// If not provided, the current working directory will be used by default.
 	WorkDir String `yaml:"working_directory"`
-	// If set to true, the tool will search the hierarchy of the working
-	// directory for files to process.
+	// If set to true, the tool will search the hierarchy
+	// of the working directory for files to process.
 	Recursive Bool `yaml:"recursive"`
 	// List of files to be used as input for the tool.
 	// The files must be located in the working directory.
@@ -429,24 +447,6 @@ func (c *Config) FileFilterFunc() (filter func(filePath string) bool) {
 ////////////////////////////////////////////////////////////////////////////////
 // helpers
 ////////////////////////////////////////////////////////////////////////////////
-
-func DefaultConfig() Config {
-	return Config{
-		WorkDir:              String{Value: "."},
-		Recursive:            Bool{Value: false},
-		FileList:             StringSlice{},
-		FilePatternList:      StringSlice{},
-		OutNameFormat:        String{Value: "%_valid.go"},
-		ValidatorNamePattern: String{Value: `^(?i:\w*Validator)$`},
-		ErrorHandling: ErrorHandlingConfig{
-			FieldKey: FieldKeyConfig{
-				Tag:       String{Value: "json"},
-				Join:      Bool{Value: true},
-				Separator: String{Value: "."},
-			},
-		},
-	}
-}
 
 // examineDir reports whether or not the directory at the given
 // path is the root directory of a git project and whether or not

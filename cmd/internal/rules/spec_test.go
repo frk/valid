@@ -8,8 +8,8 @@ import (
 
 	"github.com/frk/compare"
 	"github.com/frk/valid/cmd/internal/config"
-	"github.com/frk/valid/cmd/internal/gotype"
 	"github.com/frk/valid/cmd/internal/search"
+	"github.com/frk/valid/cmd/internal/xtypes"
 )
 
 func Test_initCustomSpecs(t *testing.T) {
@@ -165,7 +165,7 @@ func Test_initCustomSpecs(t *testing.T) {
 			rca:  &Arg{Type: ARG_STRING, Value: "foo"},
 			rcai: T.iptr(0),
 			rcak: T.sptr(""),
-			fp:   &gotype.Var{Name: "opt", Type: T.bool},
+			fp:   &xtypes.Var{Name: "opt", Type: T.bool},
 			fpi:  T.iptr(0),
 		},
 	}}

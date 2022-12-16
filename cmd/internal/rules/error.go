@@ -8,8 +8,8 @@ import (
 
 	"github.com/frk/valid/cmd/internal/config"
 	"github.com/frk/valid/cmd/internal/errors"
-	"github.com/frk/valid/cmd/internal/gotype"
 	"github.com/frk/valid/cmd/internal/search"
+	"github.com/frk/valid/cmd/internal/xtypes"
 
 	"gopkg.in/yaml.v3"
 )
@@ -42,13 +42,13 @@ type Error struct {
 	ft *types.Func
 	// Set if the error is related to a specific
 	// struct field, otherwise nil.
-	sf *gotype.StructField
+	sf *xtypes.StructField
 	// The *types.Var instance associated with
 	// the struct field.
 	sfv *types.Var
 	// Set if the error is directly related to
 	// a specific type, otherwise nil.
-	ty *gotype.Type
+	ty *xtypes.Type
 	// Set if the error is related to a tag,
 	// otherwise nil.
 	tag *Tag
@@ -64,10 +64,10 @@ type Error struct {
 	// Set if the error is related to a specific
 	// rule argument and that argument is a field
 	// reference, otherwise nil.
-	raf *gotype.StructField
+	raf *xtypes.StructField
 	// A function parameter. Set if the error is related
 	// to a specific rule function parameter, otherwise nil.
-	fp *gotype.Var
+	fp *xtypes.Var
 	// A function parameter's index. Set if the error is related
 	// to a specific rule function parameter, otherwise nil.
 	fpi *int

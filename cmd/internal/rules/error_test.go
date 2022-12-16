@@ -4,8 +4,8 @@ import (
 	"go/types"
 
 	"github.com/frk/valid/cmd/internal/config"
-	"github.com/frk/valid/cmd/internal/gotype"
 	"github.com/frk/valid/cmd/internal/search"
+	"github.com/frk/valid/cmd/internal/xtypes"
 )
 
 // Used by tests to convert Error instances to ttError.
@@ -23,15 +23,15 @@ type ttError struct {
 	rcai *int                //`cmp:"+"`
 	rcak *string             //`cmp:"+"`
 	ft   *types.Func         `cmp:"+"`
-	sf   *gotype.StructField //`cmp:"+"`
+	sf   *xtypes.StructField //`cmp:"+"`
 	sfv  *types.Var          `cmp:"+"`
-	ty   *gotype.Type        //`cmp:"+"`
+	ty   *xtypes.Type        //`cmp:"+"`
 	tag  *Tag                //`cmp:"+"`
 	r    *Rule               //`cmp:"+"`
 	r2   *Rule               //`cmp:"+"`
 	ra   *Arg                //`cmp:"+"`
-	raf  *gotype.StructField `cmp:"+"`
-	fp   *gotype.Var         //`cmp:"+"`
+	raf  *xtypes.StructField `cmp:"+"`
+	fp   *xtypes.Var         //`cmp:"+"`
 	fpi  *int                //`cmp:"+"`
 	err  error               `cmp:"+"`
 }

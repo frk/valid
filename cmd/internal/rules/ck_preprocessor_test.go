@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/frk/valid/cmd/internal/config"
-	"github.com/frk/valid/cmd/internal/gotype"
+	"github.com/frk/valid/cmd/internal/xtypes"
 
 	"github.com/frk/compare"
 )
@@ -14,46 +14,46 @@ func init() {
 	_custom["pre:p1"] = &Spec{
 		Name: "p1", Kind: PREPROC,
 		FName: "MyPreproc1",
-		FType: &gotype.Type{
-			Pkg: gotype.Pkg{
+		FType: &xtypes.Type{
+			Pkg: xtypes.Pkg{
 				Name: "mypkg",
 				Path: "github.com/frk/valid/cmd/internal/rules/testdata/mypkg",
 			},
-			In:   []*gotype.Var{{Name: "v", Type: &gotype.Type{Kind: gotype.K_FLOAT64}}},
-			Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-			Kind: gotype.K_FUNC,
+			In:   []*xtypes.Var{{Name: "v", Type: &xtypes.Type{Kind: xtypes.K_FLOAT64}}},
+			Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+			Kind: xtypes.K_FUNC,
 		},
 	}
 	_custom["pre:p2"] = &Spec{
 		Name: "p2", Kind: PREPROC,
 		FName: "MyPreproc2",
-		FType: &gotype.Type{
-			Pkg: gotype.Pkg{
+		FType: &xtypes.Type{
+			Pkg: xtypes.Pkg{
 				Name: "mypkg",
 				Path: "github.com/frk/valid/cmd/internal/rules/testdata/mypkg",
 			},
-			In: []*gotype.Var{
-				{Name: "v", Type: &gotype.Type{Kind: gotype.K_STRING}},
-				{Name: "opt", Type: &gotype.Type{Kind: gotype.K_UINT}},
+			In: []*xtypes.Var{
+				{Name: "v", Type: &xtypes.Type{Kind: xtypes.K_STRING}},
+				{Name: "opt", Type: &xtypes.Type{Kind: xtypes.K_UINT}},
 			},
-			Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_FLOAT64}}},
-			Kind: gotype.K_FUNC,
+			Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_FLOAT64}}},
+			Kind: xtypes.K_FUNC,
 		},
 	}
 	_custom["pre:p4"] = &Spec{
 		Name: "p4", Kind: PREPROC,
 		FName: "MyPreproc4",
-		FType: &gotype.Type{
-			Pkg: gotype.Pkg{
+		FType: &xtypes.Type{
+			Pkg: xtypes.Pkg{
 				Name: "mypkg",
 				Path: "github.com/frk/valid/cmd/internal/rules/testdata/mypkg",
 			},
-			In: []*gotype.Var{
-				{Name: "v", Type: &gotype.Type{Kind: gotype.K_STRING}},
-				{Name: "opt", Type: &gotype.Type{Kind: gotype.K_UINT}},
+			In: []*xtypes.Var{
+				{Name: "v", Type: &xtypes.Type{Kind: xtypes.K_STRING}},
+				{Name: "opt", Type: &xtypes.Type{Kind: xtypes.K_UINT}},
 			},
-			Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-			Kind: gotype.K_FUNC,
+			Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+			Kind: xtypes.K_FUNC,
 		},
 		ArgMin: 1,
 		ArgMax: 1,
@@ -63,14 +63,14 @@ func init() {
 	_custom["pre:p0"] = &Spec{
 		Name: "p0", Kind: FUNCTION,
 		FName: "MyPreproc0",
-		FType: &gotype.Type{
-			Pkg: gotype.Pkg{
+		FType: &xtypes.Type{
+			Pkg: xtypes.Pkg{
 				Name: "mypkg",
 				Path: "github.com/frk/valid/cmd/internal/rules/testdata/mypkg",
 			},
-			In:   []*gotype.Var{{Name: "v", Type: &gotype.Type{Kind: gotype.K_STRING}}},
-			Out:  []*gotype.Var{{Type: &gotype.Type{Kind: gotype.K_STRING}}},
-			Kind: gotype.K_FUNC,
+			In:   []*xtypes.Var{{Name: "v", Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+			Out:  []*xtypes.Var{{Type: &xtypes.Type{Kind: xtypes.K_STRING}}},
+			Kind: xtypes.K_FUNC,
 		},
 		ArgMin: 1,
 		ArgMax: 1,
@@ -88,11 +88,11 @@ func TestChecker_preprocessorCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_PREPROC_INTYPE_1_Validator",
 		err: &Error{C: ERR_PREPROC_INTYPE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `pre:"p1"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -104,11 +104,11 @@ func TestChecker_preprocessorCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_PREPROC_OUTTYPE_1_Validator",
 		err: &Error{C: ERR_PREPROC_OUTTYPE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `pre:"p2"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -120,11 +120,11 @@ func TestChecker_preprocessorCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_PREPROC_ARGTYPE_1_Validator",
 		err: &Error{C: ERR_PREPROC_ARGTYPE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `pre:"p4:foo"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -134,7 +134,7 @@ func TestChecker_preprocessorCheck(t *testing.T) {
 				Spec: GetSpec("pre:p4"),
 			},
 			ra:  &Arg{Type: ARG_STRING, Value: "foo"},
-			fp:  &gotype.Var{Name: "opt", Type: T.uint},
+			fp:  &xtypes.Var{Name: "opt", Type: T.uint},
 			fpi: T.iptr(0),
 		},
 	}}

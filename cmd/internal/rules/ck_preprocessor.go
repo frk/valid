@@ -1,7 +1,7 @@
 package rules
 
 import (
-	"github.com/frk/valid/cmd/internal/gotype"
+	"github.com/frk/valid/cmd/internal/xtypes"
 )
 
 func (c *Checker) preprocessorCheck(n *Node, r *Rule) error {
@@ -11,14 +11,14 @@ func (c *Checker) preprocessorCheck(n *Node, r *Rule) error {
 	if r.Spec.FType.IsVariadic && len(r.Spec.FType.In) == 1 {
 		paramType = paramType.Elem.Type
 	}
-	if paramType.CanAssign(n.Type) == gotype.ASSIGNMENT_INVALID {
+	if paramType.CanAssign(n.Type) == xtypes.ASSIGNMENT_INVALID {
 		return &Error{C: ERR_PREPROC_INTYPE, ty: n.Type, r: r}
 	}
 
 	// Make sure that an instance of the function
 	// output type can be assign to n.
 	outputType := r.Spec.FType.Out[0].Type
-	if n.Type.CanAssign(outputType) == gotype.ASSIGNMENT_INVALID {
+	if n.Type.CanAssign(outputType) == xtypes.ASSIGNMENT_INVALID {
 		return &Error{C: ERR_PREPROC_OUTTYPE, ty: n.Type, r: r}
 	}
 

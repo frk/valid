@@ -3,12 +3,12 @@ package rules
 import (
 	"fmt"
 
-	"github.com/frk/valid/cmd/internal/gotype"
+	"github.com/frk/valid/cmd/internal/xtypes"
 )
 
 type Node struct {
 	// The type associated with the node.
-	Type *gotype.Type
+	Type *xtypes.Type
 	// List of preprocessor rules associated with the node.
 	PreRules RuleList
 	// List of validation rules associated with the node.
@@ -32,20 +32,20 @@ type Node struct {
 }
 
 type FieldNode struct {
-	Field *gotype.StructField
+	Field *xtypes.StructField
 	// The Node representation of the field's type.
 	Type *Node
 	// The unique key of the field.
 	Key string
 	// The field's selector.
-	Selector gotype.FieldSelector
+	Selector xtypes.FieldSelector
 }
 
 // makeNode creates a Node representation of the given
 // Go type and its associated "is" & "pre" rule tags.
-func (c *Checker) makeNode(t *gotype.Type, is, pre *Tag, fs gotype.FieldSelector) (_ *Node, err error) {
+func (c *Checker) makeNode(t *xtypes.Type, is, pre *Tag, fs xtypes.FieldSelector) (_ *Node, err error) {
 	var root, base *Node
-	if t.Kind == gotype.K_PTR {
+	if t.Kind == xtypes.K_PTR {
 		root, base, err = c.makeNodeFromPtr(t, is, pre, fs)
 		if err != nil {
 			return nil, c.err(err, errOpts{sf: fs.Last()})
@@ -71,37 +71,37 @@ func (c *Checker) makeNode(t *gotype.Type, is, pre *Tag, fs gotype.FieldSelector
 
 	// Make sure that the rule structure in both tags
 	// is compatible with the associated type.
-	if is.HasKey() && !t.Is(gotype.K_MAP) {
+	if is.HasKey() && !t.Is(xtypes.K_MAP) {
 		return nil, &Error{C: ERR_RULE_KEY, sf: fs.Last(), ty: t, tag: is}
 	}
-	if is.HasElem() && !t.Is(gotype.K_ARRAY, gotype.K_SLICE, gotype.K_MAP) {
+	if is.HasElem() && !t.Is(xtypes.K_ARRAY, xtypes.K_SLICE, xtypes.K_MAP) {
 		return nil, &Error{C: ERR_RULE_ELEM, sf: fs.Last(), ty: t, tag: is}
 	}
-	if pre.HasKey() && !t.Is(gotype.K_MAP) {
+	if pre.HasKey() && !t.Is(xtypes.K_MAP) {
 		return nil, &Error{C: ERR_RULE_KEY, sf: fs.Last(), ty: t, tag: pre}
 	}
-	if pre.HasElem() && !t.Is(gotype.K_ARRAY, gotype.K_SLICE, gotype.K_MAP) {
+	if pre.HasElem() && !t.Is(xtypes.K_ARRAY, xtypes.K_SLICE, xtypes.K_MAP) {
 		return nil, &Error{C: ERR_RULE_ELEM, sf: fs.Last(), ty: t, tag: pre}
 	}
 
 	// descend the type hierarchy
 	switch t.Kind {
-	case gotype.K_ARRAY:
+	case xtypes.K_ARRAY:
 		if base.Elem, err = c.makeNode(t.Elem.Type, is.GetElem(), pre.GetElem(), fs); err != nil {
 			return nil, err
 		}
-	case gotype.K_SLICE:
+	case xtypes.K_SLICE:
 		if base.Elem, err = c.makeNode(t.Elem.Type, is.GetElem(), pre.GetElem(), fs); err != nil {
 			return nil, err
 		}
-	case gotype.K_MAP:
+	case xtypes.K_MAP:
 		if base.Key, err = c.makeNode(t.Key.Type, is.GetKey(), pre.GetKey(), fs); err != nil {
 			return nil, err
 		}
 		if base.Elem, err = c.makeNode(t.Elem.Type, is.GetElem(), pre.GetElem(), fs); err != nil {
 			return nil, err
 		}
-	case gotype.K_STRUCT:
+	case xtypes.K_STRUCT:
 		for _, f := range t.Fields {
 			if !f.CanAccess(c.pkg) {
 				continue
@@ -118,7 +118,7 @@ func (c *Checker) makeNode(t *gotype.Type, is, pre *Tag, fs gotype.FieldSelector
 	return root, nil
 }
 
-func (c *Checker) makeNodeFromPtr(t *gotype.Type, is, pre *Tag, fs gotype.FieldSelector) (root, base *Node, err error) {
+func (c *Checker) makeNodeFromPtr(t *xtypes.Type, is, pre *Tag, fs xtypes.FieldSelector) (root, base *Node, err error) {
 	root = &Node{Type: t}
 	base = root
 
@@ -188,7 +188,7 @@ func (c *Checker) makeNodeFromPtr(t *gotype.Type, is, pre *Tag, fs gotype.FieldS
 
 	// apply the pointer specific rules to
 	// every pointer in the pointer-chain
-	for t.Kind == gotype.K_PTR {
+	for t.Kind == xtypes.K_PTR {
 		if required != nil {
 			base.IsRules = append(base.IsRules, required)
 		}
@@ -245,7 +245,7 @@ func (c *Checker) makeNodeFromPtr(t *gotype.Type, is, pre *Tag, fs gotype.FieldS
 }
 
 // makeRuleLists creates RuleLists from the given Tags.
-func (c *Checker) makeRuleLists(is, pre *Tag, fs gotype.FieldSelector) (isList, preList RuleList, err error) {
+func (c *Checker) makeRuleLists(is, pre *Tag, fs xtypes.FieldSelector) (isList, preList RuleList, err error) {
 	// Load the specs for validation the rules
 	// and sort the rules according to "priority".
 	var (
@@ -293,7 +293,7 @@ func (c *Checker) makeRuleLists(is, pre *Tag, fs gotype.FieldSelector) (isList, 
 }
 
 // makeFieldNode creates a FieldNode for the given struct field.
-func (c *Checker) makeFieldNode(f *gotype.StructField, fs gotype.FieldSelector) (n *FieldNode, err error) {
+func (c *Checker) makeFieldNode(f *xtypes.StructField, fs xtypes.FieldSelector) (n *FieldNode, err error) {
 	n = &FieldNode{Field: f}
 	n.Selector = fs.CopyWith(f)
 	n.Key = c.fieldKey(n.Selector, false)
@@ -313,12 +313,12 @@ func (c *Checker) makeFieldNode(f *gotype.StructField, fs gotype.FieldSelector) 
 
 // IsPtr reports whether or not n's type is a pointer type.
 func (n *Node) IsPtr() bool {
-	return n.Type.Kind == gotype.K_PTR
+	return n.Type.Kind == xtypes.K_PTR
 }
 
 // IsStruct reports whether or not n's type is a struct type.
 func (n *Node) IsStruct() bool {
-	return n.Type.Kind == gotype.K_STRUCT
+	return n.Type.Kind == xtypes.K_STRUCT
 }
 
 // Base returns the pointer base Node of n. If n is not

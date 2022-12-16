@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/frk/valid/cmd/internal/config"
-	"github.com/frk/valid/cmd/internal/gotype"
+	"github.com/frk/valid/cmd/internal/xtypes"
 
 	"github.com/frk/compare"
 )
@@ -20,11 +20,11 @@ func TestChecker_functionCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_FUNCTION_INTYPE_1_Validator",
 		err: &Error{C: ERR_FUNCTION_INTYPE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"contains:foo"`,
-				Object: &gotype.Object{Type: T.int},
+				Object: &xtypes.Object{Type: T.int},
 				Var:    T._var,
 			},
 			ty: T.int,
@@ -39,11 +39,11 @@ func TestChecker_functionCheck(t *testing.T) {
 	}, {
 		name: "Test_ERR_FUNCTION_ARGTYPE_1_Validator",
 		err: &Error{C: ERR_FUNCTION_ARGTYPE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"uuid:v6"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -55,17 +55,17 @@ func TestChecker_functionCheck(t *testing.T) {
 				Spec: GetSpec("uuid"),
 			},
 			ra:  &Arg{Type: ARG_STRING, Value: "v6"},
-			fp:  &gotype.Var{Name: "ver", Type: T.int},
+			fp:  &xtypes.Var{Name: "ver", Type: T.int},
 			fpi: T.iptr(0),
 		},
 	}, {
 		name: "Test_ERR_FUNCTION_ARGVALUE_1_Validator",
 		err: &Error{C: ERR_FUNCTION_ARGVALUE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"alpha:foo"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -77,17 +77,17 @@ func TestChecker_functionCheck(t *testing.T) {
 				Spec: GetSpec("alpha"),
 			},
 			ra:  &Arg{Type: ARG_STRING, Value: "foo"},
-			fp:  &gotype.Var{Name: "lang", Type: T.string},
+			fp:  &xtypes.Var{Name: "lang", Type: T.string},
 			fpi: T.iptr(0),
 		},
 	}, {
 		name: "Test_ERR_FUNCTION_ARGVALUE_2_Validator",
 		err: &Error{C: ERR_FUNCTION_ARGVALUE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"alnum:foo"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -99,17 +99,17 @@ func TestChecker_functionCheck(t *testing.T) {
 				Spec: GetSpec("alnum"),
 			},
 			ra:  &Arg{Type: ARG_STRING, Value: "foo"},
-			fp:  &gotype.Var{Name: "lang", Type: T.string},
+			fp:  &xtypes.Var{Name: "lang", Type: T.string},
 			fpi: T.iptr(0),
 		},
 	}, {
 		name: "Test_ERR_FUNCTION_ARGVALUE_3_Validator",
 		err: &Error{C: ERR_FUNCTION_ARGVALUE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"ccy:foo"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -122,17 +122,17 @@ func TestChecker_functionCheck(t *testing.T) {
 				Spec: GetSpec("ccy"),
 			},
 			ra:  &Arg{Type: ARG_STRING, Value: "foo"},
-			fp:  &gotype.Var{Name: "code", Type: T.string},
+			fp:  &xtypes.Var{Name: "code", Type: T.string},
 			fpi: T.iptr(0),
 		},
 	}, {
 		name: "Test_ERR_FUNCTION_ARGVALUE_4_Validator",
 		err: &Error{C: ERR_FUNCTION_ARGVALUE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"decimal:foo"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -144,17 +144,17 @@ func TestChecker_functionCheck(t *testing.T) {
 				Spec: GetSpec("decimal"),
 			},
 			ra:  &Arg{Type: ARG_STRING, Value: "foo"},
-			fp:  &gotype.Var{Name: "locale", Type: T.string},
+			fp:  &xtypes.Var{Name: "locale", Type: T.string},
 			fpi: T.iptr(0),
 		},
 	}, {
 		name: "Test_ERR_FUNCTION_ARGVALUE_5_Validator",
 		err: &Error{C: ERR_FUNCTION_ARGVALUE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"hash:foo"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -166,17 +166,17 @@ func TestChecker_functionCheck(t *testing.T) {
 				Spec: GetSpec("hash"),
 			},
 			ra:  &Arg{Type: ARG_STRING, Value: "foo"},
-			fp:  &gotype.Var{Name: "algo", Type: T.string},
+			fp:  &xtypes.Var{Name: "algo", Type: T.string},
 			fpi: T.iptr(0),
 		},
 	}, {
 		name: "Test_ERR_FUNCTION_ARGVALUE_6_Validator",
 		err: &Error{C: ERR_FUNCTION_ARGVALUE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"ip:5"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -188,17 +188,17 @@ func TestChecker_functionCheck(t *testing.T) {
 				Spec: GetSpec("ip"),
 			},
 			ra:  &Arg{Type: ARG_INT, Value: "5"},
-			fp:  &gotype.Var{Name: "ver", Type: T.int},
+			fp:  &xtypes.Var{Name: "ver", Type: T.int},
 			fpi: T.iptr(0),
 		},
 	}, {
 		name: "Test_ERR_FUNCTION_ARGVALUE_7_Validator",
 		err: &Error{C: ERR_FUNCTION_ARGVALUE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"isbn:12"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -210,17 +210,17 @@ func TestChecker_functionCheck(t *testing.T) {
 				Spec: GetSpec("isbn"),
 			},
 			ra:  &Arg{Type: ARG_INT, Value: "12"},
-			fp:  &gotype.Var{Name: "ver", Type: T.int},
+			fp:  &xtypes.Var{Name: "ver", Type: T.int},
 			fpi: T.iptr(0),
 		},
 	}, {
 		name: "Test_ERR_FUNCTION_ARGVALUE_8_Validator",
 		err: &Error{C: ERR_FUNCTION_ARGVALUE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"iso639:3"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -232,17 +232,17 @@ func TestChecker_functionCheck(t *testing.T) {
 				Spec: GetSpec("iso639"),
 			},
 			ra:  &Arg{Type: ARG_INT, Value: "3"},
-			fp:  &gotype.Var{Name: "num", Type: T.int},
+			fp:  &xtypes.Var{Name: "num", Type: T.int},
 			fpi: T.iptr(0),
 		},
 	}, {
 		name: "Test_ERR_FUNCTION_ARGVALUE_9_Validator",
 		err: &Error{C: ERR_FUNCTION_ARGVALUE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"iso31661a:1"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -254,17 +254,17 @@ func TestChecker_functionCheck(t *testing.T) {
 				Spec: GetSpec("iso31661a"),
 			},
 			ra:  &Arg{Type: ARG_INT, Value: "1"},
-			fp:  &gotype.Var{Name: "num", Type: T.int},
+			fp:  &xtypes.Var{Name: "num", Type: T.int},
 			fpi: T.iptr(0),
 		},
 	}, {
 		name: "Test_ERR_FUNCTION_ARGVALUE_10_Validator",
 		err: &Error{C: ERR_FUNCTION_ARGVALUE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"mac:7"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -276,17 +276,17 @@ func TestChecker_functionCheck(t *testing.T) {
 				Spec: GetSpec("mac"),
 			},
 			ra:  &Arg{Type: ARG_INT, Value: "7"},
-			fp:  &gotype.Var{Name: "space", Type: T.int},
+			fp:  &xtypes.Var{Name: "space", Type: T.int},
 			fpi: T.iptr(0),
 		},
 	}, {
 		name: "Test_ERR_FUNCTION_ARGVALUE_11_Validator",
 		err: &Error{C: ERR_FUNCTION_ARGVALUE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"re:[0-9)?"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -298,18 +298,18 @@ func TestChecker_functionCheck(t *testing.T) {
 				Spec: GetSpec("re"),
 			},
 			ra:  &Arg{Type: ARG_STRING, Value: "[0-9)?"},
-			fp:  &gotype.Var{Name: "expr", Type: T.string},
+			fp:  &xtypes.Var{Name: "expr", Type: T.string},
 			fpi: T.iptr(0),
 			err: T._err,
 		},
 	}, {
 		name: "Test_ERR_FUNCTION_ARGVALUE_12_Validator",
 		err: &Error{C: ERR_FUNCTION_ARGVALUE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"uuid:6"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -321,17 +321,17 @@ func TestChecker_functionCheck(t *testing.T) {
 				Spec: GetSpec("uuid"),
 			},
 			ra:  &Arg{Type: ARG_INT, Value: "6"},
-			fp:  &gotype.Var{Name: "ver", Type: T.int},
+			fp:  &xtypes.Var{Name: "ver", Type: T.int},
 			fpi: T.iptr(0),
 		},
 	}, {
 		name: "Test_ERR_FUNCTION_ARGVALUE_13_Validator",
 		err: &Error{C: ERR_FUNCTION_ARGVALUE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"phone:foo"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -343,17 +343,17 @@ func TestChecker_functionCheck(t *testing.T) {
 				Spec: GetSpec("phone"),
 			},
 			ra:  &Arg{Type: ARG_STRING, Value: "foo"},
-			fp:  &gotype.Var{Name: "cc", Type: T.string},
+			fp:  &xtypes.Var{Name: "cc", Type: T.string},
 			fpi: T.iptr(0),
 		},
 	}, {
 		name: "Test_ERR_FUNCTION_ARGVALUE_14_Validator",
 		err: &Error{C: ERR_FUNCTION_ARGVALUE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"vat:foo"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -365,17 +365,17 @@ func TestChecker_functionCheck(t *testing.T) {
 				Spec: GetSpec("vat"),
 			},
 			ra:  &Arg{Type: ARG_STRING, Value: "foo"},
-			fp:  &gotype.Var{Name: "cc", Type: T.string},
+			fp:  &xtypes.Var{Name: "cc", Type: T.string},
 			fpi: T.iptr(0),
 		},
 	}, {
 		name: "Test_ERR_FUNCTION_ARGVALUE_15_Validator",
 		err: &Error{C: ERR_FUNCTION_ARGVALUE, a: T._ast, sfv: T._var,
-			sf: &gotype.StructField{
+			sf: &xtypes.StructField{
 				Pkg:  T.pkg,
 				Name: "F", IsExported: true,
 				Tag:    `is:"zip:foo"`,
-				Object: &gotype.Object{Type: T.string},
+				Object: &xtypes.Object{Type: T.string},
 				Var:    T._var,
 			},
 			ty: T.string,
@@ -387,7 +387,7 @@ func TestChecker_functionCheck(t *testing.T) {
 				Spec: GetSpec("zip"),
 			},
 			ra:  &Arg{Type: ARG_STRING, Value: "foo"},
-			fp:  &gotype.Var{Name: "cc", Type: T.string},
+			fp:  &xtypes.Var{Name: "cc", Type: T.string},
 			fpi: T.iptr(0),
 		},
 	}}
