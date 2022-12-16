@@ -10,7 +10,7 @@ import (
 
 	"github.com/frk/compare"
 	"github.com/frk/valid/cmd/internal/config"
-	"github.com/frk/valid/cmd/internal/global"
+	"github.com/frk/valid/cmd/internal/gotype"
 	"github.com/frk/valid/cmd/internal/rules"
 	"github.com/frk/valid/cmd/internal/search"
 )
@@ -242,14 +242,14 @@ func TestGenerator(t *testing.T) {
 		"global/01_global_error_constructor": func(t *testing.T) {
 			var cfg config.Config
 			cfg.ErrorHandling.Constructor = config.ObjectIdent{mypkg, "NewError", true}
-			if err := global.Init(cfg, &AST); err != nil {
+			if err := gotype.Globals.Init(cfg, &AST); err != nil {
 				t.Fatal(err)
 			}
 		},
 		"global/02_global_error_aggregator": func(t *testing.T) {
 			var cfg config.Config
 			cfg.ErrorHandling.Aggregator = config.ObjectIdent{mypkg, "ErrorList", true}
-			if err := global.Init(cfg, &AST); err != nil {
+			if err := gotype.Globals.Init(cfg, &AST); err != nil {
 				t.Fatal(err)
 			}
 		},
@@ -257,7 +257,7 @@ func TestGenerator(t *testing.T) {
 			var cfg config.Config
 			cfg.ErrorHandling.Constructor = config.ObjectIdent{mypkg, "NewError", true}
 			cfg.ErrorHandling.Aggregator = config.ObjectIdent{mypkg, "ErrorList", true}
-			if err := global.Init(cfg, &AST); err != nil {
+			if err := gotype.Globals.Init(cfg, &AST); err != nil {
 				t.Fatal(err)
 			}
 		},
@@ -265,7 +265,7 @@ func TestGenerator(t *testing.T) {
 			var cfg config.Config
 			cfg.ErrorHandling.Constructor = config.ObjectIdent{mypkg, "NewError", true}
 			cfg.ErrorHandling.Aggregator = config.ObjectIdent{mypkg, "ErrorList", true}
-			if err := global.Init(cfg, &AST); err != nil {
+			if err := gotype.Globals.Init(cfg, &AST); err != nil {
 				t.Fatal(err)
 			}
 		},
@@ -291,7 +291,7 @@ func TestGenerator(t *testing.T) {
 
 			if init, ok := globals[filename]; ok {
 				init(t)
-				defer global.Unset()
+				defer gotype.Globals.Unset()
 			}
 
 			infos := make([]*rules.Info, len(f.Matches))

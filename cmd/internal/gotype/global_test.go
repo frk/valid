@@ -1,31 +1,18 @@
-package global
+package gotype
 
 import (
 	"fmt"
 	"go/types"
-	"log"
-	"os"
 	"testing"
 
 	"github.com/frk/valid/cmd/internal/config"
-	//"github.com/frk/valid/cmd/internal/gotype"
 	"github.com/frk/valid/cmd/internal/search"
 
 	"github.com/frk/compare"
 )
 
-var testast search.AST
-
-func TestMain(m *testing.M) {
-	if _, err := search.Search("testdata/", false, nil, nil, &testast); err != nil {
-		log.Fatal(err)
-	}
-
-	os.Exit(m.Run())
-}
-
 func TestInit(t *testing.T) {
-	_pkg := "github.com/frk/valid/cmd/internal/global/testdata"
+	_pkg := "github.com/frk/valid/cmd/internal/gotype/testdata"
 	_err := fmt.Errorf("") // dummy to satisfy `cmp:"+"`
 	_ = _err
 
@@ -38,7 +25,7 @@ func TestInit(t *testing.T) {
 	}
 
 	var findObj = func(name string) types.Object {
-		obj, err := search.FindObject(_pkg, name, &testast)
+		obj, err := search.FindObject(_pkg, name, &test_ast)
 		if err != nil {
 			return nil
 		}
@@ -100,14 +87,15 @@ func TestInit(t *testing.T) {
 		cfg.ErrorHandling.Constructor = tt.ctor.id
 		cfg.ErrorHandling.Aggregator = tt.agg.id
 
-		err := Init(cfg, &testast)
+		gg := GlobalObjects{}
+		err := gg.Init(cfg, &test_ast)
 		if e := compare.Compare(err, tt.err); e != nil {
 			t.Errorf("Error: %v (%v)", e, err)
 		} else if err == nil {
-			if got, want := (ErrorConstructor != nil), tt.ctor.want; got != want {
+			if got, want := (gg.ErrorConstructor != nil), tt.ctor.want; got != want {
 				t.Errorf("ErrorConstructor got=%t want=%t", got, want)
 			}
-			if got, want := (ErrorAggregator != nil), tt.agg.want; got != want {
+			if got, want := (gg.ErrorAggregator != nil), tt.agg.want; got != want {
 				t.Errorf("ErrorAggregator got=%t want=%t", got, want)
 			}
 		}

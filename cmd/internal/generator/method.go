@@ -1,7 +1,7 @@
 package generator
 
 import (
-	"github.com/frk/valid/cmd/internal/global"
+	"github.com/frk/valid/cmd/internal/gotype"
 	"github.com/frk/valid/cmd/internal/rules"
 
 	GO "github.com/frk/ast/golang"
@@ -16,7 +16,7 @@ func methodAST(g *gg, info *rules.Info) (dec GO.MethodDecl) {
 	dec.Name.Name = "Validate"
 	dec.Type.Results = GO.ParamList{{Type: ERROR}}
 
-	if global.ErrorAggregator != nil && info.Validator.ErrorHandlerField == nil {
+	if gotype.Globals.ErrorAggregator != nil && info.Validator.ErrorHandlerField == nil {
 		newErrorAggregatorAST(info, g.block(&dec.Body))
 	}
 	if before := info.Validator.BeforeValidateMethod; before != nil {
@@ -35,7 +35,7 @@ func exitAST(info *rules.Info, b bb) {
 	after := info.Validator.AfterValidateMethod
 
 	hasAgg := false
-	if (errh != nil && errh.IsAggregator) || (errh == nil && global.ErrorAggregator != nil) {
+	if (errh != nil && errh.IsAggregator) || (errh == nil && gotype.Globals.ErrorAggregator != nil) {
 		hasAgg = true
 	}
 
@@ -45,7 +45,7 @@ func exitAST(info *rules.Info, b bb) {
 		if h := info.Validator.ErrorHandlerField; h != nil && h.IsAggregator {
 			x := GO.SelectorExpr{X: b.g.recv, Sel: GO.Ident{h.Name}}
 			call.Fun = GO.SelectorExpr{X: x, Sel: GO.Ident{"Out"}}
-		} else if h == nil && global.ErrorAggregator != nil {
+		} else if h == nil && gotype.Globals.ErrorAggregator != nil {
 			x := GO.SelectorExpr{X: GO.Ident{"ea"}, Sel: GO.Ident{"Out"}}
 			call.Fun = x
 		}
@@ -63,7 +63,7 @@ func exitAST(info *rules.Info, b bb) {
 			x := GO.SelectorExpr{X: b.g.recv, Sel: GO.Ident{h.Name}}
 			x = GO.SelectorExpr{X: x, Sel: GO.Ident{"Out"}}
 			stmt = GO.ReturnStmt{Result: GO.CallExpr{Fun: x}}
-		} else if h == nil && global.ErrorAggregator != nil {
+		} else if h == nil && gotype.Globals.ErrorAggregator != nil {
 			x := GO.SelectorExpr{X: GO.Ident{"ea"}, Sel: GO.Ident{"Out"}}
 			stmt = GO.ReturnStmt{Result: GO.CallExpr{Fun: x}}
 		}
@@ -77,7 +77,7 @@ func exitAST(info *rules.Info, b bb) {
 }
 
 func newErrorAggregatorAST(info *rules.Info, b bb) {
-	agg := global.ErrorAggregator
+	agg := gotype.Globals.ErrorAggregator
 	pkg := b.g.addImport(agg.Pkg)
 
 	typ := GO.QualifiedIdent{pkg.name, agg.Name}

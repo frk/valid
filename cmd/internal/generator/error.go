@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/frk/valid/cmd/internal/global"
 	"github.com/frk/valid/cmd/internal/gotype"
 	"github.com/frk/valid/cmd/internal/rules"
 
@@ -20,9 +19,9 @@ func (b *bb) err(n *rules.Node, r *rules.Rule, body *GO.BlockStmt) {
 	switch {
 	case b.g.info.Validator.ErrorHandlerField != nil:
 		b.errHandler(n, r, body)
-	case global.ErrorAggregator != nil:
+	case gotype.Globals.ErrorAggregator != nil:
 		b.errGlobalHandler(n, r, body, true)
-	case global.ErrorConstructor != nil:
+	case gotype.Globals.ErrorConstructor != nil:
 		b.errGlobalHandler(n, r, body, false)
 	default:
 		b.errDefault(n, r, body)
@@ -63,7 +62,7 @@ func (b *bb) errGlobalHandler(n *rules.Node, r *rules.Rule, body *GO.BlockStmt, 
 		x = GO.CallExpr{Fun: x, Args: GO.ArgsList{List: args}}
 		body.Add(GO.ExprStmt{x})
 	} else {
-		ctor := global.ErrorConstructor
+		ctor := gotype.Globals.ErrorConstructor
 		pkg := b.g.addImport(ctor.Type.Pkg)
 
 		x := GO.ExprNode(nil)
