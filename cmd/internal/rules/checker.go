@@ -25,6 +25,8 @@ type Info struct {
 	// EnumMap maps types to a slice of
 	// constants declared with that type.
 	EnumMap map[*xtypes.Type][]xtypes.Const
+
+	ObjRuleMap map[*xtypes.Object]*RuleSet
 }
 
 // Checker maintains the state of the rule checker.
@@ -56,6 +58,7 @@ func NewChecker(ast *search.AST, pkg search.Pkg, fkCfg *config.FieldKeyConfig, i
 	}
 	c.Info.KeyMap = make(map[string]*FieldNode)
 	c.Info.EnumMap = make(map[*xtypes.Type][]xtypes.Const)
+	c.Info.ObjRuleMap = make(map[*xtypes.Object]*RuleSet)
 	return c
 }
 
@@ -65,6 +68,13 @@ func (c *Checker) Check(match *search.Match) error {
 	// 1. analyze
 	c.an = xtypes.NewAnalyzer(match.Named.Obj().Pkg())
 	c.vs = c.an.Validator(match.Named)
+
+	/////////////////////////////////////////////////////////////////////////
+	// 2. build rule lists
+	if err := c.walkType(c.vs.Type); err != nil {
+		return c.err(err, errOpts{a: c.ast})
+	}
+	/////////////////////////////////////////////////////////////////////////
 
 	// 2. convert to a Node tree
 	rootNode, err := c.makeNode(c.vs.Type, nil, nil, nil)

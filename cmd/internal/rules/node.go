@@ -6,6 +6,144 @@ import (
 	"github.com/frk/valid/cmd/internal/xtypes"
 )
 
+type RuleSet struct {
+	Is, Pre RuleList
+}
+
+type walk struct {
+	is, pre *Tag
+	fs      xtypes.FieldSelector
+	ptr     bool
+}
+
+func (c *Checker) walkType(t *xtypes.Type) error {
+	return c.walkObject(&xtypes.Object{t}, &walk{})
+}
+
+func (c *Checker) walkObject(o *xtypes.Object, w *walk) error {
+	switch t := o.Type; t.Kind {
+	case xtypes.K_PTR:
+		w := &walk{is: w.is, pre: w.pre, fs: w.fs, ptr: true}
+		if err := c.walkObject(t.Elem, w); err != nil {
+			return err
+		}
+	case xtypes.K_ARRAY, xtypes.K_SLICE:
+		w := &walk{is: w.is.GetElem(), pre: w.pre.GetElem(), fs: w.fs}
+		if err := c.walkObject(t.Elem, w); err != nil {
+			return err
+		}
+	case xtypes.K_MAP:
+		wk := &walk{is: w.is.GetKey(), pre: w.pre.GetKey(), fs: w.fs}
+		if err := c.walkObject(t.Key, wk); err != nil {
+			return err
+		}
+		we := &walk{is: w.is.GetElem(), pre: w.pre.GetElem(), fs: w.fs}
+		if err := c.walkObject(t.Elem, we); err != nil {
+			return err
+		}
+	case xtypes.K_STRUCT:
+		for _, f := range t.Fields {
+			if !f.CanAccess(c.pkg) {
+				continue
+			}
+
+			is := parseTag(f.Tag, "is")
+			if err := c.checkFieldTag(f, is); err != nil {
+				return err
+			}
+			pre := parseTag(f.Tag, "pre")
+			if err := c.checkFieldTag(f, pre); err != nil {
+				return err
+			}
+
+			// fs := fs.CopyWith(f)
+		}
+	}
+	return nil
+}
+
+// Make sure that the rule structure in the tag is compatible with the field's type.
+func (c *Checker) checkFieldTag(f *xtypes.StructField, tag *Tag) error {
+	t := f.Object.Type
+	for t.Kind == xtypes.K_PTR {
+		t = t.Elem.Type
+	}
+
+	if tag.HasKey() && !t.Is(xtypes.K_MAP) {
+		return &Error{C: ERR_RULE_KEY, sf: f, ty: t, tag: tag}
+	}
+	if tag.HasElem() && !t.Is(xtypes.K_ARRAY, xtypes.K_SLICE, xtypes.K_MAP) {
+		return &Error{C: ERR_RULE_ELEM, sf: f, ty: t, tag: tag}
+	}
+	return nil
+}
+
+func (c *Checker) pointerRules(o *xtypes.Object, is *Tag, pre *Tag, f *xtypes.StructField) error {
+	var (
+		required *Rule // should apply to pointers and base (with easy to generate zero value)
+		notnil   *Rule // should apply to pointers and nilable base
+		optional *Rule // should apply to pointers and base
+		omitnil  *Rule // should apply to pointers only
+		noguard  *Rule // should apply to pointers only
+	)
+	for _, r := range is.GetRules() {
+		if r.Name == "omitkey" { // non-rule
+			continue
+		}
+		if r.Spec = GetSpec(r.Name); r.Spec == nil {
+			return &Error{C: ERR_RULE_UNDEFINED, ty: o.Type, tag: is, r: r}
+		}
+
+		switch {
+		case r.Spec.Kind == REQUIRED && r.Spec.Name == "required":
+			required = r
+		case r.Spec.Kind == REQUIRED && r.Spec.Name == "notnil":
+			notnil = r
+		case r.Spec.Kind == OPTIONAL && r.Spec.Name == "optional":
+			optional = r
+		case r.Spec.Kind == OPTIONAL && r.Spec.Name == "omitnil":
+			omitnil = r
+		case r.Spec.Kind == NOGUARD:
+			noguard = r
+		}
+	}
+	// for pointer types the "omitnil" is applied by default
+	// if no other pointer-specific rule was explicitly provided
+	if required == nil && notnil == nil && optional == nil && noguard == nil {
+		r := &Rule{Name: "omitnil"}
+		if r.Spec = GetSpec(r.Name); r.Spec == nil {
+			panic("shoudn't happen")
+		}
+		omitnil = r
+	}
+
+	// apply the pointer specific rules to
+	// every pointer in the pointer-chain
+	var list RuleList
+	if required != nil {
+		list = append(list, required)
+	}
+	if notnil != nil {
+		list = append(list, notnil)
+	}
+	if optional != nil {
+		list = append(list, optional)
+	}
+	if omitnil != nil {
+		list = append(list, omitnil)
+	}
+	if noguard != nil {
+		list = append(list, noguard)
+	}
+
+	c.Info.ObjRuleMap[o] = &RuleSet{Is: list}
+	return nil
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//----------------------------------------------------------------------------//
+////////////////////////////////////////////////////////////////////////////////
+
 type Node struct {
 	// The type associated with the node.
 	Type *xtypes.Type
