@@ -19,7 +19,6 @@ func Unset() {
 	ErrorAggregator = nil
 }
 
-//
 func Init(cfg config.Config, a *search.AST) error {
 	if v := cfg.ErrorHandling.Constructor; v.IsSet {
 		obj, err := search.FindObject(v.Pkg, v.Name, a)

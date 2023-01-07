@@ -38,7 +38,10 @@ func (ff FieldChain) First() *StructField {
 
 // Last returns the last, the leaf field in the chain.
 func (ff FieldChain) Last() *StructField {
-	return ff[len(ff)-1]
+	if len(ff) > 0 {
+		return ff[len(ff)-1]
+	}
+	return nil
 }
 
 // CopyWith returns a copy of the receiver with f appended to the end.

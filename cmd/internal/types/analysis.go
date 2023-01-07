@@ -17,20 +17,6 @@ func Analyze(t types.Type, ast *search.AST) *Type {
 	return a.analyzeType(t)
 }
 
-func AnalyzeFunc(fun *types.Func, ast *search.AST) *Func {
-	a := &analyzer{ast: ast}
-	t := a.analyzeType(fun.Type())
-	if pkg := fun.Pkg(); pkg != nil {
-		t.Pkg.Path = pkg.Path()
-		t.Pkg.Name = pkg.Name()
-	}
-
-	f := new(Func)
-	f.Name = fun.Name()
-	f.Type = t
-	return f
-}
-
 func AnalyzeObject(obj types.Object, ast *search.AST) *Type {
 	a := &analyzer{ast: ast}
 	t := a.analyzeType(obj.Type())

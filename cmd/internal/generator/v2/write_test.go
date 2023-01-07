@@ -1,17 +1,18 @@
 package generate
 
 import (
+	"bytes"
 	"fmt"
 	"reflect"
 	"testing"
 )
 
-func Test_writer(t *testing.T) {
+func Test_generatorP(t *testing.T) {
 	tests := []struct {
 		skip bool
 		text string
 		args []any
-		vars map[string]any
+		vars map[string]string
 		want string
 		err  error
 	}{{
@@ -37,20 +38,20 @@ func Test_writer(t *testing.T) {
 		want: "hi foo, bar, and baz",
 	}, {
 		text: "hello $key",
-		vars: map[string]any{"key": "world"},
+		vars: map[string]string{"key": "world"},
 		want: "hello world",
 	}, {
 		text: "hi $k1, $k2, and $0",
 		args: []any{"baz"},
-		vars: map[string]any{"k1": "foo", "k2": "bar"},
+		vars: map[string]string{"k1": "foo", "k2": "bar"},
 		want: "hi foo, bar, and baz",
 	}, {
 		text: "hello ${key}world",
-		vars: map[string]any{"key": "blue"},
+		vars: map[string]string{"key": "blue"},
 		want: "hello blueworld",
 	}, {
 		text: "hello ${k1}world${k2}sky",
-		vars: map[string]any{"k1": "blue", "k2": "red"},
+		vars: map[string]string{"k1": "blue", "k2": "red"},
 		want: "hello blueworldredsky",
 	}, {
 		text: "hello $26world$27sky",
@@ -74,13 +75,58 @@ func Test_writer(t *testing.T) {
 			continue
 		}
 
-		w := writer{vars: tt.vars}
-		w.p(tt.text, tt.args...)
-		if !reflect.DeepEqual(tt.err, w.err) {
-			t.Errorf("got error: %v\nwant error: %v", w.err, tt.err)
+		g := generator{vars: tt.vars}
+		g.P(tt.text, tt.args...)
+		if !reflect.DeepEqual(tt.err, g.werr) {
+			t.Errorf("got error: %v\nwant error: %v", g.werr, tt.err)
 		}
-		if got := w.buf.String(); got != tt.want {
-			t.Errorf("got text: %v\nwant text: %v", got, tt.want)
+		if g.werr == nil {
+			if got := g.buf.String(); got != tt.want {
+				t.Errorf("got text: %v\nwant text: %v", got, tt.want)
+			}
+		}
+	}
+
+}
+
+func Test_generatorRL(t *testing.T) {
+	tests := []struct {
+		skip bool
+		buf  string
+		text string
+		args []any
+		want string
+		err  error
+	}{{
+		buf:  "hello world",
+		text: "goodbye!",
+		want: "goodbye!\n",
+	}, {
+		buf:  "hello\nworld",
+		text: "goodbye!",
+		want: "hello\ngoodbye!\n",
+	}, {
+		buf:  "hello\nworld\n",
+		text: "goodbye!",
+		want: "hello\ngoodbye!\n",
+	}}
+
+	for _, tt := range tests {
+		if tt.skip {
+			continue
+		}
+
+		buf := bytes.NewBuffer([]byte(tt.buf))
+
+		g := generator{buf: *buf}
+		g.RL(tt.text, tt.args...)
+		if !reflect.DeepEqual(tt.err, g.werr) {
+			t.Errorf("got error: %v\nwant error: %v", g.werr, tt.err)
+		}
+		if g.werr == nil {
+			if got := g.buf.String(); got != tt.want {
+				t.Errorf("got text: %v\nwant text: %v", got, tt.want)
+			}
 		}
 	}
 

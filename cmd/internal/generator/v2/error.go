@@ -4,18 +4,17 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/frk/valid/cmd/internal/rules/spec"
 	"github.com/frk/valid/cmd/internal/rules/v2"
 	"github.com/frk/valid/cmd/internal/types"
 )
 
-func (g *generator) genError(r *rules.Rule, s *spec.Spec) {
-	errSpec := s.ErrSpec(r)
+func (g *generator) genError(f *types.StructField, o *types.Obj, r *rules.Rule) {
+	errSpec := r.ErrSpec()
 	text := errSpec.Text
 	if len(text) == 0 {
 		text = "is not valid"
 	}
-	text = g.info.FKeyMap[g.fld] + " " + text
+	text = g.info.FKeyMap[f] + " " + text
 
 	//var refs GO.ExprList
 	if errSpec.WithArgs {
@@ -23,7 +22,7 @@ func (g *generator) genError(r *rules.Rule, s *spec.Spec) {
 		for _, a := range r.Args {
 			// A rule argument of unknown kind for
 			// a numeric type can be treated as 0.
-			if a.Type == rules.ARG_UNKNOWN && g.obj.Type.Kind.IsNumeric() {
+			if a.Type == rules.ARG_UNKNOWN && o.Type.Kind.IsNumeric() {
 				a = &rules.Arg{rules.ARG_INT, "0"}
 			}
 			// skip empty
@@ -61,6 +60,6 @@ func (g *generator) genError(r *rules.Rule, s *spec.Spec) {
 	//		Args: GO.ArgsList{List: append(GO.ExprList{textExpr}, refs...)}}})
 	//} else {
 	pkg := g.file.addImport(types.Pkg{Path: "errors"})
-	g.wr.ln("return $0.New($1)", pkg.name, text)
+	g.L("return $0.New($1)", pkg.name, text)
 	//}
 }

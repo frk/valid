@@ -4,6 +4,11 @@ import (
 	"sort"
 )
 
+// IsPtrOf reports whether type T is a pointer with its base type identical to type U.
+func (T *Type) IsPtrOf(U *Type) bool {
+	return T.Kind == PTR && T.Elem.Type.IsIdenticalTo(U)
+}
+
 // IsIdenticalTo reports whether type T is considered identical to type U.
 func (T *Type) IsIdenticalTo(U *Type) bool {
 	if T == U {

@@ -1,43 +1,79 @@
 package generate
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"strconv"
+
+	"github.com/frk/valid/cmd/internal/rules/v2"
+	"github.com/frk/valid/cmd/internal/types"
 )
 
-type writer struct {
-	buf  bytes.Buffer
-	vars map[string]string
-	err  error
-}
-
-func (w *writer) from(r *writer) {
-	if w.err != nil {
+// write the contents of the given generator to g's buffer
+func (g *generator) From(r *generator) {
+	if g.werr != nil {
 		return
 	}
 
-	_, w.err = io.Copy(&w.buf, &r.buf)
+	_, g.werr = g.buf.Write(r.buf.Bytes())
 }
 
-func (w *writer) ln(line string, args ...any) {
-	if w.err != nil {
+// write given string to the buffer as is
+func (g *generator) S(s string) {
+	if g.werr != nil {
 		return
 	}
-	w.p(line, args...)
-	w.nl()
+
+	_, g.werr = g.buf.WriteString(s)
 }
 
-func (w *writer) nl() {
-	if w.err != nil {
+// write given text and args to buffer using fmt.Sprintf
+func (g *generator) F(text string, args ...any) {
+	if g.werr != nil {
 		return
 	}
-	w.err = w.buf.WriteByte('\n')
+
+	_, g.werr = g.buf.WriteString(fmt.Sprintf(text, args...))
 }
 
-func (w *writer) p(text string, args ...any) {
-	if w.err != nil {
+// interpret the given text with the args, write it to buffer and append a new line
+func (g *generator) L(text string, args ...any) {
+	if g.werr != nil {
+		return
+	}
+	if len(text) > 0 {
+		g.P(text, args...)
+	}
+	g.werr = g.buf.WriteByte('\n')
+}
+
+// replace last line with the provided text and args
+func (g *generator) RL(text string, args ...any) {
+	if g.werr != nil {
+		return
+	}
+
+	n := g.buf.Len()
+	b := g.buf.Bytes()
+	if len(b) > 0 {
+		if b[n-1] == '\n' {
+			b = b[:n-1]
+			n -= 1
+		}
+
+		for ; n > 0; n-- {
+			if b[n-1] == '\n' {
+				break
+			}
+		}
+		g.buf.Truncate(n)
+	}
+
+	g.L(text, args...)
+}
+
+// interpret the given text with the args and write it to buffer
+func (g *generator) P(text string, args ...any) {
+	if g.werr != nil {
 		return
 	}
 
@@ -64,6 +100,13 @@ func (w *writer) p(text string, args ...any) {
 			continue
 		}
 
+		if len(out) > 0 {
+			_, g.werr = g.buf.Write(out)
+			out = out[0:0]
+		}
+
+		////////////////////////////////////////////////////////////////
+
 		c2 := text[i+1]
 
 		// when "$<index>"; write args[index]
@@ -74,14 +117,14 @@ func (w *writer) p(text string, args ...any) {
 
 			n, err := strconv.Atoi(text[i+1 : j])
 			if err != nil {
-				w.err = fmt.Errorf("failed to parse %s: %v", text[i:j], err)
+				g.werr = fmt.Errorf("failed to parse %s: %v", text[i:j], err)
 				return
 			} else if n >= len(args) {
-				w.err = fmt.Errorf("index %s out of range", text[i:j])
+				g.werr = fmt.Errorf("index %s out of range", text[i:j])
 				return
 			}
 
-			out = append(out, fmt.Sprintf("%v", args[n])...)
+			g.A(args[n])
 			i = j - 1
 			continue
 		}
@@ -93,7 +136,8 @@ func (w *writer) p(text string, args ...any) {
 			}
 
 			key := text[i+1 : j]
-			out = append(out, fmt.Sprintf("%v", w.vars[key])...)
+			g.S(g.vars[key])
+
 			i = j - 1
 			continue
 		}
@@ -105,14 +149,45 @@ func (w *writer) p(text string, args ...any) {
 			}
 
 			key := text[i+2 : j]
-			out = append(out, fmt.Sprintf("%v", w.vars[key])...)
+			g.S(g.vars[key])
+
 			i = j
 			continue
 		}
 	}
 
-	if w.err == nil {
-		_, w.err = w.buf.Write(out)
+	if g.werr == nil {
+		_, g.werr = g.buf.Write(out)
+	}
+}
+
+// write the given arg to the buffer
+func (g *generator) A(a any) {
+	switch v := a.(type) {
+	default:
+		g.F("%v", v)
+
+	case types.Ident:
+		if pkg := v.GetPkg(); g.file.pkg.Path != pkg.Path {
+			pkg := g.file.addImport(pkg)
+			g.S(pkg.name + "." + v.GetName())
+		} else {
+			g.S(v.GetName())
+		}
+
+	case *types.Type:
+		g.S(v.TypeString(&g.file.pkg))
+
+	case *rules.Rule:
+		o := g.info.RuleObjMap[v]
+		f := g.info.ObjFieldMap[o]
+		g.genIsRuleExpr(f, o, v)
+
+	case *rules.Arg:
+		g.genArg(v)
+
+	case func():
+		v()
 	}
 }
 
