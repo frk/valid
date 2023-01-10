@@ -48,6 +48,8 @@ type Info struct {
 	RuleObjMap map[*rules.Rule]*types.Obj
 	// ObjFieldMap maps objects to the fields to which they belong.
 	ObjFieldMap map[*types.Obj]*types.StructField
+	// PtrMap maps objects to the pointers which point to them.
+	PtrMap map[*types.Obj]*types.Obj
 }
 
 func Check(cfg Config, match *search.Match, info *Info) error {
@@ -63,6 +65,7 @@ func Check(cfg Config, match *search.Match, info *Info) error {
 	info.ArgIndexMap = make(map[*rules.Arg]int)
 	info.RuleObjMap = make(map[*rules.Rule]*types.Obj)
 	info.ObjFieldMap = make(map[*types.Obj]*types.StructField)
+	info.PtrMap = make(map[*types.Obj]*types.Obj)
 
 	c := &checker{Info: info, v: v, ast: cfg.AST}
 	c.newFKey = makeFKFunc(cfg.FieldKey)

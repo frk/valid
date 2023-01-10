@@ -8,12 +8,13 @@ import (
 	"github.com/frk/valid/cmd/internal/types"
 )
 
-func (g *generator) genError(f *types.StructField, o *types.Obj, r *rules.Rule) {
+func (g *generator) ErrExpr(o *types.Obj, r *rules.Rule) (F func()) {
 	errSpec := r.ErrSpec()
 	text := errSpec.Text
 	if len(text) == 0 {
 		text = "is not valid"
 	}
+	f := g.info.ObjFieldMap[o]
 	text = g.info.FKeyMap[f] + " " + text
 
 	//var refs GO.ExprList
@@ -59,7 +60,10 @@ func (g *generator) genError(f *types.StructField, o *types.Obj, r *rules.Rule) 
 	//	body.Add(GO.ReturnStmt{GO.CallExpr{Fun: GO.QualifiedIdent{pkg.name, "Errorf"},
 	//		Args: GO.ArgsList{List: append(GO.ExprList{textExpr}, refs...)}}})
 	//} else {
+
 	pkg := g.file.addImport(types.Pkg{Path: "errors"})
-	g.L("return $0.New($1)", pkg.name, text)
-	//}
+
+	return func() {
+		g.P("$0.New($1)", pkg.name, text)
+	}
 }

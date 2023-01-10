@@ -20,7 +20,6 @@ func (o *Obj) HasRules() bool {
 	if o == nil {
 		return false
 	}
-
 	if len(o.PreRules) > 0 {
 		return true
 	}
@@ -29,18 +28,23 @@ func (o *Obj) HasRules() bool {
 			return true
 		}
 	}
+	return o.Type.HasRules()
+}
 
-	if key := o.Type.Key; key != nil && key.HasRules() {
+func (t *Type) HasRules() bool {
+	if t == nil {
+		return false
+	}
+	if key := t.Key; key != nil && key.HasRules() {
 		return true
 	}
-	if ele := o.Type.Elem; ele != nil && ele.HasRules() {
+	if ele := t.Elem; ele != nil && ele.HasRules() {
 		return true
 	}
-	for i := range o.Type.Fields {
-		if o.Type.Fields[i].Obj.HasRules() {
+	for i := range t.Fields {
+		if t.Fields[i].Obj.HasRules() {
 			return true
 		}
 	}
-
 	return false
 }

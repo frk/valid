@@ -7,16 +7,8 @@ type Validator struct {
 	S1 *struct {
 		S2 struct {
 			S3 ***struct {
-				F string `pre:"trim"`
+				F **string `pre:"trim"`
 			}
 		}
 	}
-
-	//S1 *struct {
-	//	S2 struct {
-	//		S3 ***struct {
-	//			F **string `pre:"trim"`
-	//		}
-	//	}
-	//}
 }

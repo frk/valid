@@ -4,31 +4,28 @@ import (
 	"github.com/frk/valid/cmd/internal/types"
 )
 
-func (g *generator) genSliceBlock(f *types.StructField, t *types.Type, block blockType) {
-	if !t.Elem.HasRules() {
+func (g *generator) genSliceBlock(o *types.Obj, block blockType) {
+	E := o.Type.Elem
+	if !E.HasRules() {
 		return
 	}
 
-	o := t.Elem
 	switch block {
 	default:
-		g.genSliceCode(f, o)
+		g.genSliceCode(o, E)
 	case else_block:
 		g.RL(`} else {`)
-		g.genSliceCode(f, o)
+		g.genSliceCode(o, E)
 		g.L(`}`)
 	case sub_block:
 		g.L(`{`)
-		g.genSliceCode(f, o)
+		g.genSliceCode(o, E)
 		g.L(`}`)
 	}
 }
 
-func (g *generator) genSliceCode(f *types.StructField, o *types.Obj) {
-	x := g.vars["x"]
-	g.L(`for _, e := range $x {`)
-	g.vars["x"] = "e"
-	g.genObjCode(f, o)
+func (g *generator) genSliceCode(o, E *types.Obj) {
+	g.L(`for _, $0 := range $1 {`, E, o)
+	g.genObjCode(E)
 	g.L(`}`)
-	g.vars["x"] = x
 }

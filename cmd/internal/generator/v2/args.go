@@ -34,18 +34,18 @@ func (g *generator) genArg(a *rules.Arg) {
 func (g *generator) genFieldArg(a *rules.Arg, tt *types.Type) {
 	ff := g.info.FRefChainMap[a]
 
-	x := "v"
-	for _, f := range ff {
-		x = x + "." + f.Name
-	}
+	//x := "v"
+	//for _, f := range ff {
+	//	x = x + "." + f.Name
+	//}
 
 	switch o := ff.Last().Obj; true {
 	case o.Type.IsAssignableTo(tt) == false: // need conversion?
-		g.P("$0($1)", o.Type, x)
+		g.P("$0($1)", tt, o)
 	case tt.IsPtrOf(o.Type): // need address?
-		g.P("&$0", x)
+		g.P("&$0", o)
 	default:
-		g.S(x)
+		g.P("$0", o)
 	}
 }
 

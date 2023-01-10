@@ -110,9 +110,9 @@ func (g *generator) P(text string, args ...any) {
 		c2 := text[i+1]
 
 		// when "$<index>"; write args[index]
-		if isDigit(c2) {
+		if is_digit(c2) {
 			j := i + 2
-			for ; j < len(text) && isDigit(text[j]); j++ {
+			for ; j < len(text) && is_digit(text[j]); j++ {
 			}
 
 			n, err := strconv.Atoi(text[i+1 : j])
@@ -129,28 +129,16 @@ func (g *generator) P(text string, args ...any) {
 			continue
 		}
 
-		// when "$<key>"; write vars[key]
-		if isAlnum(c2) {
-			j := i + 2
-			for ; j < len(text) && isAlnum(text[j]); j++ {
-			}
-
-			key := text[i+1 : j]
-			g.S(g.vars[key])
-
-			i = j - 1
-			continue
-		}
-
-		// when ${<key>}; write vars[key]
+		// when "${<expansion>}"; write args[index]
 		if c2 == '{' {
 			j := i + 2
 			for ; j < len(text) && text[j] != '}'; j++ {
 			}
 
-			key := text[i+2 : j]
-			g.S(g.vars[key])
-
+			exp := text[i+2 : j]
+			if err := g.X(exp, args); err != nil {
+				g.werr = err
+			}
 			i = j
 			continue
 		}
@@ -159,6 +147,81 @@ func (g *generator) P(text string, args ...any) {
 	if g.werr == nil {
 		_, g.werr = g.buf.Write(out)
 	}
+}
+
+type exprOp uint
+
+func (op exprOp) has(ops ...exprOp) bool {
+	for _, v := range ops {
+		if op&v == 0 {
+			return false
+		}
+	}
+	return true
+}
+
+const (
+	unary_not exprOp = 1 << iota
+	bool_and
+	bool_or
+)
+
+// X parses and evaluates the expression x similar to how brace expansions work.
+func (g *generator) X(x string, args []any) error {
+	var a any
+	switch {
+	case len(x) > 0 && is_digit(x[0]):
+		i := 0
+		for ; i < len(x) && is_digit(x[i]); i++ {
+		}
+
+		ind, err := strconv.Atoi(x[0:i])
+		if err != nil {
+			return fmt.Errorf("failed to parse %s: %v", x, err)
+		} else if ind >= len(args) {
+			return fmt.Errorf("index %s out of range", x)
+		}
+
+		a = args[ind]
+		x = x[i:]
+	}
+
+	var op exprOp
+	switch {
+
+	// - "[||]": expand arg as "expr1 || expr2"
+	// - "[&&]": expand arg as "expr1 && expr2"
+	// - "[!|]": expand arg as "!expr1 || !expr2"
+	// - "[!&]": expand arg as "!expr1 && !expr2"
+	case len(x) > 0 && x[0] == '[':
+		i := 1
+		for ; i < len(x) && x[i] != ']'; i++ {
+		}
+
+		switch x[1:i] {
+		case "||":
+			op = bool_or
+		case "&&":
+			op = bool_and
+		case "!|":
+			op = unary_not | bool_or
+		case "!&":
+			op = unary_not | bool_and
+		}
+	}
+
+	switch v := a.(type) {
+	default:
+		g.A(a)
+
+	case []*rules.Rule:
+		g.genRulesExpr(v, op)
+
+	case *rules.Rule:
+		g.genRuleExpr(v)
+	}
+
+	return nil
 }
 
 // write the given arg to the buffer
@@ -178,10 +241,12 @@ func (g *generator) A(a any) {
 	case *types.Type:
 		g.S(v.TypeString(&g.file.pkg))
 
+	case *types.Obj:
+		g.S(g.vars[v])
+
 	case *rules.Rule:
 		o := g.info.RuleObjMap[v]
-		f := g.info.ObjFieldMap[o]
-		g.genIsRuleExpr(f, o, v)
+		g.genIsRuleExpr(o, v)
 
 	case *rules.Arg:
 		g.genArg(v)
@@ -191,11 +256,11 @@ func (g *generator) A(a any) {
 	}
 }
 
-func isDigit(c byte) bool {
+func is_digit(c byte) bool {
 	return (c >= '0' && c <= '9')
 }
 
-func isAlnum(c byte) bool {
+func is_alnum(c byte) bool {
 	return c == '_' ||
 		(c >= '0' && c <= '9') ||
 		(c >= 'a' && c <= 'z') ||

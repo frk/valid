@@ -5,31 +5,34 @@ import (
 	"github.com/frk/valid/cmd/internal/types"
 )
 
-func (g *generator) genReqCode(f *types.StructField, o *types.Obj) (x *types.Obj) {
-	x = o
-	g.P(`if $0 `, x.IsRules[0])
-	for x.Type.Kind == types.PTR {
-		x = x.Type.Elem
-		g.deref()
+func (g *generator) genReqPtrCode(o *types.Obj) {
+	p := o // retain the pointer object
 
-		if x.Has(rules.REQUIRED) {
-			g.P(`|| $0 `, x.IsRules[0])
-		}
-	}
+	g.P(`if `)
+	o = g.genReqPtrExpr(o)
+	g.L(` {
+		return $0`, g.ErrExpr(p, p.IsRules[0]))
 
-	// "required" already done; remove
-	if x.Has(rules.REQUIRED) {
-		x.IsRules = x.IsRules[1:]
-	}
+	switch {
+	case len(o.IsRules) > 0:
+		g.genIsRuleBlock(o, elif_block)
 
-	g.L(`{`)
-	g.genError(f, o, o.IsRules[0])
-	if len(x.IsRules) > 0 {
-		g.genIsRuleBlock(f, x, elif_block)
-		x.IsRules = nil // already done; remove
-	} else {
+	case len(o.IsRules) == 0:
 		g.L(`}`)
 	}
+}
 
-	return x
+func (g *generator) genReqPtrExpr(o *types.Obj) *types.Obj {
+	g.P(`$0 `, o.IsRules[0])
+	for o.Type.Kind == types.PTR {
+		o = o.Type.Elem
+		if o.Has(rules.REQUIRED) {
+			g.P(`|| $0 `, o.IsRules[0])
+		}
+	}
+	// "required" already done; remove
+	if o.Has(rules.REQUIRED) {
+		o.IsRules = o.IsRules[1:]
+	}
+	return o
 }

@@ -32,6 +32,7 @@ func (c *checker) walkObj(o *types.Obj, w *walk) error {
 
 	switch t := o.Type; t.Kind {
 	case types.PTR:
+		c.Info.PtrMap[o.Type.Elem] = o
 		w := &walk{is: w.is, pre: w.pre, ff: w.ff, ptr: w.ptr}
 		if err := c.walkObj(t.Elem, w); err != nil {
 			return err
@@ -52,9 +53,9 @@ func (c *checker) walkObj(o *types.Obj, w *walk) error {
 		}
 	case types.STRUCT:
 		for _, f := range t.Fields {
-			//if f.CanSkip(c.v.Type.Pkg) {
-			//	continue
-			//}
+			if f.CanSkip(c.v.Type.Pkg) {
+				continue
+			}
 
 			ff := w.ff.CopyWith(f)
 			c.Info.FKeyMap[f] = c.newFKey(ff)

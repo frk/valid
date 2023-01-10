@@ -12,7 +12,7 @@ func Test_generatorP(t *testing.T) {
 		skip bool
 		text string
 		args []any
-		vars map[string]string
+		// varz map[string]string
 		want string
 		err  error
 	}{{
@@ -36,23 +36,23 @@ func Test_generatorP(t *testing.T) {
 		text: "hi $0, $1, and $2",
 		args: []any{"foo", "bar", "baz"},
 		want: "hi foo, bar, and baz",
-	}, {
-		text: "hello $key",
-		vars: map[string]string{"key": "world"},
-		want: "hello world",
-	}, {
-		text: "hi $k1, $k2, and $0",
-		args: []any{"baz"},
-		vars: map[string]string{"k1": "foo", "k2": "bar"},
-		want: "hi foo, bar, and baz",
-	}, {
-		text: "hello ${key}world",
-		vars: map[string]string{"key": "blue"},
-		want: "hello blueworld",
-	}, {
-		text: "hello ${k1}world${k2}sky",
-		vars: map[string]string{"k1": "blue", "k2": "red"},
-		want: "hello blueworldredsky",
+		//}, {
+		//	text: "hello $key",
+		//	varz: map[string]string{"key": "world"},
+		//	want: "hello world",
+		//}, {
+		//	text: "hi $k1, $k2, and $0",
+		//	args: []any{"baz"},
+		//	varz: map[string]string{"k1": "foo", "k2": "bar"},
+		//	want: "hi foo, bar, and baz",
+		//}, {
+		//	text: "hello ${key}world",
+		//	varz: map[string]string{"key": "blue"},
+		//	want: "hello blueworld",
+		//}, {
+		//	text: "hello ${k1}world${k2}sky",
+		//	varz: map[string]string{"k1": "blue", "k2": "red"},
+		//	want: "hello blueworldredsky",
 	}, {
 		text: "hello $26world$27sky",
 		args: append(make([]any, 26), "blue", "red"),
@@ -75,7 +75,7 @@ func Test_generatorP(t *testing.T) {
 			continue
 		}
 
-		g := generator{vars: tt.vars}
+		g := generator{ /*varz: tt.varz*/ }
 		g.P(tt.text, tt.args...)
 		if !reflect.DeepEqual(tt.err, g.werr) {
 			t.Errorf("got error: %v\nwant error: %v", g.werr, tt.err)
