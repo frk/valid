@@ -1,12 +1,15 @@
 package generate
 
 import (
+	"fmt"
+
 	"github.com/frk/valid/cmd/internal/rules/specs"
 	"github.com/frk/valid/cmd/internal/rules/v2"
 	"github.com/frk/valid/cmd/internal/types"
 )
 
 func (g *generator) genIsRuleBlock(o *types.Obj, block blockType) {
+	fmt.Println("xxxx")
 	switch block {
 	case if_block:
 		g.P(`if `)

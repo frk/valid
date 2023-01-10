@@ -1,13 +1,123 @@
 package generate
 
 import (
+	"fmt"
+
+	"github.com/frk/valid/cmd/internal/rules/specs"
 	"github.com/frk/valid/cmd/internal/rules/v2"
+	"github.com/frk/valid/cmd/internal/types"
 )
 
-func (g *generator) genRulesExpr(rr []*rules.Rule, op exprOp) {
-	switch rr[0].Spec.Kind {
-	case rules.PREPROC:
-		// TODO... if rules preproc...
+var _ = fmt.Println
+
+func (g *generator) gen_required_pointer_code(o *types.Obj) {
+	list := p_rules(o)
+	base := p_end(o)
+
+	switch {
+	case len(base.IsRules) == 0:
+		g.L(`if ${0[||]} {`, list)
+		g.P(`	return ${0:e}`, list[0])
+		g.L(`}`)
+
+	case len(base.IsRules) > 0:
+		g.L(`if ${0[||]} {`, list)
+		g.L(`	return ${0:e}`, list[0])
+		for _, r := range base.IsRules {
+			g.L(`} else if ${0} {`, r)
+			g.L(`	return ${0:e}`, r)
+		}
+		g.L(`}`)
+	}
+}
+
+func (g *generator) gen_optional_pointer_code(o *types.Obj) {
+	list := p_rules(o)
+	base := p_end(o)
+
+	switch {
+	case can_join_opt(base):
+		r := base.IsRules[0]
+		g.L(`if ${0[&&]} && ${1:p} {`, list, r)
+		g.L(`	return ${0:e}`, r)
+		g.L(`}`)
+
+	default:
+		g.L(`if ${0[&&]} {`, list)
+		g.P(`	${0:g}`, base)
+		g.L(`}`)
+	}
+}
+
+func (g *generator) gen_pre_rules_code(o *types.Obj) {
+	g.L(`$0 = ${1[@]}`, o, o.PreRules)
+}
+
+func (g *generator) gen_is_rules_code(o *types.Obj) {
+	r := o.IsRules[0]
+	o.IsRules = o.IsRules[1:]
+
+	switch {
+	case len(o.IsRules) == 0:
+		g.L(`if ${0} {`, r)
+		g.L(`	return ${0:e}`, r)
+		g.L(`}`)
+
+	case r.Is(rules.OPTIONAL) && can_join_opt(o):
+		r2 := o.IsRules[0]
+		g.L(`if ${0} && ${1:p} {`, r, r2)
+		g.L(`	return ${0:e}`, r2)
+		g.L(`}`)
+
+	case len(o.IsRules) > 0:
+		g.L(`if ${0} {`, r)
+		g.L(`	return ${0:e}`, r)
+		for _, r := range o.IsRules {
+			g.L(`} else if ${0} {`, r)
+			g.L(`	return ${0:e}`, r)
+		}
+		g.L(`}`)
+
+		// TODO when o.Type.HasRules() we need to
+		// do an else block...
+	}
+}
+
+func (g *generator) gen_rule_expr(r *rules.Rule, can_group bool) {
+	switch {
+	case can_group && g.is_multi_expr(r):
+		g.P(`(${0})`, r)
+
+	case r.Spec.Kind == rules.PREPROC:
+		g.P(`${0}`, specs.GetFunc(r.Spec))
+
+	default:
+		o := g.info.RuleObjMap[r]
+		g.genIsRuleExpr(o, r)
+	}
+}
+
+func (g *generator) gen_rule_list_expr(rr []*rules.Rule, op exprOp) {
+	switch {
+	case len(rr) == 0:
+		// nothing to do
+
+	case op.has(func_call):
+		// the last func is the leftmost
+		n := len(rr) - 1
+		r := rr[n]
+		o := g.info.RuleObjMap[r]
+
+		switch {
+		case len(rr) == 1 && len(r.Args) == 0:
+			g.P(`${0}(${1})`, r, o)
+		case len(rr) == 1 && len(r.Args) > 0:
+			g.P(`${0}(${1}, ${2})`, r, o, r.Args)
+		case len(rr) > 1 && len(r.Args) == 0:
+			g.P(`${0}(${1[@]})`, r, rr[:n])
+		case len(rr) > 1 && len(r.Args) > 0:
+			g.P(`${0}(${1[@]}, ${2})`, r, rr[:n], r.Args)
+		}
 
 	default:
 		if op.has(unary_not) {
@@ -30,8 +140,9 @@ func (g *generator) genRulesExpr(rr []*rules.Rule, op exprOp) {
 	}
 }
 
-func (g *generator) genRuleExpr(r *rules.Rule) {
-	// TODO
-	o := g.info.RuleObjMap[r]
-	g.genIsRuleExpr(o, r)
+func (g *generator) gen_arg_list_expr(args []*rules.Arg) {
+	g.P(`${0}`, args[0])
+	for _, a := range args[1:] {
+		g.P(`, ${0}`, a)
+	}
 }

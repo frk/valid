@@ -164,6 +164,7 @@ const (
 	unary_not exprOp = 1 << iota
 	bool_and
 	bool_or
+	func_call
 )
 
 // X parses and evaluates the expression x similar to how brace expansions work.
@@ -187,12 +188,14 @@ func (g *generator) X(x string, args []any) error {
 	}
 
 	var op exprOp
+	var mod string
 	switch {
 
-	// - "[||]": expand arg as "expr1 || expr2"
-	// - "[&&]": expand arg as "expr1 && expr2"
-	// - "[!|]": expand arg as "!expr1 || !expr2"
-	// - "[!&]": expand arg as "!expr1 && !expr2"
+	// - "[||]": will expand arg as "expr1 || expr2"
+	// - "[&&]": will expand arg as "expr1 && expr2"
+	// - "[!|]": will expand arg as "!expr1 || !expr2"
+	// - "[!&]": will expand arg as "!expr1 && !expr2"
+	// - "[@]": will expand arg as "h(g(f(o)))" (assumes rules are preproc funcs)
 	case len(x) > 0 && x[0] == '[':
 		i := 1
 		for ; i < len(x) && x[i] != ']'; i++ {
@@ -207,18 +210,58 @@ func (g *generator) X(x string, args []any) error {
 			op = unary_not | bool_or
 		case "!&":
 			op = unary_not | bool_and
+		case "@":
+			op = func_call
 		}
+
+	// - ":e": when arg=rule, will generate error expression
+	// - ":p": when arg=rule, can group expression
+	// - ":g": when arg=obj, will generate object code instead of the default objec identifier
+	case len(x) > 0 && x[0] == ':':
+		mod = x[1:]
 	}
 
 	switch v := a.(type) {
 	default:
 		g.A(a)
 
+	case rules.List:
+		g.gen_rule_list_expr([]*rules.Rule(v), op)
+
 	case []*rules.Rule:
-		g.genRulesExpr(v, op)
+		g.gen_rule_list_expr(v, op)
+
+	case []*rules.Arg:
+		g.gen_arg_list_expr(v)
+
+	case *rules.Arg:
+		g.genArg(v)
 
 	case *rules.Rule:
-		g.genRuleExpr(v)
+		switch mod {
+		case "err", "e":
+			g.genErrorExpr(v)
+		case "p":
+			g.gen_rule_expr(v, true)
+		default:
+			g.gen_rule_expr(v, false)
+		}
+
+	case *types.Obj:
+		switch mod {
+		case "gen", "g":
+			g.genObjCode(v)
+		default:
+			g.S(g.vars[v])
+		}
+
+	case types.Ident:
+		if pkg := v.GetPkg(); g.file.pkg.Path != pkg.Path {
+			pkg := g.file.addImport(pkg)
+			g.S(pkg.name + "." + v.GetName())
+		} else {
+			g.S(v.GetName())
+		}
 	}
 
 	return nil
