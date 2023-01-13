@@ -40,6 +40,8 @@ type Info struct {
 	FDepMap map[*types.StructField][]*types.StructField
 	// ChainMap maps each field to its corresponding field chain.
 	ChainMap map[*types.StructField]types.FieldChain
+	// VisibleChainMap maps each field to its shortest field chain.
+	VisibleChainMap map[*types.StructField]types.FieldChain
 	// ArgRuleMap maps args to the rules to which they belong.
 	ArgRuleMap map[*rules.Arg]*rules.Rule
 	// ArgIndexMap maps args to their respective index within the rule.
@@ -61,6 +63,7 @@ func Check(cfg Config, match *search.Match, info *Info) error {
 	info.FRefChainMap = make(map[*rules.Arg]types.FieldChain)
 	info.FDepMap = make(map[*types.StructField][]*types.StructField)
 	info.ChainMap = make(map[*types.StructField]types.FieldChain)
+	info.VisibleChainMap = make(map[*types.StructField]types.FieldChain)
 	info.ArgRuleMap = make(map[*rules.Arg]*rules.Rule)
 	info.ArgIndexMap = make(map[*rules.Arg]int)
 	info.RuleObjMap = make(map[*rules.Rule]*types.Obj)

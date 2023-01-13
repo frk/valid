@@ -5,6 +5,12 @@ import (
 	"github.com/frk/valid/cmd/internal/types"
 )
 
+func (g *generator) gen_obj_field_key(o *types.Obj) {
+	f := g.info.ObjFieldMap[o]
+	k := g.info.FKeyMap[f]
+	g.Q(k)
+}
+
 type blockType uint
 
 const (
@@ -57,20 +63,17 @@ func (g *generator) genObjCode(o *types.Obj) {
 
 	case len(o.PreRules) > 0:
 		g.gen_pre_rules_code(o)
-		//g.genPreRuleCode(o)
 
 	case len(o.IsRules) > 0:
 		g.gen_is_rules_code(o)
-		//g.genIsRuleBlock(o, if_block)
 
 	case o.Type.Kind == types.MAP:
-		g.genMapBlock(o, current_block)
+		g.gen_map_code(o)
 	case o.Type.Kind == types.ARRAY:
-		g.genSliceBlock(o, current_block)
+		g.gen_slice_code(o)
 	case o.Type.Kind == types.SLICE:
 		g.gen_slice_code(o)
-		// g.genSliceBlock(o, current_block)
 	case o.Type.Kind == types.STRUCT:
-		g.genStructBlock(o, current_block)
+		g.genStructCode(o)
 	}
 }

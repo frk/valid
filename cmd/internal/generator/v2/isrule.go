@@ -1,53 +1,10 @@
 package generate
 
 import (
-	"fmt"
-
 	"github.com/frk/valid/cmd/internal/rules/specs"
 	"github.com/frk/valid/cmd/internal/rules/v2"
 	"github.com/frk/valid/cmd/internal/types"
 )
-
-func (g *generator) genIsRuleBlock(o *types.Obj, block blockType) {
-	fmt.Println("xxxx")
-	switch block {
-	case if_block:
-		g.P(`if `)
-		g.genIsRuleCode(o)
-
-	case elif_block:
-		g.P(`} else if `)
-		g.genIsRuleCode(o)
-	}
-
-	g.genObjBlock(o, else_block)
-	g.L(`}`)
-}
-
-func (g *generator) genIsRuleCode(o *types.Obj) {
-	if o.Has(rules.OPTIONAL) && len(o.IsRules) > 1 {
-		// TODO subsequent rule could be error-returning
-		// function, that needs to be handled here ...
-		g.genIsRuleExpr(o, o.IsRules[0])
-		g.P(` && `)
-		o.IsRules = o.IsRules[1:]
-	}
-
-	r := o.IsRules[0]
-	g.genIsRuleExpr(o, r)
-	g.L(` {
-		return $0`, g.ErrExpr(o, r))
-
-	for _, r := range o.IsRules[1:] {
-		g.P(`} else if `)
-		g.genIsRuleExpr(o, r)
-		g.L(` {
-			return $0`, g.ErrExpr(o, r))
-
-	}
-
-	o.IsRules = nil
-}
 
 func (g *generator) genIsRuleExpr(o *types.Obj, r *rules.Rule) {
 	switch r.Spec.Kind {

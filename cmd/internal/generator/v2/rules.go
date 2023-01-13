@@ -51,36 +51,46 @@ func (g *generator) gen_optional_pointer_code(o *types.Obj) {
 
 func (g *generator) gen_pre_rules_code(o *types.Obj) {
 	g.L(`$0 = ${1[@]}`, o, o.PreRules)
+
+	o.PreRules = nil
+	g.genObjCode(o)
 }
 
 func (g *generator) gen_is_rules_code(o *types.Obj) {
 	r := o.IsRules[0]
-	o.IsRules = o.IsRules[1:]
+	list := o.IsRules[1:]
+
+	// DO NOT move nor remove this or else the can_join_opt(o) call
+	// may not produce the expected result.
+	//
+	// TODO: make the writer less easily breakable
+	o.IsRules = list
 
 	switch {
-	case len(o.IsRules) == 0:
+	case len(list) == 0:
 		g.L(`if ${0} {`, r)
 		g.L(`	return ${0:e}`, r)
-		g.L(`}`)
 
 	case r.Is(rules.OPTIONAL) && can_join_opt(o):
-		r2 := o.IsRules[0]
+		r2 := list[0]
 		g.L(`if ${0} && ${1:p} {`, r, r2)
 		g.L(`	return ${0:e}`, r2)
-		g.L(`}`)
 
-	case len(o.IsRules) > 0:
+	case len(list) > 0:
 		g.L(`if ${0} {`, r)
 		g.L(`	return ${0:e}`, r)
-		for _, r := range o.IsRules {
+		for _, r := range list {
 			g.L(`} else if ${0} {`, r)
 			g.L(`	return ${0:e}`, r)
 		}
-		g.L(`}`)
-
-		// TODO when o.Type.HasRules() we need to
-		// do an else block...
 	}
+
+	o.IsRules = nil
+	if o.Type.HasRules() {
+		g.L(`} else {`)
+		g.P(`	${0:g}`, o)
+	}
+	g.L(`}`)
 }
 
 func (g *generator) gen_rule_expr(r *rules.Rule, can_group bool) {
@@ -137,12 +147,5 @@ func (g *generator) gen_rule_list_expr(rr []*rules.Rule, op exprOp) {
 				g.P(`|| ${0}`, r)
 			}
 		}
-	}
-}
-
-func (g *generator) gen_arg_list_expr(args []*rules.Arg) {
-	g.P(`${0}`, args[0])
-	for _, a := range args[1:] {
-		g.P(`, ${0}`, a)
 	}
 }

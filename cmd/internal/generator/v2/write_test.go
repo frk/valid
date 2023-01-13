@@ -1,7 +1,6 @@
 package generate
 
 import (
-	"bytes"
 	"fmt"
 	"reflect"
 	"testing"
@@ -77,49 +76,6 @@ func Test_generatorP(t *testing.T) {
 
 		g := generator{ /*varz: tt.varz*/ }
 		g.P(tt.text, tt.args...)
-		if !reflect.DeepEqual(tt.err, g.werr) {
-			t.Errorf("got error: %v\nwant error: %v", g.werr, tt.err)
-		}
-		if g.werr == nil {
-			if got := g.buf.String(); got != tt.want {
-				t.Errorf("got text: %v\nwant text: %v", got, tt.want)
-			}
-		}
-	}
-
-}
-
-func Test_generatorRL(t *testing.T) {
-	tests := []struct {
-		skip bool
-		buf  string
-		text string
-		args []any
-		want string
-		err  error
-	}{{
-		buf:  "hello world",
-		text: "goodbye!",
-		want: "goodbye!\n",
-	}, {
-		buf:  "hello\nworld",
-		text: "goodbye!",
-		want: "hello\ngoodbye!\n",
-	}, {
-		buf:  "hello\nworld\n",
-		text: "goodbye!",
-		want: "hello\ngoodbye!\n",
-	}}
-
-	for _, tt := range tests {
-		if tt.skip {
-			continue
-		}
-
-		buf := bytes.NewBuffer([]byte(tt.buf))
-
-		g := generator{buf: *buf}
-		g.RL(tt.text, tt.args...)
 		if !reflect.DeepEqual(tt.err, g.werr) {
 			t.Errorf("got error: %v\nwant error: %v", g.werr, tt.err)
 		}

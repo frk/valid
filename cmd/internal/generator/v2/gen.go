@@ -42,6 +42,7 @@ func File(pkg search.Pkg, infos []*checker.Info) ([]byte, error) {
 		g.L(``)
 	}
 	if g.werr != nil {
+		panic(g.werr.Error()) // TEMP
 		return nil, g.werr
 	}
 	return g.buf.Bytes(), nil
@@ -60,7 +61,7 @@ type generator struct {
 
 func (g *generator) run() error {
 	g.prepVars()
-	g.genValidator()
+	g.gen_validate()
 	if g.werr != nil {
 		return g.werr
 	}
@@ -70,10 +71,10 @@ func (g *generator) run() error {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-func (g *generator) genValidator() {
+func (g *generator) gen_validate() {
 	g.L("func ($0 *$1) Validate() error {", g.v, g.v.Type.Name)
 	g.genBeforeHook()
-	g.genStructBlock(g.v, current_block)
+	g.genStructCode(g.v)
 	g.genAfterHook()
 	g.genReturn()
 	g.L("}")

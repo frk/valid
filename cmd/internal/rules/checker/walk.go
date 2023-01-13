@@ -14,7 +14,11 @@ import (
 // - generates field keys
 // - resolves field references
 func (c *checker) walkType(t *types.Type) error {
-	return c.walkObj(&types.Obj{Type: t}, &walk{})
+	if err := c.walkObj(&types.Obj{Type: t}, &walk{}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type walk struct {
@@ -315,4 +319,29 @@ func (c *checker) objRuleSet(o *types.Obj, w *walk) error {
 		o.IsRules = w.ptr
 	}
 	return nil
+}
+
+func (c *checker) walkVisible(o *types.Obj, ff types.FieldChain) {
+	switch t := o.Type; t.Kind {
+	case types.PTR:
+		c.walkVisible(t.Elem, ff)
+	case types.ARRAY, types.SLICE:
+		c.walkVisible(t.Elem, ff)
+	case types.MAP:
+		c.walkVisible(t.Key, ff)
+		c.walkVisible(t.Elem, ff)
+	case types.STRUCT:
+		for _, f := range t.VisibleFields() {
+			if f.CanSkip(c.v.Type.Pkg) {
+				continue
+			}
+
+			ff := ff.CopyWith(f)
+			if _, ok := c.Info.VisibleChainMap[f]; !ok {
+				c.Info.VisibleChainMap[f] = ff
+			}
+
+			c.walkVisible(f.Obj, ff)
+		}
+	}
 }
