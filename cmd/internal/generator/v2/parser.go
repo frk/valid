@@ -14,7 +14,11 @@ type scope struct {
 }
 
 type parser struct {
+	// recieve tokens from scanners
 	tokens chan *token
+	// explicitly stop scanners
+	stop chan struct{}
+
 	scopes map[any]*scope
 	// the validate method's body
 	body *block_stmt
@@ -24,6 +28,8 @@ type parser struct {
 	cur_expr expr
 	// stack of paren_expr
 	parens []*paren_expr
+	// chain of unary_expr
+	unary []*unary_expr
 
 	// remove after testing
 	debug bool
@@ -36,6 +42,10 @@ func (p *parser) _debug(mesg string, vv ...any) {
 	}
 }
 
+func (p *parser) fail(mesg string, vv ...any) {
+	panic(fmt.Sprintf("bad token stream: "+mesg, vv...))
+}
+
 func (p *parser) init() *parser {
 	p.tokens = make(chan *token)
 	p.scopes = make(map[any]*scope)
@@ -44,41 +54,55 @@ func (p *parser) init() *parser {
 	return p
 }
 
+func (p *parser) close() {
+	if p.cur_expr != nil {
+		s := &expr_stmt{p.cur_expr}
+		p.body.list = append(p.body.list, s)
+		p.cur_expr = nil
+	}
+
+	close(p.tokens)
+}
+
 func (p *parser) parse(in string, args ...any) {
 	go (&scanner{in: in, out: p.tokens}).run()
-	for tok := range p.tokens {
-		if tok.t == t_ws { // ignore ws
+	for t := range p.tokens {
+		if t.t == t_eof { // scanner's done?
+			return
+		} else if t.t == t_invalid { // bad token?
+			// set error value
+			return
+		}
+		// ignore ws
+		if t.t == t_ws {
 			continue
 		}
 
 		if p.debug {
-			v := any(tok.v)
+			v := any(t.v)
 			if v == "" {
-				v = tok.t
+				v = t.t
 			}
 			fmt.Printf("- %q\n", v)
 		}
 
-		switch tok.t {
-		case t_eof:
-			return
-		case t_ws: // ignore
+		switch t.t {
 		case t_comment:
-			p.add_line_comment(tok)
+			p.handle_line_comment(t)
 		case t_int, t_float:
-			p.add_lit_expr(tok)
+			p.add_lit_expr(t)
 		case t_ident:
-			p.add_ident_expr(tok)
+			p.add_ident_expr(t)
 		case t_param, t_paramx:
-			p.add_param_expr(tok, args)
+			p.add_param_expr(t, args)
 		case t_inc, t_dec:
-			p.add_incdec_stmt(tok)
-		case t_ptr, t_amp, t_not:
-			p.add_unary_expr(tok)
+			p.add_incdec_stmt(t)
+		case t_mul, t_and, t_not:
+			p.add_unary_expr(t)
 		case t_land, t_lor, t_eql, t_lss, t_gtr, t_neq, t_leq, t_geq:
-			p.add_binary_expr(tok)
+			p.add_binary_expr(t)
 		case t_assign, t_define:
-			p.add_assign_stmt(tok)
+			p.add_assign_stmt(t)
 		case t_lparen:
 			p.add_paren_expr()
 		case t_rparen:
@@ -114,15 +138,22 @@ func (p *parser) parse(in string, args ...any) {
 	}
 }
 
-func (p *parser) fail(mesg string, vv ...any) {
-	panic(fmt.Sprintf("bad token stream: "+mesg, vv...))
+func (s *block_stmt) build(t *token) node {
+	switch t.t {
+	case t_comment:
+		s.list = append(s.list, &line_comment{t.v})
+		return s
+	}
 }
 
-func (p *parser) end() {
-	if p.cur_expr != nil {
-		s := &expr_stmt{p.cur_expr}
-		p.body.list = append(p.body.list, s)
-		p.cur_expr = nil
+func (p *parser) handle_line_comment(t *token) {
+	switch cs := p.cur_stmt.(type) {
+	default:
+		p.fail("unexpected '%s' in %T", t.t, p.cur_stmt)
+
+	case *block_stmt:
+		cs.list = append(cs.list, &line_comment{t.v})
+
 	}
 }
 
@@ -162,17 +193,6 @@ func (p *parser) handle_semicolon() {
 	}
 
 	p.cur_expr = nil
-}
-
-func (p *parser) add_line_comment(tok *token) {
-	switch cs := p.cur_stmt.(type) {
-	default:
-		p.fail("unexpected '%s' in %T", tok.t, p.cur_stmt)
-
-	case *block_stmt:
-		cs.list = append(cs.list, &line_comment{tok.v})
-
-	}
 }
 
 func (p *parser) add_block_stmt() {
@@ -388,6 +408,15 @@ func (p *parser) add_func_decl() {
 }
 
 func (p *parser) add_paren_expr() {
+	// possible func call?
+	switch cx := p.cur_expr.(type) {
+	case *ident_expr:
+		x := &call_expr{outer: p.cur_stmt, fun: cx}
+		p.cur_expr = x
+		return
+	}
+
+	// assume parens for grouping other expressions
 	x := &paren_expr{}
 	p.parens = append(p.parens, x)
 
@@ -395,8 +424,7 @@ func (p *parser) add_paren_expr() {
 	default:
 		p.fail("unexpected '(' in %T", p.cur_stmt)
 
-	case nil: // nothing to do
-
+	case nil: // nothing much to do
 	case *paren_expr:
 		cx.x = x
 
@@ -408,11 +436,12 @@ func (p *parser) add_paren_expr() {
 		cx.items = append(cx.items, x)
 		x.outer = cx
 	}
-
 	p.cur_expr = x
 }
 
 func (p *parser) pop_paren_expr() {
+	// must either have parens[] or be a call expr, otherwise this is illegal
+
 	l := len(p.parens)
 	x := p.parens[l-1]
 	p.parens = p.parens[:l-1]
@@ -454,7 +483,9 @@ func (p *parser) add_param_expr(t *token, args []any) {
 }
 
 func (p *parser) add_unary_expr(t *token) {
-	p.add_expr(&unary_expr{outer: p.cur_stmt, op: t.t})
+	x := &unary_expr{outer: p.cur_stmt, op: t.t}
+	p.add_expr(x)
+	p.unary = append(p.unary, x)
 }
 
 func (p *parser) add_binary_expr(t *token) {
@@ -462,17 +493,24 @@ func (p *parser) add_binary_expr(t *token) {
 	if left == nil {
 		p.fail("unexpected %s in %T", t, p.cur_stmt)
 	}
+
 	p.cur_expr = &binary_expr{op: t.t, left: left}
 }
 
 func (p *parser) add_expr(x expr) {
+	if depth := len(p.unary); depth > 0 {
+		p.unary[depth-1].x = x
+		if _, ok := x.(*unary_expr); !ok { // terminal?
+			p.unary = p.unary[0:0]
+		}
+		return
+	}
+
 	switch cx := p.cur_expr.(type) {
 	default:
 		p.fail("unexpected %T in %T", x, p.cur_stmt)
+
 	case nil:
-		p.cur_expr = x
-	case *unary_expr:
-		cx.x = x
 		p.cur_expr = x
 	case *binary_expr:
 		cx.right = x

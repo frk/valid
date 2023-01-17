@@ -1,7 +1,8 @@
 package generate
 
-// The supported subset of lexial tokens of the Go
-// language, plus the additional parameter tokens.
+// The set of tokens supported by the generator. Most of these are the subset
+// of lexial tokens of the Go language, in addition to those there are the
+// additional parameter tokens.
 type token_type uint8
 
 func (t token_type) String() string {
@@ -14,17 +15,28 @@ const (
 	t_ws      // ' ', '\t' only, line whitespace is not supported
 	t_comment // "//" only
 
-	t_int   // 123
-	t_float // 12.3
+	t_ident
+	t_int    // 123
+	t_float  // 12.3
+	t_char   // 'a'
+	t_string // "foo bar"
 
 	t_param  // positional parameter, e.g. $0, $1, ...
 	t_paramx // parameter expansion, e.g. ${0:e}
 
-	t_ptr // *
-	t_amp // &
+	t_add // +
+	t_sub // -
+	t_mul // *
+	t_quo // /
+	t_rem // %
+
+	t_and // &
+	t_or  // |
 
 	t_land // &&
 	t_lor  // ||
+	t_inc  // ++
+	t_dec  // --
 
 	t_eql    // ==
 	t_lss    // <
@@ -32,13 +44,11 @@ const (
 	t_assign // =
 	t_not    // !
 
-	t_neq    // !=
-	t_leq    // <=
-	t_geq    // >=
-	t_define // :=
-
-	t_inc // ++
-	t_dec // --
+	t_neq      // !=
+	t_leq      // <=
+	t_geq      // >=
+	t_define   // :=
+	t_ellipsis // ...
 
 	t_lparen // (
 	t_rparen // )
@@ -50,8 +60,7 @@ const (
 	t_comma     // ,
 	t_period    // .
 	t_semicolon // ;
-
-	t_ident
+	t_colon     // :
 
 	// supported keywords
 	t_if
@@ -69,14 +78,24 @@ var _token_types = [...]string{
 	t_eof:       "<eof token>",
 	t_ws:        "<whitespace token>",
 	t_comment:   "<comment token>",
+	t_ident:     "<identifier token>",
 	t_int:       "<int token>",
 	t_float:     "<float token>",
+	t_char:      "<char token>",
+	t_string:    "<string token>",
 	t_param:     "<param token>",
 	t_paramx:    "<paramx token>",
-	t_ptr:       "*",
-	t_amp:       "&",
+	t_add:       "+",
+	t_sub:       "-",
+	t_mul:       "*",
+	t_quo:       "/",
+	t_rem:       "%",
+	t_and:       "&",
+	t_or:        "|",
 	t_land:      "&&",
 	t_lor:       "||",
+	t_inc:       "++",
+	t_dec:       "--",
 	t_eql:       "==",
 	t_lss:       "<",
 	t_gtr:       ">",
@@ -86,8 +105,7 @@ var _token_types = [...]string{
 	t_leq:       "<=",
 	t_geq:       ">=",
 	t_define:    ":=",
-	t_inc:       "++",
-	t_dec:       "--",
+	t_ellipsis:  "...",
 	t_lparen:    "(",
 	t_rparen:    ")",
 	t_lbrack:    "[",
@@ -97,7 +115,7 @@ var _token_types = [...]string{
 	t_comma:     ",",
 	t_period:    ".",
 	t_semicolon: ";",
-	t_ident:     "<identifier token>",
+	t_colon:     ":",
 	t_if:        "if",
 	t_else:      "else",
 	t_for:       "for",
@@ -110,159 +128,145 @@ var _token_types = [...]string{
 
 type token struct {
 	t token_type // the type of the token
+	p int        // position of the token
 	v string     // literal value; used only when needed
-	p int        // position; used only when needed
 }
 
+// The scanner for the generator's input. Note that the implementation of the
+// scanner is quite naive and not at all as sophisticated as Go's own scanner.
 type scanner struct {
 	in  string
 	out chan<- *token
 
+	stop chan struct{}
+	exit bool
+
 	ch  byte // current character (ascii only)
-	off int
+	off int  // current offset
 	eof bool
 }
 
 func (s *scanner) run() {
-loop:
 	for {
-		s.next()
-		if s.eof {
-			s.emit_eof()
+		if s.exit {
 			return
 		}
 
-		if s.is_letter(s.ch) {
-			lit := s.scan_ident()
-			switch lit {
+		s.next()
+		if s.eof {
+			s.emit(&token{t: t_eof})
+			return
+		}
+
+		p := s.off - 1
+		switch c, c2 := s.ch, s.peek(); {
+		case s.is_letter(c):
+			p, v := s.scan_ident()
+			switch v {
 			default:
-				s.out <- &token{t: t_ident, v: lit}
+				s.emit(&token{t: t_ident, p: p, v: v})
 			case "if":
-				s.out <- &token{t: t_if}
+				s.emit(&token{t: t_if, p: p})
 			case "else":
-				s.out <- &token{t: t_else}
+				s.emit(&token{t: t_else, p: p})
 			case "for":
-				s.out <- &token{t: t_for}
+				s.emit(&token{t: t_for, p: p})
 			case "range":
-				s.out <- &token{t: t_range}
+				s.emit(&token{t: t_range, p: p})
 			case "return":
-				s.out <- &token{t: t_return}
+				s.emit(&token{t: t_return, p: p})
 			case "package":
-				s.out <- &token{t: t_package}
+				s.emit(&token{t: t_package, p: p})
 			case "import":
-				s.out <- &token{t: t_import}
+				s.emit(&token{t: t_import, p: p})
 			case "func":
-				s.out <- &token{t: t_func}
+				s.emit(&token{t: t_func, p: p})
 			}
-			continue
-		}
 
-		if s.is_digit(s.ch) {
-			lit, is_fp := s.scan_number()
-			switch {
-			case lit != "" && !is_fp:
-				s.out <- &token{t: t_int, v: lit}
-			case lit != "" && is_fp:
-				s.out <- &token{t: t_float, v: lit}
-			case lit == "":
-				s.out <- &token{t: t_invalid, v: string(s.ch), p: s.off}
-				return
-			}
-			continue
-		}
+		case s.is_digit(c):
+			t, p, v := s.scan_number()
+			s.emit(&token{t: t, p: p, v: v})
 
-		switch s.ch {
-		case ' ', '\t':
-			s.emit_ws()
-		case '$':
-			switch c := s.peek(); true {
-			case s.is_digit(c): // param?
-				s.emit_param()
-			case c == '{': // paramx?
-				s.emit_paramx()
-			default:
-				break loop
-			}
-		case '/':
-			if s.peek() == '/' {
-				s.emit_comment()
-			} else {
-				break loop
-			}
-		case '*':
-			s.emit_ptr()
-		case '&':
-			if s.peek() == '&' {
-				s.emit_land()
-			} else {
-				s.emit_amp()
-			}
-		case '|':
-			if s.peek() == '|' {
-				s.emit_lor()
-			} else {
-				break loop
-			}
-		case '=':
-			if s.peek() == '=' {
-				s.emit_eql()
-			} else {
-				s.emit_assign()
-			}
-		case '>':
-			if s.peek() == '=' {
-				s.emit_geq()
-			} else {
-				s.emit_gtr()
-			}
-		case '<':
-			if s.peek() == '=' {
-				s.emit_leq()
-			} else {
-				s.emit_lss()
-			}
-		case '!':
-			if s.peek() == '=' {
-				s.emit_neq()
-			} else {
-				s.emit_not()
-			}
-		case ':':
-			if s.peek() == '=' {
-				s.emit_define()
-			} else {
-				break loop
-			}
-		case '+':
-			if s.peek() == '+' {
-				s.emit_inc()
-			} else {
-				break loop
-			}
-		case '-':
-			if s.peek() == '-' {
-				s.emit_dec()
-			} else {
-				break loop
-			}
-		case '(':
-			s.emit_lparen()
-		case '[':
-			s.emit_lbrack()
-		case '{':
-			s.emit_lbrace()
-		case ')':
-			s.emit_rparen()
-		case ']':
-			s.emit_rbrack()
-		case '}':
-			s.emit_rbrace()
-		case ',':
-			s.emit_comma()
-		case '.':
-			s.emit_period()
-		case ';':
-			s.emit_semicolon()
+		case s.is_ws(c):
+			p, v := s.scan_ws()
+			s.emit(&token{t: t_ws, p: p, v: v})
+
+		case c == '\'':
+			t, p, v := s.scan_char()
+			s.emit(&token{t: t, p: p, v: v})
+
+		case c == '"':
+			t, p, v := s.scan_string()
+			s.emit(&token{t: t, p: p, v: v})
+
+		case c == '$':
+			t, p, v := s.scan_param()
+			s.emit(&token{t: t, p: p, v: v})
+
+		case c == '.':
+			t, p, v := s.scan_dots()
+			s.emit(&token{t: t, p: p, v: v})
+
+		case c == '/':
+			t, p, v := s.scan_quo()
+			s.emit(&token{t: t, p: p, v: v})
+
+		case c == '+' && c2 == '+':
+			s.next_emit(&token{t: t_inc, p: p})
+		case c == '+':
+			s.emit(&token{t: t_add, p: p})
+		case c == '-' && c2 == '-':
+			s.next_emit(&token{t: t_dec, p: p})
+		case c == '-':
+			s.emit(&token{t: t_sub, p: p})
+		case c == '*':
+			s.emit(&token{t: t_mul, p: p})
+		case c == '%':
+			s.emit(&token{t: t_rem, p: p})
+		case c == '&' && c2 == '&':
+			s.next_emit(&token{t: t_land, p: p})
+		case c == '&':
+			s.emit(&token{t: t_and, p: p})
+		case c == '|' && c2 == '|':
+			s.next_emit(&token{t: t_lor, p: p})
+		case c == '|':
+			s.emit(&token{t: t_or, p: p})
+		case c == '=' && c2 == '=':
+			s.next_emit(&token{t: t_eql, p: p})
+		case c == '=':
+			s.emit(&token{t: t_assign, p: p})
+		case c == '<' && c2 == '=':
+			s.next_emit(&token{t: t_leq, p: p})
+		case c == '<':
+			s.emit(&token{t: t_lss, p: p})
+		case c == '>' && c2 == '=':
+			s.next_emit(&token{t: t_geq, p: p})
+		case c == '>':
+			s.emit(&token{t: t_gtr, p: p})
+		case c == '!' && c2 == '=':
+			s.next_emit(&token{t: t_neq, p: p})
+		case c == '!':
+			s.emit(&token{t: t_not, p: p})
+		case c == ':' && c2 == '=':
+			s.next_emit(&token{t: t_define, p: p})
+		case c == ':':
+			s.emit(&token{t: t_colon, p: p})
+		case c == '(':
+			s.emit(&token{t: t_lparen, p: p})
+		case c == '[':
+			s.emit(&token{t: t_lbrack, p: p})
+		case c == '{':
+			s.emit(&token{t: t_lbrace, p: p})
+		case c == ')':
+			s.emit(&token{t: t_rparen, p: p})
+		case c == ']':
+			s.emit(&token{t: t_rbrack, p: p})
+		case c == '}':
+			s.emit(&token{t: t_rbrace, p: p})
+		case c == ',':
+			s.emit(&token{t: t_comma, p: p})
+		case c == ';':
+			s.emit(&token{t: t_semicolon, p: p})
 		}
 	}
 }
@@ -284,150 +288,128 @@ func (s *scanner) peek() byte {
 	return 0
 }
 
-func (s *scanner) scan_ident() string {
+func (s *scanner) emit(t *token) {
+	if t.t == t_invalid {
+		s.exit = true
+	}
+
+	select {
+	case <-s.stop:
+		s.exit = true
+
+	case s.out <- t:
+		// ok;
+	}
+}
+
+func (s *scanner) next_emit(t *token) {
+	s.next()
+	s.emit(t)
+}
+
+func (s *scanner) scan_ident() (p int, v string) {
 	offs := s.off - 1
 	for ; s.is_ident_char(s.peek()); s.next() {
 	}
-	return s.in[offs:s.off]
+	return offs, s.in[offs:s.off]
 }
 
-func (s *scanner) scan_number() (_ string, is_fp bool) {
+func (s *scanner) scan_ws() (p int, v string) {
 	offs := s.off - 1
-	is_digsep := false
-
-loop:
-	for {
-		switch c := s.peek(); {
-		default:
-			break loop
-		case c == '.' && !is_fp:
-			is_fp = true
-		case c == '_' && !is_digsep:
-			is_digsep = true
-		case s.is_digit(c):
-			// ok
-		}
-
-		s.next()
-		is_digsep = (s.ch == '_')
-	}
-
-	return s.in[offs:s.off], is_fp
-}
-
-func (s *scanner) emit_eof() {
-	s.out <- &token{t: t_eof}
-}
-
-func (s *scanner) emit_comment() {
-	s.out <- &token{t: t_comment, v: s.in[s.off+1:]}
-	s.off = len(s.in)
-}
-
-func (s *scanner) emit_ws() {
 	for ; s.is_ws(s.peek()); s.next() {
 	}
-	s.out <- &token{t: t_ws}
+	return offs, s.in[offs:s.off]
 }
 
-func (s *scanner) emit_param() {
+func (s *scanner) scan_char() (t token_type, p int, v string) {
 	offs := s.off
-	for ; s.is_digit(s.peek()); s.next() {
+	for ; s.ch != '\'' && !s.eof; s.next() {
 	}
-	s.out <- &token{t: t_param, v: s.in[offs:s.off]}
+	if s.ch != '\'' {
+		return t_invalid, s.off, string(s.ch)
+	}
+	return t_char, offs - 1, s.in[offs : s.off-1]
 }
 
-func (s *scanner) emit_paramx() {
-	s.next() // read '{'
-
+func (s *scanner) scan_string() (t token_type, p int, v string) {
 	offs := s.off
-	for ; s.ch != '}' && !s.eof; s.next() {
+	for ; s.ch != '"' && !s.eof; s.next() {
 	}
-	if s.ch == '}' {
-		s.out <- &token{t: t_paramx, v: s.in[offs : s.off-1]}
-		return
+	if s.ch != '"' {
+		return t_invalid, s.off, string(s.ch)
 	}
-	s.out <- &token{t: t_invalid, v: string(s.ch), p: s.off}
+	return t_string, offs - 1, s.in[offs : s.off-1]
 }
 
-func (s *scanner) emit_ptr() {
-	s.out <- &token{t: t_ptr}
-}
-
-func (s *scanner) emit_amp() {
-	s.out <- &token{t: t_amp}
-}
-
-func (s *scanner) emit_land() {
+func (s *scanner) scan_dots() (t token_type, p int, v string) {
+	if s.peek() != '.' {
+		return t_period, s.off, ""
+	}
 	s.next()
-	s.out <- &token{t: t_land}
-}
-
-func (s *scanner) emit_lor() {
 	s.next()
-	s.out <- &token{t: t_lor}
+	if s.ch == '.' { // "..."?
+		return t_ellipsis, s.off - 2, ""
+	}
+	return t_invalid, s.off, string(s.ch)
+
 }
 
-func (s *scanner) emit_eql() {
-	s.next()
-	s.out <- &token{t: t_eql}
+func (s *scanner) scan_quo() (t token_type, p int, v string) {
+	if s.peek() == '/' { // comment?
+		offs := s.off + 1
+		s.off = len(s.in)
+		return t_comment, offs - 2, s.in[offs:]
+	}
+	return t_quo, s.off, "" // quotient op
+
 }
 
-func (s *scanner) emit_assign() {
-	s.out <- &token{t: t_assign}
+func (s *scanner) scan_number() (token_type, int, string) {
+	offs := s.off - 1
+	with_fp := false
+
+	for {
+		prev_ch := s.ch
+		s.next()
+
+		switch {
+		case s.ch == '.' && !with_fp:
+			with_fp = true
+		case s.ch == '_' && prev_ch != '_':
+			// ok
+		case s.is_digit(s.ch):
+			// ok
+		default:
+			return t_invalid, s.off, string(s.ch)
+		}
+	}
+
+	if with_fp {
+		return t_float, offs, s.in[offs:s.off]
+	}
+	return t_int, offs, s.in[offs:s.off]
 }
 
-func (s *scanner) emit_geq() {
-	s.next()
-	s.out <- &token{t: t_geq}
-}
+func (s *scanner) scan_param() (t token_type, p int, v string) {
+	switch s.next(); {
+	case s.is_digit(s.ch): // index only?
+		offs := s.off - 1
+		for ; s.is_digit(s.peek()); s.next() {
+		}
+		return t_param, offs - 1, s.in[offs:s.off]
 
-func (s *scanner) emit_gtr() {
-	s.out <- &token{t: t_gtr}
-}
+	case s.ch == '{': // with expansion?
+		offs := s.off
+		for ; s.ch != '}' && !s.eof; s.next() {
+		}
+		if s.ch != '}' {
+			return t_invalid, s.off, string(s.ch)
+		}
+		return t_paramx, offs - 2, s.in[offs : s.off-1]
+	}
 
-func (s *scanner) emit_leq() {
-	s.next()
-	s.out <- &token{t: t_leq}
+	return t_invalid, s.off, string(s.ch)
 }
-
-func (s *scanner) emit_lss() {
-	s.out <- &token{t: t_lss}
-}
-
-func (s *scanner) emit_neq() {
-	s.next()
-	s.out <- &token{t: t_neq}
-}
-
-func (s *scanner) emit_not() {
-	s.out <- &token{t: t_not}
-}
-
-func (s *scanner) emit_define() {
-	s.next()
-	s.out <- &token{t: t_define}
-}
-
-func (s *scanner) emit_inc() {
-	s.next()
-	s.out <- &token{t: t_inc}
-}
-
-func (s *scanner) emit_dec() {
-	s.next()
-	s.out <- &token{t: t_dec}
-}
-
-func (s *scanner) emit_lparen()    { s.out <- &token{t: t_lparen} }
-func (s *scanner) emit_lbrack()    { s.out <- &token{t: t_lbrack} }
-func (s *scanner) emit_lbrace()    { s.out <- &token{t: t_lbrace} }
-func (s *scanner) emit_rparen()    { s.out <- &token{t: t_rparen} }
-func (s *scanner) emit_rbrack()    { s.out <- &token{t: t_rbrack} }
-func (s *scanner) emit_rbrace()    { s.out <- &token{t: t_rbrace} }
-func (s *scanner) emit_comma()     { s.out <- &token{t: t_comma} }
-func (s *scanner) emit_period()    { s.out <- &token{t: t_period} }
-func (s *scanner) emit_semicolon() { s.out <- &token{t: t_semicolon} }
 
 func (s *scanner) is_ws(c byte) bool {
 	return c == ' ' || c == '\t'

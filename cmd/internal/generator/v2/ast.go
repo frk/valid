@@ -1,6 +1,7 @@
 package generate
 
 type node interface {
+	build(t *token) node
 	writeTo(w *writer)
 }
 
@@ -32,7 +33,8 @@ type method_decl struct {
 
 type block_stmt struct {
 	outer stmt
-	list  []stmt
+
+	list []stmt
 }
 
 type if_stmt struct {
@@ -168,7 +170,6 @@ func (*line_comment) stmt() {}
 
 func (*lit_expr) expr()      {}
 func (*ident_expr) expr()    {}
-func (*param_expr) expr()    {}
 func (*unary_expr) expr()    {}
 func (*binary_expr) expr()   {}
 func (*index_expr) expr()    {}
@@ -176,3 +177,4 @@ func (*call_expr) expr()     {}
 func (*selector_expr) expr() {}
 func (*paren_expr) expr()    {}
 func (*expr_list) expr()     {}
+func (*param_expr) expr()    {}
