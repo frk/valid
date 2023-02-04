@@ -20,6 +20,12 @@ import (
 //
 
 func File(pkg search.Pkg, infos []*checker.Info) ([]byte, error) {
+
+	// TODO(mkopriva):
+	// > walk through to find what imports are needed?
+	// > or perhaps do this with rules/checker?
+	// > adding something like checker.FileInfo might be a good idea
+
 	f := new(fileInfo)
 	f.pkg = types.Pkg(pkg)
 

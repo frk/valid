@@ -4,6 +4,7 @@ import (
 	"log"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/frk/valid"
 	"github.com/frk/valid/cmd/internal/config"
@@ -11,6 +12,7 @@ import (
 	"github.com/frk/valid/cmd/internal/rules/v2"
 	"github.com/frk/valid/cmd/internal/search"
 	"github.com/frk/valid/cmd/internal/types"
+	"github.com/frk/valid/cmd/internal/types/global"
 	"github.com/frk/valid/internal/cldr"
 	"github.com/frk/valid/internal/tables"
 )
@@ -22,7 +24,30 @@ type Config struct {
 	FieldKey *config.FieldKeyConfig
 }
 
-type Info struct {
+type FileInfo struct {
+	Import map[string]*PkgInfo
+	// A map of regular expressions that need
+	// to be registered in the file's init func.
+	RxMap map[string]int
+	Types []*TypeInfo
+}
+
+// The PkgInfo type holds info that will be used to generate an import spec.
+type PkgInfo struct {
+	// The package path.
+	Path string
+	// The package name.
+	Name string
+	// If set, it indicates that the name should be used
+	// to specify the local name of the package.
+	Local bool
+	// The number of package's with the same name. This value
+	// is used by those packages to modify their name in order
+	// to not cause an import conflict.
+	num int
+}
+
+type TypeInfo struct {
 	// The Validtor struct being rule-checked.
 	Validator *types.Validator
 	// EnumMap maps types to their declared constants.
@@ -54,9 +79,10 @@ type Info struct {
 	PtrMap map[*types.Obj]*types.Obj
 }
 
-func Check(cfg Config, match *search.Match, info *Info) error {
+func Check(cfg Config, match *search.Match, fi *FileInfo) error {
 	v := types.AnalyzeValidator(match.Named, cfg.AST)
 
+	info := new(TypeInfo)
 	info.EnumMap = make(map[*types.Type][]types.Const)
 	info.FKeyMap = make(map[*types.StructField]string)
 	info.FRefMap = make(map[*rules.Arg]*types.StructField)
@@ -70,18 +96,20 @@ func Check(cfg Config, match *search.Match, info *Info) error {
 	info.ObjFieldMap = make(map[*types.Obj]*types.StructField)
 	info.PtrMap = make(map[*types.Obj]*types.Obj)
 
-	c := &checker{Info: info, v: v, ast: cfg.AST}
+	c := &checker{ti: info, fi: fi, v: v, ast: cfg.AST}
 	c.newFKey = makeFKFunc(cfg.FieldKey)
 	if err := c.run(); err != nil {
 		return c.err(err, errOpts{})
 	}
 
 	info.Validator = v
+	fi.Types = append(fi.Types, info)
 	return nil
 }
 
 type checker struct {
-	*Info
+	fi *FileInfo
+	ti *TypeInfo
 	// The Validtor struct being rule-checked.
 	v *types.Validator
 	// The function used for generating unique field keys.
@@ -104,6 +132,19 @@ func (c *checker) run() error {
 	// i.e., field F has rule arg that references field G
 	// and field G has rule arg that references field F
 	// should be disallowed....
+
+	// If a global error handler was specified, which is
+	// not local, then the file will need to import it.
+	switch {
+	case global.ErrorAggregator != nil:
+		if pkg := global.ErrorAggregator.Pkg; pkg != c.v.Type.Pkg {
+			c.fi.addImport(pkg)
+		}
+	case global.ErrorConstructor != nil:
+		if pkg := global.ErrorConstructor.Type.Pkg; pkg != c.v.Type.Pkg {
+			c.fi.addImport(pkg)
+		}
+	}
 	return nil
 }
 
@@ -171,7 +212,11 @@ func (c *checker) checkObjRules(o *types.Obj) error {
 			return err
 		}
 
-		c.Info.RuleObjMap[r] = o
+		c.ti.RuleObjMap[r] = o
+
+		if !c.hasCustomErrorHandler() {
+			c.addDefaultErrorImport(r)
+		}
 	}
 
 	for _, r := range o.PreRules {
@@ -186,7 +231,7 @@ func (c *checker) checkObjRules(o *types.Obj) error {
 			return err
 		}
 
-		c.Info.RuleObjMap[r] = o
+		c.ti.RuleObjMap[r] = o
 	}
 	return nil
 }
@@ -214,8 +259,16 @@ func (c *checker) checkRequired(o *types.Obj, r *rules.Rule) error {
 		return &Error{C: E_NOTNIL_TYPE, ty: o.Type, r: r}
 	}
 
-	// the "required" rule doesn't need any checking atm
+	// the "required" rule doesn't need any validation atm
 
+	// If a "required" rule was specified on a struct type value, and
+	// the struct type is not local, then the file will need to import
+	// the struct type's package.
+	if r.Name == "required" && o.Type.Kind == types.STRUCT {
+		if o.Type.Pkg != c.v.Type.Pkg {
+			c.fi.addImport(o.Type.Pkg)
+		}
+	}
 	return nil
 }
 
@@ -261,6 +314,10 @@ func (c *checker) checkLength(o *types.Obj, r *rules.Rule) error {
 		if o.Type.Kind != types.STRING && !o.Type.IsBytesOrRunes() {
 			return &Error{C: E_LENGTH_NORUNE, ty: o.Type, r: r}
 		}
+
+		// If a "runecount" rule is present, then the file
+		// will need to import the unicode/utf8 package.
+		c.fi.addImport(types.Pkg{Path: "unicode/utf8"})
 	}
 
 	// Make sure that at least one arg was provided.
@@ -297,7 +354,7 @@ func (c *checker) checkLength(o *types.Obj, r *rules.Rule) error {
 		// return value of the `len` and `ut8.RuneCount` functions.
 		case a.IsFieldRef():
 			tt := &types.Type{Kind: types.INT}
-			ft := c.Info.FRefMap[a].Obj.Type // field's type
+			ft := c.ti.FRefMap[a].Obj.Type // field's type
 			if !ft.IsConvertibleTo(tt) {
 				return &Error{C: E_LENGTH_ARGTYPE, r: r, ra: a}
 			}
@@ -360,9 +417,18 @@ func (c *checker) checkEnum(o *types.Obj, r *rules.Rule) error {
 	}
 
 	// Make sure that the type actually has some accessible constants declared.
-	consts := c.Info.EnumMap[o.Type]
+	consts := c.ti.EnumMap[o.Type]
 	if len(consts) == 0 {
 		return &Error{C: E_ENUM_NOCONST, ty: o.Type, r: r}
+	}
+
+	// If an ENUM rule is present, which has constants declared in
+	// packages other than the validator's package, then the file
+	// will need to import each constant's package.
+	for _, k := range consts {
+		if k.Pkg != c.v.Type.Pkg {
+			c.fi.addImport(k.Pkg)
+		}
 	}
 	return nil
 }
@@ -398,6 +464,11 @@ func (c *checker) checkFunction(o *types.Obj, r *rules.Rule) error {
 		}
 	}
 
+	// If a FUNCTION rule is present with a non-local function,
+	// then the file will need to import the function's package.
+	if fn.Type.Pkg != c.v.Type.Pkg {
+		c.fi.addImport(fn.Type.Pkg)
+	}
 	return nil
 }
 
@@ -480,6 +551,12 @@ func (c *checker) checkPreprocessor(o *types.Obj, r *rules.Rule) error {
 	if err := c.canUseRuleArgsAsFuncParams(r); err != nil {
 		return c.err(err, errOpts{C: E_PREPROC_ARGTYPE, ty: o.Type})
 	}
+
+	// If a PREPROC rule is present with a non-local function,
+	// then the file will need to import the function's package.
+	if fn.Type.Pkg != c.v.Type.Pkg {
+		c.fi.addImport(fn.Type.Pkg)
+	}
 	return nil
 }
 
@@ -490,7 +567,7 @@ func (c *checker) checkPreprocessor(o *types.Obj, r *rules.Rule) error {
 // literal value can be converted to the object's type.
 func (c *checker) canConvertRuleArg(o *types.Obj, a *rules.Arg) bool {
 	if a.IsFieldRef() {
-		f := c.Info.FRefMap[a]
+		f := c.ti.FRefMap[a]
 
 		// If obj's type is a pointer and the referenced field's type
 		// is identical to the pointer's base, then accept because the
@@ -710,6 +787,11 @@ func (c *checker) checkIncludedRuleArgValues(r *rules.Rule) error {
 			}
 		}
 
+		// If the "re" rule is present then the file will need
+		// to import the github.com/frk/valid package to gain
+		// access to the registry function.
+		c.fi.addImport(types.Pkg{Path: "github.com/frk/valid"})
+
 	// uuid expects an integer specifying a supported uuid version
 	case "uuid":
 		if a0 != nil {
@@ -766,9 +848,75 @@ func (c *checker) consolidateRuleArgs(r *rules.Rule) {
 	}
 
 	for i, a := range r.Args {
-		c.Info.ArgRuleMap[a] = r
-		c.Info.ArgIndexMap[a] = i
+		c.ti.ArgRuleMap[a] = r
+		c.ti.ArgIndexMap[a] = i
 	}
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+func (c *checker) hasCustomErrorHandler() bool {
+	return global.ErrorAggregator != nil ||
+		global.ErrorConstructor != nil ||
+		c.v.ErrorHandlerField != nil
+}
+
+func (c *checker) addDefaultErrorImport(r *rules.Rule) {
+	// If the validator doesn't use a custom error handler then the file
+	// will need to import either the "errors" package, or the "fmt" package,
+	// depending on whether or not the rule has WithArgs, and one or more of
+	// those args is a field reference.
+	if r.Spec.Err.WithArgs {
+		for _, a := range r.Args {
+			if a.IsFieldRef() {
+				c.fi.addImport(types.Pkg{Path: "fmt"})
+				return
+			}
+		}
+	}
+	c.fi.addImport(types.Pkg{Path: "errors"})
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+// addRegExpr adds a new regular expression string to the RxMap.
+func (f *FileInfo) addRegExpr(a *rules.Arg) {
+	if f.RxMap == nil {
+		f.RxMap = make(map[string]int)
+	}
+
+	if _, ok := f.RxMap[a.Value]; !ok {
+		f.RxMap[a.Value] = len(f.RxMap)
+	}
+}
+
+// addImport adds a new PkgInfo to the f.Import set.
+func (f *FileInfo) addImport(pkg types.Pkg) {
+	if _, ok := f.Import[pkg.Path]; ok {
+		return
+	}
+
+	if f.Import == nil {
+		f.Import = make(map[string]*PkgInfo)
+	}
+
+	if pkg.Name == "" {
+		pkg.Name = pkg.Path
+		if i := strings.LastIndexByte(pkg.Name, '/'); i > -1 {
+			pkg.Name = pkg.Name[i+1:]
+		}
+	}
+
+	p := &PkgInfo{Path: pkg.Path, Name: pkg.Name}
+	for _, q := range f.Import {
+		if p.Name == q.Name {
+			q.num += 1
+			p.Name = p.Name + strconv.Itoa(q.num)
+			p.Local = true
+		}
+	}
+
+	f.Import[p.Path] = p
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -813,7 +961,7 @@ func (c *checker) err(err error, opts errOpts) error {
 	}
 
 	if e.ra != nil && e.raf == nil {
-		e.raf = c.Info.FRefMap[e.ra]
+		e.raf = c.ti.FRefMap[e.ra]
 	}
 	return e
 }

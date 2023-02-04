@@ -12,7 +12,8 @@ func (t token_type) String() string {
 const (
 	t_invalid token_type = iota
 	t_eof
-	t_ws      // ' ', '\t' only, line whitespace is not supported
+	t_nl      // new lines
+	t_ws      // ' ', '\t' only
 	t_comment // "//" only
 
 	t_ident
@@ -76,6 +77,7 @@ const (
 var _token_types = [...]string{
 	t_invalid:   "<invalid token>",
 	t_eof:       "<eof token>",
+	t_nl:        "<newline token>",
 	t_ws:        "<whitespace token>",
 	t_comment:   "<comment token>",
 	t_ident:     "<identifier token>",
@@ -191,6 +193,9 @@ func (s *scanner) run() {
 			p, v := s.scan_ws()
 			s.emit(&token{t: t_ws, p: p, v: v})
 
+		case c == '\n':
+			s.emit(&token{t: t_nl, p: p})
+
 		case c == '\'':
 			t, p, v := s.scan_char()
 			s.emit(&token{t: t, p: p, v: v})
@@ -278,6 +283,7 @@ func (s *scanner) next() {
 	} else {
 		s.off = len(s.in)
 		s.eof = true
+		s.ch = 0
 	}
 }
 
@@ -356,9 +362,9 @@ func (s *scanner) scan_dots() (t token_type, p int, v string) {
 
 func (s *scanner) scan_quo() (t token_type, p int, v string) {
 	if s.peek() == '/' { // comment?
-		offs := s.off + 1
+		offs := s.off
 		s.off = len(s.in)
-		return t_comment, offs - 2, s.in[offs:]
+		return t_comment, offs - 1, s.in[offs-1:]
 	}
 	return t_quo, s.off, "" // quotient op
 
@@ -371,6 +377,9 @@ func (s *scanner) scan_number() (token_type, int, string) {
 	for {
 		prev_ch := s.ch
 		s.next()
+		if s.eof {
+			break
+		}
 
 		switch {
 		case s.ch == '.' && !with_fp:

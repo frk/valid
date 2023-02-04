@@ -258,7 +258,7 @@ func Test_walk(t *testing.T) {
 			match := testMatch(t, tt.name)
 
 			cfg := Config{AST: &test_ast, FieldKey: fkCfg}
-			err := Check(cfg, match, &Info{})
+			err := Check(cfg, match, &FileInfo{})
 
 			got := _ttError(err)
 			want := _ttError(tt.err)

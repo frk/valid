@@ -168,6 +168,19 @@ func (c *line_comment) writeTo(w *writer) {
 	w.write(c.text)
 }
 
+func (g *line_comment_group) writeTo(w *writer) {
+	if len(g.list) == 0 {
+		return
+	}
+
+	w.write("//")
+	w.write(g.list[0])
+	for _, c := range g.list[1:] {
+		w.write("\n//")
+		w.write(c)
+	}
+}
+
 func (x *lit_expr) writeTo(w *writer) {
 	w.write(x.value)
 }

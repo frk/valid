@@ -1,7 +1,6 @@
 package generate
 
 type node interface {
-	build(t *token) node
 	writeTo(w *writer)
 }
 
@@ -32,114 +31,103 @@ type method_decl struct {
 }
 
 type block_stmt struct {
-	outer stmt
-
 	list []stmt
 }
 
 type if_stmt struct {
-	outer stmt // block-or-if
-	init  stmt
-	cond  expr
-	body  *block_stmt
-	els   stmt // block-or-if
+	init stmt
+	cond expr
+	body *block_stmt
+	els  stmt // block-or-if
 }
 
 type for_stmt struct {
-	outer *block_stmt
-	init  stmt
-	cond  expr
-	post  stmt
-	body  *block_stmt
+	init stmt
+	cond expr
+	post stmt
+	body *block_stmt
 }
 
 type range_stmt struct {
-	outer *block_stmt
-	key   expr       // may be nil
-	val   expr       // may be nil
-	x     expr       // value to range over
-	tt    token_type // = or :=
-	body  *block_stmt
+	key  expr       // may be nil
+	val  expr       // may be nil
+	x    expr       // value to range over
+	tt   token_type // = or :=
+	body *block_stmt
 }
 
 type return_stmt struct {
-	outer *block_stmt
-	res   []expr
+	res []expr
 }
 
 type assign_stmt struct {
-	outer stmt
-	lhs   []expr
-	rhs   []expr
-	tt    token_type // = or :=
+	lhs []expr
+	rhs []expr
+	tt  token_type // = or :=
 }
 
 type incdec_stmt struct {
-	outer stmt
-	x     expr
-	tt    token_type
+	x  expr
+	tt token_type
 }
 
 type expr_stmt struct {
 	x expr
 }
 
+// line_comment produces a single //-style comment.
 type line_comment struct {
 	text string
 }
 
+// line_comment_group produces a group of //-style comments.
+type line_comment_group struct {
+	list []string
+}
+
 type lit_expr struct {
-	outer stmt
 	tt    token_type
 	value string
 }
 
 type ident_expr struct {
-	outer stmt
-	name  string
+	name string
 }
 
 type param_expr struct {
-	outer stmt
-	arg   any
+	arg any
 }
 
 type unary_expr struct {
-	outer stmt
-	root  *unary_expr
-	op    token_type // operator
-	x     expr       // operand
+	root *unary_expr
+	op   token_type // operator
+	x    expr       // operand
 }
 
 type binary_expr struct {
-	outer stmt
 	left  expr
 	op    token_type
 	right expr
 }
 
 type index_expr struct {
-	outer stmt
 	x     expr
 	index expr
 }
 
 type call_expr struct {
-	outer    stmt
 	fun      expr
 	args     []expr
 	ellipsis bool
 }
 
 type selector_expr struct {
-	outer stmt
-	x     expr
-	sel   expr
+	x   expr
+	sel expr
 }
 
 type paren_expr struct {
-	outer expr
-	x     expr
+	x expr
 }
 
 type expr_list struct {

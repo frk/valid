@@ -56,9 +56,9 @@ func (c *checker) addFRef(a *rules.Arg, ff types.FieldChain) error {
 			return &Error{C: E_FIELD_UNKNOWN, ty: ff.Last().Obj.Type, ra: a}
 		}
 		if i == last {
-			c.Info.FRefMap[a] = sf
-			c.Info.FRefChainMap[a] = fc
-			c.Info.FDepMap[lf] = append(c.Info.FDepMap[lf], sf)
+			c.ti.FRefMap[a] = sf
+			c.ti.FRefChainMap[a] = fc
+			c.ti.FDepMap[lf] = append(c.ti.FDepMap[lf], sf)
 		}
 	}
 	return nil

@@ -24,7 +24,7 @@ func (o *Obj) HasRules() bool {
 		return true
 	}
 	for _, r := range o.IsRules {
-		if r.Spec.Kind != rules.OPTIONAL && r.Spec.Kind != rules.NOGUARD {
+		if !r.Is(rules.OPTIONAL, rules.NOGUARD, rules.REMOVE) {
 			return true
 		}
 	}
