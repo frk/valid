@@ -233,20 +233,18 @@ func TestFile(t *testing.T) {
 				defer global.Unset()
 			}
 
-			infos := make([]*checker.Info, len(f.Matches))
-			for k, match := range f.Matches {
+			fi := new(checker.FileInfo)
+			for _, match := range f.Matches {
 				cfg := checker.Config{
 					AST:      &AST,
 					FieldKey: fkCfg,
 				}
-				info := new(checker.Info)
-				if err := checker.Check(cfg, match, info); err != nil {
+				if err := checker.Check(cfg, match, fi); err != nil {
 					t.Fatal(err)
 				}
-				infos[k] = info
 			}
 
-			code, err := File(pkg.Pkg(), infos)
+			code, err := File(pkg.Pkg(), fi)
 			if err != nil {
 				t.Error(err)
 				return

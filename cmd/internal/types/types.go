@@ -34,37 +34,30 @@ type Type struct {
 	IsRune bool
 	// Indicates that the type is recursive.
 	IsRecursive bool
-
 	// If kind is map, Key will hold the info on the map's key type.
 	Key *Obj
 	// If kind is map, Elem will hold the info on the map's value type.
 	// If kind is ptr, Elem will hold the info on pointed-to type.
 	// If kind is slice/array, Elem will hold the info on slice/array element type.
 	Elem *Obj
-
 	// The method set of a named type or an interface type.
 	MethodSet []*Method
 	Embeddeds []*Type
-
 	// If kind is func, In & Out will hold the
 	// function's parameter and result types.
 	In, Out []*Var
-
 	// If kind is struct, Fields will hold the
 	// list of the struct's fields.
 	Fields []*StructField
-
 	// If the Type is an instantiated named type then
 	// Origin points to the original generic type.
 	Origin *Type
 	// If the Type is an instantiated named type then
 	// TypeArgs is the list of type arguments.
 	TypeArgs []*Type
-
 	// If the Type is a generic named type or a generic function
 	// signature then TypeParams is the list of type parameters.
 	TypeParams []*TypeParam
-
 	// If the Type is a union then Terms holds
 	// the union's of terms.
 	Terms []*Term

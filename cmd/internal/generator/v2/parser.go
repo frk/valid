@@ -93,7 +93,7 @@ func (p *parser) close() {
 
 func (p *parser) parse(in string, args ...any) error {
 	go (&scanner{in: in, out: p.tokens, stop: p.stop}).run()
-	n, err := p.parse1(in, args...)
+	n, err := p.parse1()
 	if err != nil {
 		return err
 	}

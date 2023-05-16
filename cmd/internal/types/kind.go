@@ -1,6 +1,6 @@
 package types
 
-// Kind indicates the specific kind of a Go type.
+// Kind describes the specific kind of a Go type.
 type Kind uint
 
 const (

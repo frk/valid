@@ -19,18 +19,12 @@ import (
 //
 //
 
-func File(pkg search.Pkg, infos []*checker.Info) ([]byte, error) {
-
-	// TODO(mkopriva):
-	// > walk through to find what imports are needed?
-	// > or perhaps do this with rules/checker?
-	// > adding something like checker.FileInfo might be a good idea
-
+func File(pkg search.Pkg, fi *checker.FileInfo) ([]byte, error) {
 	f := new(fileInfo)
 	f.pkg = types.Pkg(pkg)
 
-	for _, i := range infos {
-		g := &generator{file: f, info: i}
+	for _, ti := range fi.Types {
+		g := &generator{file: f, info: ti}
 		if err := g.run(); err != nil {
 			return nil, err
 		}
@@ -57,7 +51,7 @@ func File(pkg search.Pkg, infos []*checker.Info) ([]byte, error) {
 type generator struct {
 	buf  bytes.Buffer
 	file *fileInfo
-	info *checker.Info
+	info *checker.TypeInfo
 	vars map[*types.Obj]string
 	// the target validator
 	v *types.Obj

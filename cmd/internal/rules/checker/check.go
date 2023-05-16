@@ -25,6 +25,7 @@ type Config struct {
 }
 
 type FileInfo struct {
+	Pkg    types.Pkg
 	Import map[string]*PkgInfo
 	// A map of regular expressions that need
 	// to be registered in the file's init func.
@@ -81,35 +82,40 @@ type TypeInfo struct {
 
 func Check(cfg Config, match *search.Match, fi *FileInfo) error {
 	v := types.AnalyzeValidator(match.Named, cfg.AST)
+	fi.Pkg = v.Type.Pkg
 
-	info := new(TypeInfo)
-	info.EnumMap = make(map[*types.Type][]types.Const)
-	info.FKeyMap = make(map[*types.StructField]string)
-	info.FRefMap = make(map[*rules.Arg]*types.StructField)
-	info.FRefChainMap = make(map[*rules.Arg]types.FieldChain)
-	info.FDepMap = make(map[*types.StructField][]*types.StructField)
-	info.ChainMap = make(map[*types.StructField]types.FieldChain)
-	info.VisibleChainMap = make(map[*types.StructField]types.FieldChain)
-	info.ArgRuleMap = make(map[*rules.Arg]*rules.Rule)
-	info.ArgIndexMap = make(map[*rules.Arg]int)
-	info.RuleObjMap = make(map[*rules.Rule]*types.Obj)
-	info.ObjFieldMap = make(map[*types.Obj]*types.StructField)
-	info.PtrMap = make(map[*types.Obj]*types.Obj)
+	ty := new(TypeInfo)
+	ty.EnumMap = make(map[*types.Type][]types.Const)
+	ty.FKeyMap = make(map[*types.StructField]string)
+	ty.FRefMap = make(map[*rules.Arg]*types.StructField)
+	ty.FRefChainMap = make(map[*rules.Arg]types.FieldChain)
+	ty.FDepMap = make(map[*types.StructField][]*types.StructField)
+	ty.ChainMap = make(map[*types.StructField]types.FieldChain)
+	ty.VisibleChainMap = make(map[*types.StructField]types.FieldChain)
+	ty.ArgRuleMap = make(map[*rules.Arg]*rules.Rule)
+	ty.ArgIndexMap = make(map[*rules.Arg]int)
+	ty.RuleObjMap = make(map[*rules.Rule]*types.Obj)
+	ty.ObjFieldMap = make(map[*types.Obj]*types.StructField)
+	ty.PtrMap = make(map[*types.Obj]*types.Obj)
 
-	c := &checker{ti: info, fi: fi, v: v, ast: cfg.AST}
+	c := &checker{file: fi, ty: ty, v: v, ast: cfg.AST}
 	c.newFKey = makeFKFunc(cfg.FieldKey)
 	if err := c.run(); err != nil {
 		return c.err(err, errOpts{})
 	}
 
-	info.Validator = v
-	fi.Types = append(fi.Types, info)
+	ty.Validator = v
+	fi.Types = append(fi.Types, ty)
 	return nil
 }
 
 type checker struct {
-	fi *FileInfo
-	ti *TypeInfo
+	// Information the checker collected about
+	// the file which will be generated.
+	file *FileInfo
+	// Information the checker collected about
+	// the type being rule-checked.
+	ty *TypeInfo
 	// The Validtor struct being rule-checked.
 	v *types.Validator
 	// The function used for generating unique field keys.
@@ -138,11 +144,11 @@ func (c *checker) run() error {
 	switch {
 	case global.ErrorAggregator != nil:
 		if pkg := global.ErrorAggregator.Pkg; pkg != c.v.Type.Pkg {
-			c.fi.addImport(pkg)
+			c.file.addImport(pkg)
 		}
 	case global.ErrorConstructor != nil:
 		if pkg := global.ErrorConstructor.Type.Pkg; pkg != c.v.Type.Pkg {
-			c.fi.addImport(pkg)
+			c.file.addImport(pkg)
 		}
 	}
 	return nil
@@ -212,7 +218,7 @@ func (c *checker) checkObjRules(o *types.Obj) error {
 			return err
 		}
 
-		c.ti.RuleObjMap[r] = o
+		c.ty.RuleObjMap[r] = o
 
 		if !c.hasCustomErrorHandler() {
 			c.addDefaultErrorImport(r)
@@ -231,7 +237,7 @@ func (c *checker) checkObjRules(o *types.Obj) error {
 			return err
 		}
 
-		c.ti.RuleObjMap[r] = o
+		c.ty.RuleObjMap[r] = o
 	}
 	return nil
 }
@@ -266,7 +272,7 @@ func (c *checker) checkRequired(o *types.Obj, r *rules.Rule) error {
 	// the struct type's package.
 	if r.Name == "required" && o.Type.Kind == types.STRUCT {
 		if o.Type.Pkg != c.v.Type.Pkg {
-			c.fi.addImport(o.Type.Pkg)
+			c.file.addImport(o.Type.Pkg)
 		}
 	}
 	return nil
@@ -317,7 +323,7 @@ func (c *checker) checkLength(o *types.Obj, r *rules.Rule) error {
 
 		// If a "runecount" rule is present, then the file
 		// will need to import the unicode/utf8 package.
-		c.fi.addImport(types.Pkg{Path: "unicode/utf8"})
+		c.file.addImport(types.Pkg{Path: "unicode/utf8"})
 	}
 
 	// Make sure that at least one arg was provided.
@@ -354,7 +360,7 @@ func (c *checker) checkLength(o *types.Obj, r *rules.Rule) error {
 		// return value of the `len` and `ut8.RuneCount` functions.
 		case a.IsFieldRef():
 			tt := &types.Type{Kind: types.INT}
-			ft := c.ti.FRefMap[a].Obj.Type // field's type
+			ft := c.ty.FRefMap[a].Obj.Type // field's type
 			if !ft.IsConvertibleTo(tt) {
 				return &Error{C: E_LENGTH_ARGTYPE, r: r, ra: a}
 			}
@@ -417,7 +423,7 @@ func (c *checker) checkEnum(o *types.Obj, r *rules.Rule) error {
 	}
 
 	// Make sure that the type actually has some accessible constants declared.
-	consts := c.ti.EnumMap[o.Type]
+	consts := c.ty.EnumMap[o.Type]
 	if len(consts) == 0 {
 		return &Error{C: E_ENUM_NOCONST, ty: o.Type, r: r}
 	}
@@ -427,7 +433,7 @@ func (c *checker) checkEnum(o *types.Obj, r *rules.Rule) error {
 	// will need to import each constant's package.
 	for _, k := range consts {
 		if k.Pkg != c.v.Type.Pkg {
-			c.fi.addImport(k.Pkg)
+			c.file.addImport(k.Pkg)
 		}
 	}
 	return nil
@@ -467,7 +473,7 @@ func (c *checker) checkFunction(o *types.Obj, r *rules.Rule) error {
 	// If a FUNCTION rule is present with a non-local function,
 	// then the file will need to import the function's package.
 	if fn.Type.Pkg != c.v.Type.Pkg {
-		c.fi.addImport(fn.Type.Pkg)
+		c.file.addImport(fn.Type.Pkg)
 	}
 	return nil
 }
@@ -555,7 +561,7 @@ func (c *checker) checkPreprocessor(o *types.Obj, r *rules.Rule) error {
 	// If a PREPROC rule is present with a non-local function,
 	// then the file will need to import the function's package.
 	if fn.Type.Pkg != c.v.Type.Pkg {
-		c.fi.addImport(fn.Type.Pkg)
+		c.file.addImport(fn.Type.Pkg)
 	}
 	return nil
 }
@@ -567,7 +573,7 @@ func (c *checker) checkPreprocessor(o *types.Obj, r *rules.Rule) error {
 // literal value can be converted to the object's type.
 func (c *checker) canConvertRuleArg(o *types.Obj, a *rules.Arg) bool {
 	if a.IsFieldRef() {
-		f := c.ti.FRefMap[a]
+		f := c.ty.FRefMap[a]
 
 		// If obj's type is a pointer and the referenced field's type
 		// is identical to the pointer's base, then accept because the
@@ -790,7 +796,7 @@ func (c *checker) checkIncludedRuleArgValues(r *rules.Rule) error {
 		// If the "re" rule is present then the file will need
 		// to import the github.com/frk/valid package to gain
 		// access to the registry function.
-		c.fi.addImport(types.Pkg{Path: "github.com/frk/valid"})
+		c.file.addImport(types.Pkg{Path: "github.com/frk/valid"})
 
 	// uuid expects an integer specifying a supported uuid version
 	case "uuid":
@@ -848,8 +854,8 @@ func (c *checker) consolidateRuleArgs(r *rules.Rule) {
 	}
 
 	for i, a := range r.Args {
-		c.ti.ArgRuleMap[a] = r
-		c.ti.ArgIndexMap[a] = i
+		c.ty.ArgRuleMap[a] = r
+		c.ty.ArgIndexMap[a] = i
 	}
 }
 
@@ -869,12 +875,12 @@ func (c *checker) addDefaultErrorImport(r *rules.Rule) {
 	if r.Spec.Err.WithArgs {
 		for _, a := range r.Args {
 			if a.IsFieldRef() {
-				c.fi.addImport(types.Pkg{Path: "fmt"})
+				c.file.addImport(types.Pkg{Path: "fmt"})
 				return
 			}
 		}
 	}
-	c.fi.addImport(types.Pkg{Path: "errors"})
+	c.file.addImport(types.Pkg{Path: "errors"})
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -961,7 +967,7 @@ func (c *checker) err(err error, opts errOpts) error {
 	}
 
 	if e.ra != nil && e.raf == nil {
-		e.raf = c.ti.FRefMap[e.ra]
+		e.raf = c.ty.FRefMap[e.ra]
 	}
 	return e
 }

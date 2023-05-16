@@ -28,14 +28,14 @@ type walk struct {
 }
 
 func (c *checker) walkObj(o *types.Obj, w *walk) error {
-	c.ti.ObjFieldMap[o] = w.ff.Last()
+	c.ty.ObjFieldMap[o] = w.ff.Last()
 	if err := c.objRuleSet(o, w); err != nil {
 		return err
 	}
 
 	switch t := o.Type; t.Kind {
 	case types.PTR:
-		c.ti.PtrMap[o.Type.Elem] = o
+		c.ty.PtrMap[o.Type.Elem] = o
 		w := &walk{is: w.is, pre: w.pre, ff: w.ff, ptr: w.ptr}
 		if err := c.walkObj(t.Elem, w); err != nil {
 			return err
@@ -61,8 +61,8 @@ func (c *checker) walkObj(o *types.Obj, w *walk) error {
 			}
 
 			ff := w.ff.CopyWith(f)
-			c.ti.FKeyMap[f] = c.newFKey(ff)
-			c.ti.ChainMap[f] = ff
+			c.ty.FKeyMap[f] = c.newFKey(ff)
+			c.ty.ChainMap[f] = ff
 
 			is := rules.ParseTag(f.Tag, "is")
 			pre := rules.ParseTag(f.Tag, "pre")
@@ -175,7 +175,7 @@ func (c *checker) objRuleSet(o *types.Obj, w *walk) error {
 			}
 
 			if s.Kind == rules.ENUM && o.Type.Name != "" && o.Type.Kind.IsBasic() {
-				c.ti.EnumMap[o.Type] = types.FindConsts(o.Type, c.ast)
+				c.ty.EnumMap[o.Type] = types.FindConsts(o.Type, c.ast)
 			}
 			if err := c.addFRefs(r, w.ff); err != nil {
 				return err
@@ -336,8 +336,8 @@ func (c *checker) walkVisible(o *types.Obj, ff types.FieldChain) {
 			}
 
 			ff := ff.CopyWith(f)
-			if _, ok := c.ti.VisibleChainMap[f]; !ok {
-				c.ti.VisibleChainMap[f] = ff
+			if _, ok := c.ty.VisibleChainMap[f]; !ok {
+				c.ty.VisibleChainMap[f] = ff
 			}
 
 			c.walkVisible(f.Obj, ff)
