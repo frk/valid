@@ -1,0 +1,3 @@
+rules:
+  - func: "mod/pkg.Test"
+    rule: { name: "test" }

@@ -1,0 +1,55 @@
+working_directory: "testdata/"
+recursive: true
+
+file_list:
+  - "testdata/good_config_test/foo/bar/baz/file1.go"
+  - "testdata/good_config_test/foo/bar/baz/file_2.go"
+
+file_pattern_list:
+  - "^\\/path\\/to\\/my\\/\\w+_foo.go$"
+  - "^\\/path\\/to\\/my\\/\\w+_bar.go$"
+
+out_name_format: "%_out.go"
+
+error_handling:
+  field_key:
+    tag: "json"
+    join: true
+    separator: "."
+  constructor: "example.com/me/mymod/mypkg.NewError"
+  aggregator: "example.com/me/mymod/mypkg.MyErrorAggregator"
+
+validator_name_pattern: "^\\w+Input$"
+
+rules:
+  - func: "example.com/me/mymod/mypkg.IsFoobar"
+    rule:
+      name: "foobar"
+      args:
+        - default: !!nil
+          options:
+            - { value: 123, alias: x }
+      arg_min: 1
+      arg_max: 2
+      error:
+        text: "invalid foobar"
+        with_args: true
+        arg_sep: ", "
+        arg_suffix: " (bazzz)"
+      join_op: OR
+
+types:
+  - type: "example.com/me/mymod/mypkg.MyType1"
+    value: "Value"
+    required_check: "IsZero"
+    notnil_check: "IsNil"
+    optional_check: "IsNotZero"
+    omitnil_check: "IsNotNil"
+  - type: "example.com/me/mymod/mypkg.MyType2"
+    value:
+      get: "GetValue"
+      set: "SetValue"
+    required_check: "IsZero"
+    notnil_check: "IsNil"
+    optional_check: "IsNotZero"
+    omitnil_check: "IsNotNil"

@@ -1,0 +1,5 @@
+working_directory: "testdata/"
+types:
+  - type: "example.com/test.Test1"
+  - type: "example.com/test.Test2"
+  - type: ""

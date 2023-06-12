@@ -1,0 +1,4 @@
+working_directory: "testdata/"
+rules:
+  - rule:
+      name: "foobar"
