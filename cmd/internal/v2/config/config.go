@@ -46,8 +46,8 @@ type Config struct {
 	ValidatorNamePattern String `yaml:"validator_name_pattern"`
 	// Configures the code generation of the handling of validation errors.
 	ErrorHandling ErrorHandlingConfig `yaml:"error_handling"`
-	// List of custom rules to be made available to the tool.
-	Rules []RuleConfig `yaml:"rules"`
+	// List of custom rule functions to be made available to the tool.
+	Rules []FuncConfig `yaml:"rules"`
 	// List of custom types to be made available to the tool.
 	Types []TypeConfig `yaml:"types"`
 

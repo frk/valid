@@ -103,7 +103,7 @@ func TestVisibleFields(t *testing.T) {
 	compare := compare.Config{ObserveFieldTag: "cmp"}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ty := Analyze(test_type(tt.name), &test_ast)
+			ty := Analyze(test_type(tt.name), &test_src)
 
 			fields := ty.VisibleFields()
 			got := make([]structField, len(fields))

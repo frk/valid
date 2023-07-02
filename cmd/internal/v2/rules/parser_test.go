@@ -8,7 +8,7 @@ import (
 
 func TestParse(t *testing.T) {
 	rr := registry{
-		builtin: map[string]Rule{
+		builtins: map[string]Rule{
 			"required": {Name: "required"},
 			"notnil":   {Name: "notnil"},
 			"optional": {Name: "optional"},

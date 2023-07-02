@@ -1,15 +1,15 @@
 package config
 
-type RuleConfig struct {
+type FuncConfig struct {
 	// The function's name qualified with
 	// the path of the function's package.
 	Func ObjectIdent `yaml:"func"`
 	// The configuration for the function's rule. This is
 	// optional if the func's doc already has a valid config.
-	Rule *Rule `yaml:"rule"`
+	Rule *RuleConfig `yaml:"rule"`
 }
 
-type Rule struct {
+type RuleConfig struct {
 	// The name of the rule.
 	Name string `yaml:"name"`
 	// The configuration for the rule's arguments.

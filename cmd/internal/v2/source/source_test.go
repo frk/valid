@@ -12,13 +12,13 @@ import (
 	"github.com/frk/compare"
 )
 
-var testSource = &Source{
+var test_src = Source{
 	Dir:       "testdata/",
 	Recursive: false,
 }
 
 func TestMain(m *testing.M) {
-	if _, err := testSource.Load(); err != nil {
+	if _, err := test_src.Load(); err != nil {
 		log.Fatal(err)
 	}
 
@@ -222,7 +222,7 @@ func TestSource_FindObject(t *testing.T) {
 
 	compare := compare.Config{ObserveFieldTag: "cmp"}
 	for i, tt := range tests {
-		obj, err := testSource.FindObject(tt.pkgpath, tt.name)
+		obj, err := test_src.FindObject(tt.pkgpath, tt.name)
 		if e := compare.Compare(err, tt.err); e != nil {
 			t.Errorf("Error: %v (%v)", e, err)
 		} else if err == nil {
@@ -288,7 +288,7 @@ func TestSource_FindConsts(t *testing.T) {
 	}}
 
 	for _, tt := range tests {
-		got := testSource.FindConsts(tt.pkg, tt.typname)
+		got := test_src.FindConsts(tt.pkg, tt.typname)
 		if len(got) != len(tt.want) {
 			t.Errorf("%s.%s: len got=%d; want=%d", tt.pkg, tt.typname, len(got), len(tt.want))
 		} else {
@@ -351,12 +351,12 @@ error: { text: "bar is not valid" }
 
 	compare := compare.Config{ObserveFieldTag: "cmp"}
 	for i, tt := range tests {
-		fn, err := testSource.FindFunc(tt.pkg, tt.name)
+		fn, err := test_src.FindFunc(tt.pkg, tt.name)
 		if e := compare.Compare(err, tt.err); e != nil {
 			t.Errorf("Error: %v (%v)", e, err)
 		} else if err == nil {
-			if p := fn.Type.Pkg(); p.Path() != tt.pkg || fn.Type.Name() != tt.name {
-				t.Errorf("#%d: want=%s.%s; got type=%v", i, tt.pkg, tt.name, fn.Type)
+			if p := fn.Pkg(); p.Path() != tt.pkg || fn.Name() != tt.name {
+				t.Errorf("#%d: want=%s.%s; got type=%v", i, tt.pkg, tt.name, fn.Func)
 			}
 			if e := compare.Compare(string(fn.config), string(tt.config)); e != nil {
 				t.Errorf("#%d: *rulecfg.RuleConfig: %v\n%q", i, e, fn.config)

@@ -134,9 +134,9 @@ func Test_Config_MergeAndCheck(t *testing.T) {
 			ValidatorNamePattern: dc.ValidatorNamePattern,
 			ErrorHandling:        dc.ErrorHandling,
 			validatorNameRegexp:  regexp.MustCompile(dc.ValidatorNamePattern.Value),
-			Rules: []RuleConfig{{
+			Rules: []FuncConfig{{
 				Func: ObjectIdent{Pkg: "mod/pkg", Name: "Test", IsSet: true},
-				Rule: &Rule{Name: "test"},
+				Rule: &RuleConfig{Name: "test"},
 			}},
 		},
 	}, {
@@ -188,13 +188,13 @@ func Test_Config_MergeAndCheck(t *testing.T) {
 					IsSet: true,
 				},
 			},
-			Rules: []RuleConfig{{
+			Rules: []FuncConfig{{
 				Func: ObjectIdent{
 					Pkg:   "example.com/me/mymod/mypkg",
 					Name:  "IsFoobar",
 					IsSet: true,
 				},
-				Rule: &Rule{
+				Rule: &RuleConfig{
 					Name: "foobar",
 					Args: []RuleArg{{
 						Default: &Scalar{Type: NIL},

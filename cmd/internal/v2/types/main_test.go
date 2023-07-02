@@ -4,23 +4,21 @@ import (
 	"go/types"
 	"log"
 	"os"
-	"regexp"
 	"testing"
 
-	"github.com/frk/valid/cmd/internal/search"
+	"github.com/frk/valid/cmd/internal/v2/source"
 )
 
-var test_ast search.AST
-var test_pkg search.Package
+var test_pkg source.Package
+
+var test_src = source.Source{
+	Dir:               "testdata/",
+	Recursive:         true,
+	TargetNamePattern: `(?i:Validator)$`,
+}
 
 func TestMain(m *testing.M) {
-	pkgs, err := search.Search(
-		"testdata/",
-		true,
-		regexp.MustCompile(`(?i:Validator)$`),
-		nil,
-		&test_ast,
-	)
+	pkgs, err := test_src.Load()
 	if err != nil {
 		log.Fatal(err)
 	}

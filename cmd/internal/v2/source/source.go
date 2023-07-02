@@ -6,6 +6,7 @@ import (
 	"go/types"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -13,6 +14,11 @@ import (
 
 	"gopkg.in/yaml.v3"
 )
+
+// Obj represents an object with a position in the source.
+type Obj interface {
+	Pos() token.Pos
+}
 
 // Match holds information on a matched target struct type.
 type Match struct {
@@ -58,7 +64,7 @@ type Pkg struct {
 
 // Func contains information about a Go function's type.
 type Func struct {
-	Type *types.Func
+	*types.Func
 	// The raw config associated with this specific function, if any.
 	config []byte
 }
@@ -218,6 +224,14 @@ func (s *Source) Load() (out []*Package, err error) {
 	return out, nil
 }
 
+// FileAndLine returns the "filename:line" source position of obj.
+func (s *Source) FileAndLine(obj Obj) string {
+	if p := s.fset.Position(obj.Pos()); p.IsValid() {
+		return p.Filename + ":" + strconv.Itoa(p.Line)
+	}
+	return "[unknown-source-location]"
+}
+
 // FindObject returns a top-level declared object that matches the given
 // pkgpath and name. The returned object will either be a top-level declared
 // type or a top-level declared function.
@@ -350,7 +364,7 @@ func (s *Source) FindFunc(pkgpath, name string) (*Func, error) {
 
 				if fn, ok := obj.(*types.Func); ok {
 					config := s.extract_rule_config(fd.Doc)
-					f := &Func{Type: fn, config: config}
+					f := &Func{Func: fn, config: config}
 					return f, nil
 				}
 			}
@@ -395,7 +409,7 @@ func (s *Source) GetIncludedRuleFuncs() ([]*Func, error) {
 					continue
 				}
 
-				f := &Func{Type: fn, config: config}
+				f := &Func{Func: fn, config: config}
 				funcs = append(funcs, f)
 			}
 		}

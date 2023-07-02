@@ -4,7 +4,7 @@ import (
 	"go/types"
 	"strings"
 
-	"github.com/frk/valid/cmd/internal/search"
+	"github.com/frk/valid/cmd/internal/v2/source"
 )
 
 // Validator represents a validator struct type.
@@ -41,7 +41,7 @@ type MethodInfo struct {
 // corresponding types.Validator representation.
 //
 // The method will panic if the named type is not a struct.
-func AnalyzeValidator(named *types.Named, ast *search.AST) *Validator {
+func AnalyzeValidator(named *types.Named, src *source.Source) *Validator {
 	if _, ok := named.Underlying().(*types.Struct); !ok {
 		panic(named.Obj().Name() + " must be a struct type.")
 	}
@@ -50,7 +50,7 @@ func AnalyzeValidator(named *types.Named, ast *search.AST) *Validator {
 	}
 
 	v := new(Validator)
-	v.Type = Analyze(named, ast)
+	v.Type = Analyze(named, src)
 	if name := nameOfValidateMethod(v.Type, "before"); len(name) > 0 {
 		v.BeforeValidateMethod = &MethodInfo{Name: name}
 	}

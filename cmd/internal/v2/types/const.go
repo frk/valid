@@ -3,7 +3,7 @@ package types
 import (
 	"sync"
 
-	"github.com/frk/valid/cmd/internal/search"
+	"github.com/frk/valid/cmd/internal/v2/source"
 )
 
 // Const represents the identifier of a declared constant.
@@ -18,7 +18,7 @@ type Const struct {
 
 // FindConsts is a helper method that finds and
 // returns all declared constants for a given type.
-func FindConsts(t *Type, ast *search.AST) (consts []Const) {
+func FindConsts(t *Type, src *source.Source) (consts []Const) {
 	ident := t.Pkg.Path + "." + t.Name
 
 	constCache.RLock()
@@ -31,7 +31,7 @@ func FindConsts(t *Type, ast *search.AST) (consts []Const) {
 		consts = nil
 	}
 
-	for _, c := range search.FindConstantsByType(t.Pkg.Path, t.Name, ast) {
+	for _, c := range src.FindConsts(t.Pkg.Path, t.Name) {
 		name := c.Name()
 		// blank, skip
 		if name == "_" {

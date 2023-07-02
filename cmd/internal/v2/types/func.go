@@ -3,7 +3,7 @@ package types
 import (
 	"go/types"
 
-	"github.com/frk/valid/cmd/internal/search"
+	"github.com/frk/valid/cmd/internal/v2/source"
 )
 
 // Func is used to represent a function.
@@ -12,8 +12,8 @@ type Func struct {
 	Type *Type
 }
 
-func AnalyzeFunc(fun *types.Func, ast *search.AST) *Func {
-	a := &analyzer{ast: ast}
+func AnalyzeFunc(fun *types.Func, src *source.Source) *Func {
+	a := &analyzer{src: src}
 	t := a.analyzeType(fun.Type())
 	if pkg := fun.Pkg(); pkg != nil {
 		t.Pkg.Path = pkg.Path()

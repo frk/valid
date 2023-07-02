@@ -293,7 +293,7 @@ func TestAnalyze(t *testing.T) {
 			continue
 		}
 		t.Run(tt.ty.String(), func(t *testing.T) {
-			got := Analyze(tt.ty, &test_ast)
+			got := Analyze(tt.ty, &test_src)
 			if err := compare.Compare(got, tt.want); err != nil {
 				t.Error(err)
 			}
@@ -343,7 +343,7 @@ func TestAnalyzeObject(t *testing.T) {
 	}}
 
 	for _, tt := range tests {
-		got := AnalyzeObject(tt.obj, &test_ast)
+		got := AnalyzeObject(tt.obj, &test_src)
 		if err := compare.Compare(got, tt.want); err != nil {
 			t.Error(err)
 		}

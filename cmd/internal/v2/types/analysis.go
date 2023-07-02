@@ -5,20 +5,20 @@ import (
 	"go/types"
 	"sync"
 
-	"github.com/frk/valid/cmd/internal/search"
+	"github.com/frk/valid/cmd/internal/v2/source"
 )
 
 var _ = fmt.Println
 
 // Analyze runs the analyzer of the given types.Type t
 // and returns the corresponding Type representation.
-func Analyze(t types.Type, ast *search.AST) *Type {
-	a := &analyzer{ast: ast}
+func Analyze(t types.Type, src *source.Source) *Type {
+	a := &analyzer{src: src}
 	return a.analyzeType(t)
 }
 
-func AnalyzeObject(obj types.Object, ast *search.AST) *Type {
-	a := &analyzer{ast: ast}
+func AnalyzeObject(obj types.Object, src *source.Source) *Type {
+	a := &analyzer{src: src}
 	t := a.analyzeType(obj.Type())
 	if pkg := obj.Pkg(); pkg != nil {
 		t.Pkg.Path = pkg.Path()
@@ -30,7 +30,7 @@ func AnalyzeObject(obj types.Object, ast *search.AST) *Type {
 ////////////////////////////////////////////////////////////////////////////////
 
 type analyzer struct {
-	ast      *search.AST
+	src      *source.Source
 	visiting map[string]*Type
 }
 
@@ -179,7 +179,7 @@ func (a *analyzer) analyzeFields(stype *types.Struct) (fields []*Field) {
 
 		fields = append(fields, f)
 
-		storePosition(f, a.ast.FileAndLine(fvar))
+		storePosition(f, a.src.FileAndLine(fvar))
 	}
 	return fields
 }

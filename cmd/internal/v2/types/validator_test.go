@@ -125,7 +125,7 @@ func TestAnalyzeValidator(t *testing.T) {
 	compare := compare.Config{ObserveFieldTag: "cmp"}
 	for i, tt := range tests {
 		t.Run(tt.named.String(), func(t *testing.T) {
-			got := AnalyzeValidator(tt.named, &test_ast)
+			got := AnalyzeValidator(tt.named, &test_src)
 			if err := compare.Compare(got, tt.want); err != nil {
 				t.Errorf("#%d: %v", i, err)
 			}

@@ -3,11 +3,11 @@ package types
 import (
 	"go/types"
 
-	"github.com/frk/valid/cmd/internal/search"
+	"github.com/frk/valid/cmd/internal/v2/source"
 )
 
-func MustGetType(pkgpath, name string, a *search.AST) *Type {
-	o, err := search.FindObject(pkgpath, name, a)
+func MustGetType(pkgpath, name string, src *source.Source) *Type {
+	o, err := src.FindObject(pkgpath, name)
 	if err != nil {
 		panic(err)
 	}
@@ -20,5 +20,5 @@ func MustGetType(pkgpath, name string, a *search.AST) *Type {
 		panic("type name is not named")
 	}
 
-	return Analyze(named, a)
+	return Analyze(named, src)
 }

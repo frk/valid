@@ -51,7 +51,7 @@ func TestFindConsts(t *testing.T) {
 	}}
 
 	for _, tt := range tests {
-		got := FindConsts(tt.typ, &test_ast)
+		got := FindConsts(tt.typ, &test_src)
 		if err := compare.Compare(got, tt.want); err != nil {
 			t.Error(err)
 		}
