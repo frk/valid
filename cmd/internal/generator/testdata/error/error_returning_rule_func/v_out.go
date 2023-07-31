@@ -62,21 +62,21 @@ func (v Validator) Validate() error {
 	} else if !ok {
 		return errors.New("F6 is not valid")
 	}
-	for _, e := range v.F7 {
-		if ok, err := mypkg.RuleWithErr2(e, 3, 8); err != nil {
+	for _, e1 := range v.F7 {
+		if ok, err := mypkg.RuleWithErr2(e1, 3, 8); err != nil {
 			return err
 		} else if !ok {
 			return errors.New("F7 is not valid")
 		}
 	}
-	for _, e := range v.F8 {
-		if e == nil || *e == "" {
+	for _, e1 := range v.F8 {
+		if e1 == nil || *e1 == "" {
 			return errors.New("F8 is required")
-		} else if ok, err := mypkg.RuleWithErr2(*e, 3, 8); err != nil {
+		} else if ok, err := mypkg.RuleWithErr2(*e1, 3, 8); err != nil {
 			return err
 		} else if !ok {
 			return errors.New("F8 is not valid")
-		} else if ok, err := mypkg.RuleWithErr1(*e); err != nil {
+		} else if ok, err := mypkg.RuleWithErr1(*e1); err != nil {
 			return err
 		} else if !ok {
 			return errors.New("F8 is not valid")

@@ -113,49 +113,54 @@ type bb struct {
 	idx    GO.ExprNode
 	key    string
 	tmp    bool
+	nloop  int
 }
 
 func (b *bb) new() (out bb) {
 	return bb{
-		g:   b.g,
-		ast: b.cur,
-		cur: b.cur,
-		val: b.val,
-		idx: b.idx,
-		key: b.key,
+		g:     b.g,
+		ast:   b.cur,
+		cur:   b.cur,
+		val:   b.val,
+		idx:   b.idx,
+		key:   b.key,
+		nloop: b.nloop,
 	}
 }
 
 func (b *bb) with(val GO.ExprNode) (out bb) {
 	return bb{
-		g:   b.g,
-		ast: b.ast,
-		cur: b.cur,
-		idx: b.idx,
-		val: val,
-		key: b.key,
+		g:     b.g,
+		ast:   b.ast,
+		cur:   b.cur,
+		idx:   b.idx,
+		val:   val,
+		key:   b.key,
+		nloop: b.nloop,
 	}
 }
 
 func (b *bb) field(f *rules.FieldNode) (out bb) {
 	if f.Field.IsEmbedded {
 		return bb{
-			g:   b.g,
-			ast: b.ast,
-			cur: b.cur,
-			idx: b.idx,
-			val: b.val,
-			key: b.key,
+			g:     b.g,
+			ast:   b.ast,
+			cur:   b.cur,
+			idx:   b.idx,
+			val:   b.val,
+			key:   b.key,
+			nloop: b.nloop,
 		}
 	}
 
 	return bb{
-		g:   b.g,
-		ast: b.ast,
-		cur: b.cur,
-		idx: b.idx,
-		val: GO.SelectorExpr{X: b.val, Sel: GO.Ident{f.Field.Name}},
-		key: f.Key,
+		g:     b.g,
+		ast:   b.ast,
+		cur:   b.cur,
+		idx:   b.idx,
+		val:   GO.SelectorExpr{X: b.val, Sel: GO.Ident{f.Field.Name}},
+		key:   f.Key,
+		nloop: b.nloop,
 	}
 }
 

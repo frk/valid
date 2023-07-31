@@ -12,8 +12,8 @@ func (v T51Validator) Validate() error {
 	if len(v.F1) == 0 {
 		return errors.New("F1 is required")
 	} else {
-		for _, e := range v.F1 {
-			if !valid.Email(e) {
+		for _, e1 := range v.F1 {
+			if !valid.Email(e1) {
 				return errors.New("F1 must be a valid email address")
 			}
 		}
@@ -21,8 +21,8 @@ func (v T51Validator) Validate() error {
 	if len(v.F2) < 1 {
 		return errors.New("F2 must be of length at least: 1")
 	} else {
-		for _, e := range v.F2 {
-			if !valid.Email(e) {
+		for _, e1 := range v.F2 {
+			if !valid.Email(e1) {
 				return errors.New("F2 must be a valid email address")
 			}
 		}

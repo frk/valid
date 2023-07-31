@@ -9,30 +9,30 @@ import (
 )
 
 func (v T53Validator) Validate() error {
-	for _, e := range v.F1 {
-		if !valid.Email(e) {
+	for _, e1 := range v.F1 {
+		if !valid.Email(e1) {
 			return errors.New("F1 must be a valid email address")
 		}
 	}
-	for k := range v.F2 {
-		if !valid.Email(k) {
+	for k1 := range v.F2 {
+		if !valid.Email(k1) {
 			return errors.New("F2 must be a valid email address")
 		}
 	}
-	for k, e := range v.F3 {
-		if !valid.Email(k) {
+	for k1, e1 := range v.F3 {
+		if !valid.Email(k1) {
 			return errors.New("F3 must be a valid email address")
 		}
-		if !valid.Phone(e, "us") {
+		if !valid.Phone(e1, "us") {
 			return errors.New("F3 must be a valid phone number")
 		}
 	}
 	if v.F4 != nil && *v.F4 != nil && **v.F4 != nil {
-		for k, e := range ***v.F4 {
-			if k != nil && *k != nil && !valid.Phone(**k, "us") {
+		for k1, e1 := range ***v.F4 {
+			if k1 != nil && *k1 != nil && !valid.Phone(**k1, "us") {
 				return errors.New("F4 must be a valid phone number")
 			}
-			if e != nil && *e != nil && **e != nil && (***e < 18 || ***e > 64) {
+			if e1 != nil && *e1 != nil && **e1 != nil && (***e1 < 18 || ***e1 > 64) {
 				return errors.New("F4 must be between: 18 and 64")
 			}
 		}

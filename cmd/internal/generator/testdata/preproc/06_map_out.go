@@ -10,30 +10,30 @@ import (
 )
 
 func (v T06Validator) Validate() error {
-	for k, e := range v.F1 {
-		v.F1[k] = strings.TrimSpace(e)
+	for k1, e1 := range v.F1 {
+		v.F1[k1] = strings.TrimSpace(e1)
 	}
-	for k, e := range v.F2 {
-		v.F2[k] = strings.TrimSpace(e)
-		e = v.F2[k]
-		if !valid.Email(e) {
+	for k1, e1 := range v.F2 {
+		v.F2[k1] = strings.TrimSpace(e1)
+		e1 = v.F2[k1]
+		if !valid.Email(e1) {
 			return errors.New("F2 must be a valid email address")
 		}
 	}
-	for _, e := range v.F3 {
-		for _, e2 := range e {
+	for _, e1 := range v.F3 {
+		for _, e2 := range e1 {
 			if e2 != nil {
 				*e2 = strings.TrimSpace(*e2)
 			}
 		}
 	}
-	for _, e := range v.F4 {
-		if len(e) < 4 {
+	for _, e1 := range v.F4 {
+		if len(e1) < 4 {
 			return errors.New("F4 must be of length at least: 4")
 		} else {
-			for k, e2 := range e {
-				e[k] = strings.TrimSpace(e2)
-				e2 = e[k]
+			for k2, e2 := range e1 {
+				e1[k2] = strings.TrimSpace(e2)
+				e2 = e1[k2]
 				if !valid.Email(e2) {
 					return errors.New("F4 must be a valid email address")
 				}

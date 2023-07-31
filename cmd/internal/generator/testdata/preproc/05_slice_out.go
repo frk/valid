@@ -10,18 +10,18 @@ import (
 )
 
 func (v T05Validator) Validate() error {
-	for i, e := range v.F1 {
-		v.F1[i] = strings.TrimSpace(e)
+	for i, e1 := range v.F1 {
+		v.F1[i] = strings.TrimSpace(e1)
 	}
-	for i, e := range v.F2 {
-		v.F2[i] = strings.TrimSpace(e)
-		e = v.F2[i]
-		if !valid.Email(e) {
+	for i, e1 := range v.F2 {
+		v.F2[i] = strings.TrimSpace(e1)
+		e1 = v.F2[i]
+		if !valid.Email(e1) {
 			return errors.New("F2 must be a valid email address")
 		}
 	}
-	for _, e := range v.F3 {
-		for _, e2 := range e {
+	for _, e1 := range v.F3 {
+		for _, e2 := range e1 {
 			if e2 != nil {
 				*e2 = strings.TrimSpace(*e2)
 			}
@@ -30,18 +30,18 @@ func (v T05Validator) Validate() error {
 	if len(v.F4) > 10 {
 		return errors.New("F4 must be of length at most: 10")
 	} else {
-		for _, e := range v.F4 {
-			if len(e) < 3 || len(e) > 5 {
+		for _, e1 := range v.F4 {
+			if len(e1) < 3 || len(e1) > 5 {
 				return errors.New("F4 must be of length between: 3 and 5 (inclusive)")
 			} else {
-				for _, e2 := range e {
+				for _, e2 := range e1 {
 					if len(e2) < 4 {
 						return errors.New("F4 must be of length at least: 4")
 					} else {
-						for _, e := range e2 {
-							if e != nil {
-								*e = strings.TrimSpace(*e)
-								if !valid.Email(*e) {
+						for _, e3 := range e2 {
+							if e3 != nil {
+								*e3 = strings.TrimSpace(*e3)
+								if !valid.Email(*e3) {
 									return errors.New("F4 must be a valid email address")
 								}
 							}

@@ -9,14 +9,14 @@ import (
 )
 
 func (v T54Validator) Validate() error {
-	for _, e := range v.F5 {
-		for k, e2 := range e {
-			if k != nil {
-				for k, e := range *k {
-					if !valid.Email(k) {
+	for _, e1 := range v.F5 {
+		for k2, e2 := range e1 {
+			if k2 != nil {
+				for k3, e3 := range *k2 {
+					if !valid.Email(k3) {
 						return errors.New("F5 must be a valid email address")
 					}
-					if !valid.Phone(e, "ca") {
+					if !valid.Phone(e3, "ca") {
 						return errors.New("F5 must be a valid phone number")
 					}
 				}
@@ -24,8 +24,8 @@ func (v T54Validator) Validate() error {
 			if len(e2) > 10 {
 				return errors.New("F5 must be of length at most: 10")
 			} else {
-				for _, e := range e2 {
-					if e < -54 || e > 256 {
+				for _, e3 := range e2 {
+					if e3 < -54 || e3 > 256 {
 						return errors.New("F5 must be between: -54 and 256")
 					}
 				}

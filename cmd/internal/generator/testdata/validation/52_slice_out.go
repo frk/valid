@@ -9,23 +9,23 @@ import (
 )
 
 func (v T52Validator) Validate() error {
-	for _, e := range v.F1 {
-		if !valid.Email(e) {
+	for _, e1 := range v.F1 {
+		if !valid.Email(e1) {
 			return errors.New("F1 must be a valid email address")
 		}
 	}
 	if v.F2 != nil && *v.F2 != nil && **v.F2 != nil {
-		for _, e := range ***v.F2 {
-			if !valid.Email(e) {
+		for _, e1 := range ***v.F2 {
+			if !valid.Email(e1) {
 				return errors.New("F2 must be a valid email address")
 			}
 		}
 	}
 	if v.F3 != nil {
-		for _, e := range *v.F3 {
-			if e == nil || *e == "" {
+		for _, e1 := range *v.F3 {
+			if e1 == nil || *e1 == "" {
 				return errors.New("F3 is required")
-			} else if !valid.Email(*e) {
+			} else if !valid.Email(*e1) {
 				return errors.New("F3 must be a valid email address")
 			}
 		}

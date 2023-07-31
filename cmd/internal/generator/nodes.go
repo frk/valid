@@ -90,10 +90,12 @@ func nodesAST(n *rules.Node, b bb) {
 		nodesAST(n, b.new())
 
 	case n.Type.Is(gotype.K_ARRAY, gotype.K_SLICE):
+		b.nloop += 1
 		rc := b.arrayForStmt(n)
 		nodesAST(n.Elem, b.with(rc.Value))
 
 	case n.Type.Is(gotype.K_MAP):
+		b.nloop += 1
 		rc := b.mapForStmt(n)
 		nodesAST(n.Key, b.with(rc.Key))
 		nodesAST(n.Elem, b.with(rc.Value))

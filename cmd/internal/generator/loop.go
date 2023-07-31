@@ -2,6 +2,7 @@ package generator
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/frk/valid/cmd/internal/gotype"
 	"github.com/frk/valid/cmd/internal/rules"
@@ -32,21 +33,12 @@ func (b *bb) arrayRangeClause(E *rules.Node) GO.ForRangeClause {
 	k, v := GO.Ident{}, GO.Ident{}
 
 	if E.HasRules() {
-		v = GO.Ident{"e"}
+		v = GO.Ident{"e" + strconv.Itoa(b.nloop)}
 	}
 	if E.Type.Kind != gotype.K_PTR && len(E.PreRules) > 0 {
 		k = GO.Ident{"i"}
 	} else if v.Name != "" {
 		k = GO.Ident{"_"}
-	}
-
-	if x, ok := rc.X.(GO.Ident); ok {
-		if x == k {
-			k.Name += "2"
-		}
-		if x == v {
-			v.Name += "2"
-		}
 	}
 
 	if k.Name != "" {
@@ -79,21 +71,12 @@ func (b *bb) mapRangeClause(K, E *rules.Node) GO.ForRangeClause {
 	k, v := GO.Ident{}, GO.Ident{}
 
 	if E.HasRules() {
-		v = GO.Ident{"e"}
+		v = GO.Ident{"e" + strconv.Itoa(b.nloop)}
 	}
 	if K.HasRules() || (E.Type.Kind != gotype.K_PTR && len(E.PreRules) > 0) {
-		k = GO.Ident{"k"}
+		k = GO.Ident{"k" + strconv.Itoa(b.nloop)}
 	} else if v.Name != "" {
 		k = GO.Ident{"_"}
-	}
-
-	if x, ok := rc.X.(GO.Ident); ok {
-		if x == k {
-			k.Name += "2"
-		}
-		if x == v {
-			v.Name += "2"
-		}
 	}
 
 	if k.Name != "" {
