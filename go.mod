@@ -1,6 +1,6 @@
 module github.com/frk/valid
 
-go 1.18
+go 1.20
 
 require (
 	github.com/frk/ast v0.0.5-0.20201210051705-327961897a90
