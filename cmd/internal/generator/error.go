@@ -42,10 +42,7 @@ func (b *bb) errGlobalHandler(n *rules.Node, r *rules.Rule, body *GO.BlockStmt, 
 		for _, a := range r.Args {
 			switch a.Type {
 			case rules.ARG_FIELD_ABS, rules.ARG_FIELD_REL:
-				x := b.g.recv
-				for _, f := range b.g.info.KeyMap[a.Value].Selector {
-					x = GO.SelectorExpr{X: x, Sel: GO.Ident{f.Name}}
-				}
+				x, _ := b.fieldArgSelector(a)
 				args = append(args, x)
 			case rules.ARG_STRING:
 				args = append(args, GO.StringLit(a.Value))
@@ -86,10 +83,7 @@ func (b *bb) errHandler(n *rules.Node, r *rules.Rule, body *GO.BlockStmt) {
 		for _, a := range r.Args {
 			switch a.Type {
 			case rules.ARG_FIELD_ABS, rules.ARG_FIELD_REL:
-				x := b.g.recv
-				for _, f := range b.g.info.KeyMap[a.Value].Selector {
-					x = GO.SelectorExpr{X: x, Sel: GO.Ident{f.Name}}
-				}
+				x, _ := b.fieldArgSelector(a)
 				args = append(args, x)
 			case rules.ARG_STRING:
 				args = append(args, GO.StringLit(a.Value))
@@ -155,10 +149,7 @@ func (b *bb) errDefault(n *rules.Node, r *rules.Rule, body *GO.BlockStmt) {
 
 			switch arg.Type {
 			case rules.ARG_FIELD_ABS, rules.ARG_FIELD_REL:
-				x := b.g.recv
-				for _, f := range b.g.info.KeyMap[arg.Value].Selector {
-					x = GO.SelectorExpr{X: x, Sel: GO.Ident{f.Name}}
-				}
+				x, _ := b.fieldArgSelector(arg)
 				args = append(args, "%v")
 				refs = append(refs, x)
 			case rules.ARG_STRING:

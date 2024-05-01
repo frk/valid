@@ -13,7 +13,7 @@ var _ = fmt.Println
 
 func (b *bb) condExpr(n *rules.Node, r *rules.Rule) GO.ExprNode {
 	if len(r.Args) > 0 {
-		b.g.prepArgs(n, r)
+		b.prepArgs(n, r)
 	}
 	if r.Spec.Kind == rules.ENUM {
 		b.g.prepEnums(n, r)
@@ -305,7 +305,7 @@ func (b *bb) methodCondExpr(n *rules.Node, r *rules.Rule) GO.ExprNode {
 // builds an expression that calls the rule spec's function.
 func (b *bb) functionCallExpr(n *rules.Node, r *rules.Rule) (x GO.ExprNode) {
 	if len(r.Args) > 0 {
-		b.g.prepArgs(n, r)
+		b.prepArgs(n, r)
 	}
 	if r.Spec.Kind == rules.ENUM {
 		b.g.prepEnums(n, r)

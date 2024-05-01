@@ -114,6 +114,13 @@ type bb struct {
 	key    string
 	tmp    bool
 	nloop  int
+
+	elems []elem
+}
+
+type elem struct {
+	x GO.ExprNode
+	n *rules.Node
 }
 
 func (b *bb) new() (out bb) {
@@ -125,6 +132,7 @@ func (b *bb) new() (out bb) {
 		idx:   b.idx,
 		key:   b.key,
 		nloop: b.nloop,
+		elems: b.elems,
 	}
 }
 
@@ -137,6 +145,7 @@ func (b *bb) with(val GO.ExprNode) (out bb) {
 		val:   val,
 		key:   b.key,
 		nloop: b.nloop,
+		elems: b.elems,
 	}
 }
 
@@ -150,6 +159,7 @@ func (b *bb) field(f *rules.FieldNode) (out bb) {
 			val:   b.val,
 			key:   b.key,
 			nloop: b.nloop,
+			elems: b.elems,
 		}
 	}
 
@@ -161,6 +171,7 @@ func (b *bb) field(f *rules.FieldNode) (out bb) {
 		val:   GO.SelectorExpr{X: b.val, Sel: GO.Ident{f.Field.Name}},
 		key:   f.Key,
 		nloop: b.nloop,
+		elems: b.elems,
 	}
 }
 

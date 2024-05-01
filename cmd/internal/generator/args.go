@@ -9,15 +9,15 @@ import (
 	GO "github.com/frk/ast/golang"
 )
 
-func (g *gg) prepArgs(n *rules.Node, r *rules.Rule) {
+func (b *bb) prepArgs(n *rules.Node, r *rules.Rule) {
 	args := make([]GO.ExprNode, len(r.Args))
 	for i, a := range r.Args {
-		args[i] = g.ruleArg(n, r, i, a)
+		args[i] = b.ruleArg(n, r, i, a)
 	}
-	g.argmap[r] = args
+	b.g.argmap[r] = args
 }
 
-func (g *gg) ruleArg(n *rules.Node, r *rules.Rule, i int, a *rules.Arg) GO.ExprNode {
+func (b *bb) ruleArg(n *rules.Node, r *rules.Rule, i int, a *rules.Arg) GO.ExprNode {
 	tt := n.Type // target type
 
 	switch r.Spec.Kind {
@@ -32,32 +32,58 @@ func (g *gg) ruleArg(n *rules.Node, r *rules.Rule, i int, a *rules.Arg) GO.ExprN
 	}
 
 	if a.Type == rules.ARG_FIELD_ABS || a.Type == rules.ARG_FIELD_REL {
-		return g.fieldArg(a, tt)
+		return b.fieldArg(a, tt)
 	}
-	return g.constArg(n, r, a, tt)
+	return b.constArg(n, r, a, tt)
 }
 
-func (g *gg) fieldArg(a *rules.Arg, t *gotype.Type) GO.ExprNode {
-	f := g.info.KeyMap[a.Value]
-	x := g.recv
-
-	var last *gotype.StructField
-	for _, f := range f.Selector {
-		x = GO.SelectorExpr{X: x, Sel: GO.Ident{f.Name}}
-		last = f
-	}
-
-	if t.PtrOf(last.Type) {
+func (b *bb) fieldArg(a *rules.Arg, t *gotype.Type) GO.ExprNode {
+	x, leaf := b.fieldArgSelector(a)
+	if t.PtrOf(leaf.Type) {
 		return GO.UnaryExpr{Op: GO.UnaryAmp, X: x}
 	}
-	if last.Type.NeedsConversion(t) {
+	if leaf.Type.NeedsConversion(t) {
 		T := GO.Ident{t.TypeString(nil)}
 		return GO.CallExpr{Fun: T, Args: GO.ArgsList{List: x}}
 	}
 	return x
 }
 
-func (g *gg) constArg(n *rules.Node, r *rules.Rule, a *rules.Arg, t *gotype.Type) (x GO.ExprNode) {
+func (b *bb) fieldArgSelector(a *rules.Arg) (x GO.ExprNode, leaf *gotype.StructField) {
+	x = b.g.recv // default base
+	s := b.g.info.KeyMap[a.Value].Selector
+
+	if len(b.elems) > 0 {
+		// resolve base expression
+		for i := len(b.elems) - 1; i >= 0; i-- {
+			if b.elems[i].n.Type.Is(gotype.K_STRUCT) {
+				x = b.elems[i].x
+				break
+			}
+		}
+
+		// resolve elem distance
+		var distance int
+		for i := len(s) - 1; i >= 0; i-- {
+			if s[i].Type.Is(gotype.K_ARRAY, gotype.K_SLICE, gotype.K_MAP) {
+				break
+			}
+			distance += 1
+		}
+
+		if len(s) > distance {
+			s = s[(len(s) - distance):]
+		}
+	}
+
+	for i := range s {
+		x = GO.SelectorExpr{X: x, Sel: GO.Ident{s[i].Name}}
+		leaf = s[i]
+	}
+	return x, leaf
+}
+
+func (b *bb) constArg(n *rules.Node, r *rules.Rule, a *rules.Arg, t *gotype.Type) (x GO.ExprNode) {
 	if t.IsEmptyInterface() && a.Type != rules.ARG_STRING {
 		return GO.ValueLit(a.Value)
 	}

@@ -46,6 +46,7 @@ func (b *bb) arrayRangeClause(E *rules.Node) GO.ForRangeClause {
 	}
 	if v.Name != "" {
 		rc.Value = v
+		b.elems = append(b.elems, elem{x: v, n: E})
 	}
 	return rc
 }
@@ -84,6 +85,7 @@ func (b *bb) mapRangeClause(K, E *rules.Node) GO.ForRangeClause {
 	}
 	if v.Name != "" {
 		rc.Value = v
+		b.elems = append(b.elems, elem{x: v, n: E})
 	}
 	return rc
 }

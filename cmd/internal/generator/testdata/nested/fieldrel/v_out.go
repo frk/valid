@@ -22,5 +22,22 @@ func (v Validator) Validate() error {
 	if v.S1.F2 <= v.S1.S3.F1 {
 		return fmt.Errorf("S1.F2 must be greater than: %v", v.S1.S3.F1)
 	}
+	for _, e1 := range v.S2 {
+		for _, e2 := range e1.S2 {
+			if e2.F2 <= e2.F1 {
+				return fmt.Errorf("S2.S2.F2 must be greater than: %v", e2.F1)
+			}
+		}
+		if e1.S3.F2 <= e1.S3.F1 {
+			return fmt.Errorf("S2.S3.F2 must be greater than: %v", e1.S3.F1)
+		}
+		for _, e2 := range e1.F1 {
+			for _, e3 := range e2 {
+				if e3 <= e1.S3.F2 {
+					return fmt.Errorf("S2.F1 must be greater than: %v", e1.S3.F2)
+				}
+			}
+		}
+	}
 	return nil
 }

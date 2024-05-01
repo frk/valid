@@ -32,7 +32,7 @@ func (b *bb) preruleStmt(n *rules.Node) {
 
 func (b *bb) preprocCall(n *rules.Node) GO.CallExpr {
 	for _, r := range n.PreRules {
-		b.g.prepArgs(n, r)
+		b.prepArgs(n, r)
 	}
 
 	r := n.PreRules[0]
