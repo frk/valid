@@ -29,6 +29,9 @@ func (b *bb) ruleArg(n *rules.Node, r *rules.Rule, i int, a *rules.Arg) GO.ExprN
 		} else {
 			tt = in[i+1].Type
 		}
+		if r.Spec.FType.IsVariadic {
+			tt = tt.Elem
+		}
 	}
 
 	if a.Type == rules.ARG_FIELD_ABS || a.Type == rules.ARG_FIELD_REL {
@@ -56,7 +59,7 @@ func (b *bb) fieldArgSelector(a *rules.Arg) (x GO.ExprNode, leaf *gotype.StructF
 	if len(b.elems) > 0 {
 		// resolve base expression
 		for i := len(b.elems) - 1; i >= 0; i-- {
-			if b.elems[i].n.Type.Is(gotype.K_STRUCT) {
+			if b.elems[i].n.Type.IsStructOrStructPointer() {
 				x = b.elems[i].x
 				break
 			}
@@ -76,9 +79,13 @@ func (b *bb) fieldArgSelector(a *rules.Arg) (x GO.ExprNode, leaf *gotype.StructF
 		}
 	}
 
-	for i := range s {
-		x = GO.SelectorExpr{X: x, Sel: GO.Ident{s[i].Name}}
-		leaf = s[i]
+	for _, f := range s {
+		if f.IsEmbedded {
+			continue
+		}
+
+		x = GO.SelectorExpr{X: x, Sel: GO.Ident{f.Name}}
+		leaf = f
 	}
 	return x, leaf
 }

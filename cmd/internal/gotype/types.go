@@ -99,6 +99,16 @@ func (t Type) Is(kinds ...Kind) bool {
 	return false
 }
 
+// IsStructPointer indicates that t is a pointer-to-struct type.
+func (t Type) IsStructPointer() bool {
+	return t.Kind == K_PTR && t.Elem != nil && t.Elem.Kind == K_STRUCT
+}
+
+// IsStructOrStructPointer indicates that t is either a struct type or a pointer-to-struct type.
+func (t Type) IsStructOrStructPointer() bool {
+	return t.Kind == K_STRUCT || t.IsStructPointer()
+}
+
 // Indicates whether or not the type is an empty interface type.
 func (t *Type) IsEmptyInterface() bool {
 	return t.Kind == K_INTERFACE && len(t.Methods) == 0

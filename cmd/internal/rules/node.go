@@ -2,6 +2,7 @@ package rules
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/frk/valid/cmd/internal/gotype"
 )
@@ -170,8 +171,8 @@ func (c *Checker) makeNodeFromPtr(t *gotype.Type, is, pre *Tag, fs gotype.FieldS
 		}
 
 		for _, a := range r.Args {
-			if a.Type == ARG_FIELD_REL && len(fs) > 1 {
-				a.Value = c.fieldKey(fs[:len(fs)-1], true) + "." + a.Value
+			if a.Type == ARG_FIELD_REL {
+				c.normalizeRelFieldValue(a, fs)
 			}
 		}
 	}
@@ -235,8 +236,8 @@ func (c *Checker) makeNodeFromPtr(t *gotype.Type, is, pre *Tag, fs gotype.FieldS
 		base.PreRules = append(base.PreRules, r)
 
 		for _, a := range r.Args {
-			if a.Type == ARG_FIELD_REL && len(fs) > 1 {
-				a.Value = c.fieldKey(fs[:len(fs)-1], true) + "." + a.Value
+			if a.Type == ARG_FIELD_REL {
+				c.normalizeRelFieldValue(a, fs)
 			}
 		}
 	}
@@ -268,8 +269,8 @@ func (c *Checker) makeRuleLists(is, pre *Tag, fs gotype.FieldSelector) (isList, 
 		}
 
 		for _, a := range r.Args {
-			if a.Type == ARG_FIELD_REL && len(fs) > 1 {
-				a.Value = c.fieldKey(fs[:len(fs)-1], true) + "." + a.Value
+			if a.Type == ARG_FIELD_REL {
+				c.normalizeRelFieldValue(a, fs)
 			}
 		}
 	}
@@ -283,8 +284,8 @@ func (c *Checker) makeRuleLists(is, pre *Tag, fs gotype.FieldSelector) (isList, 
 		preList = append(preList, r)
 
 		for _, a := range r.Args {
-			if a.Type == ARG_FIELD_REL && len(fs) > 1 {
-				a.Value = c.fieldKey(fs[:len(fs)-1], true) + "." + a.Value
+			if a.Type == ARG_FIELD_REL {
+				c.normalizeRelFieldValue(a, fs)
 			}
 		}
 	}
@@ -437,4 +438,13 @@ func (n *Node) IsNoGuard() bool {
 
 func (n *Node) NeedsTempVar() bool {
 	return n.IsDeep() && (n.IsRules.Many() || n.IsStruct())
+}
+
+func (c *Checker) normalizeRelFieldValue(a *Arg, fs gotype.FieldSelector) {
+	sep := "."
+	if len(fs) > 1 {
+		a.Value = c.fieldKey(fs[:len(fs)-1], true) + sep + a.Value
+	}
+	a.Value = strings.TrimPrefix(a.Value, sep)
+	a.Value = strings.TrimSuffix(a.Value, sep)
 }

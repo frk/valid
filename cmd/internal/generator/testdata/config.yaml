@@ -1,4 +1,6 @@
 rules:
+  - func: github.com/frk/valid/cmd/internal/generator/testdata/mypkg.HasUniqueInts
+    rule: { name: unique_ints }
   - func: github.com/frk/valid/cmd/internal/generator/testdata/mypkg.MyRule
     rule: { name: myrule }
   - func: github.com/frk/valid/cmd/internal/generator/testdata/mypkg.MyRule2

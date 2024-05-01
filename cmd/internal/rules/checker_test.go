@@ -134,7 +134,6 @@ func TestCheckerCheck(t *testing.T) {
 			},
 			ra: &Arg{Type: ARG_FIELD_REL, Value: "X.num"},
 		},
-		show: true,
 	}, {
 		name: "Test_ERR_RULE_ARGMIN_1_Validator",
 		err: &Error{

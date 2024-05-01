@@ -217,6 +217,7 @@ func TestGenerator(t *testing.T) {
 		"nested/complex/v",
 		"nested/fieldabs/v",
 		"nested/fieldrel/v",
+		"nested/fieldrel/v1",
 
 		// error
 		"error/error_returning_rule_func/v",

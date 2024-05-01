@@ -1,5 +1,10 @@
 package mypkg
 
+func HasUniqueInts(v []int, vv ...[]int) bool {
+	// ...
+	return false
+}
+
 func MyRule(v string) bool {
 	// ...
 	return false
