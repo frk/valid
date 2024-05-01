@@ -111,7 +111,7 @@ func (b *bb) requiredCondExpr(n *rules.Node, r *rules.Rule) GO.ExprNode {
 			lit := GO.StructLit{Compact: true}
 			if n.Type.Pkg != b.g.pkg {
 				pkg := b.g.addImport(n.Type.Pkg)
-				lit.Type = GO.QualifiedIdent{pkg.name, n.Type.Name}
+				lit.Type = pkgQualIdent(pkg, n.Type.Name)
 			} else {
 				lit.Type = GO.Ident{n.Type.Name}
 			}
@@ -179,9 +179,9 @@ func (b *bb) lengthCondExpr(n *rules.Node, r *rules.Rule) GO.ExprNode {
 		pkg := b.g.addImport(utf8)
 		expr := GO.CallExpr{Args: GO.ArgsList{List: b.val}}
 		if n.Type.Kind == gotype.K_STRING {
-			expr.Fun = GO.QualifiedIdent{pkg.name, "RuneCountInString"}
+			expr.Fun = pkgQualIdent(pkg, "RuneCountInString")
 		} else if n.Type.Kind == gotype.K_SLICE && n.Type.Elem.IsByte {
-			expr.Fun = GO.QualifiedIdent{pkg.name, "RuneCount"}
+			expr.Fun = pkgQualIdent(pkg, "RuneCount")
 		} else {
 			panic("shouldn't reach")
 		}
@@ -250,14 +250,14 @@ func (b *bb) functionCondExpr(n *rules.Node, r *rules.Rule) (x GO.ExprNode) {
 	}
 
 	if r.Spec.JoinOp == 0 {
-		cx := GO.CallExpr{Fun: GO.QualifiedIdent{pkg.name, r.Spec.FName}}
+		cx := GO.CallExpr{Fun: pkgQualIdent(pkg, r.Spec.FName)}
 		cx.Args.List = append(GO.ExprList{v}, args...)
 		return GO.UnaryExpr{Op: GO.UnaryNot, X: cx}
 	}
 
 	if r.Spec.JoinOp > 0 {
 		for _, a := range args {
-			cx := GO.CallExpr{Fun: GO.QualifiedIdent{pkg.name, r.Spec.FName}}
+			cx := GO.CallExpr{Fun: pkgQualIdent(pkg, r.Spec.FName)}
 			cx.Args.List = GO.ExprList{v, a}
 
 			switch {
@@ -334,7 +334,7 @@ func (b *bb) functionCallExpr(n *rules.Node, r *rules.Rule) (x GO.ExprNode) {
 		v = GO.CallExpr{Fun: T, Args: GO.ArgsList{List: v}}
 	}
 
-	cx := GO.CallExpr{Fun: GO.QualifiedIdent{pkg.name, r.Spec.FName}}
+	cx := GO.CallExpr{Fun: pkgQualIdent(pkg, r.Spec.FName)}
 	cx.Args.List = append(GO.ExprList{v}, args...)
 	return cx
 }

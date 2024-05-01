@@ -1,5 +1,7 @@
 github.com/frk/ast v0.0.5-0.20201210051705-327961897a90 h1:4BMgwXLANNhM8WtfnNFYW75CzcqKSr9skkWJ3q7Pk7Q=
 github.com/frk/ast v0.0.5-0.20201210051705-327961897a90/go.mod h1:PZvafXe37J/Yhe6jbYQgbmlRfVEjeVej6ruZhrSrgdQ=
+github.com/frk/ast v0.0.7 h1:FHegvUyLOZjZ8vJ+FgW2H/UpWDN39/wOvfReZjkrSKQ=
+github.com/frk/ast v0.0.7/go.mod h1:PZvafXe37J/Yhe6jbYQgbmlRfVEjeVej6ruZhrSrgdQ=
 github.com/frk/compare v0.0.6 h1:iltAyhxsNb2lAl5666vr+mZGyIkVV0S/wx0qVlkNklM=
 github.com/frk/compare v0.0.6/go.mod h1:5bwv6/gZd3HD/UngMXbki5nvp6aJBTiWmXozSqE1uPc=
 github.com/frk/tagutil v0.0.1 h1:wv/RrK2pIp8DXQEJ4C+0CO+q0mMJmM3whygoEEi/JsE=

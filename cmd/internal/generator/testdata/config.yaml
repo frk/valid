@@ -1,4 +1,10 @@
 rules:
+  - func: github.com/frk/valid/cmd/internal/generator/testdata/imports.is_foo
+    rule: { name: foo }
+  - func: github.com/frk/valid/cmd/internal/generator/testdata/imports.isBar
+    rule: { name: bar }
+  - func: github.com/frk/valid/cmd/internal/generator/testdata/imports.IsBaz
+    rule: { name: baz }
   - func: github.com/frk/valid/cmd/internal/generator/testdata/mypkg.HasUniqueInts
     rule: { name: unique_ints }
   - func: github.com/frk/valid/cmd/internal/generator/testdata/mypkg.MyRule

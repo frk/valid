@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-func (v Validator) Validate() error {
+func (v T01Validator) Validate() error {
 	if v.F2 <= v.F1 {
 		return fmt.Errorf("F2 must be greater than: %v", v.F1)
 	}

@@ -80,7 +80,7 @@ func newErrorAggregatorAST(info *rules.Info, b bb) {
 	agg := global.ErrorAggregator
 	pkg := b.g.addImport(agg.Pkg)
 
-	typ := GO.QualifiedIdent{pkg.name, agg.Name}
+	typ := pkgQualIdent(pkg, agg.Name)
 	call := GO.CallExpr{Fun: GO.Ident{"new"}}
 	call.Args = GO.ArgsList{List: GO.ExprList{typ}}
 

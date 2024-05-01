@@ -71,6 +71,11 @@ type pkginfo struct {
 // addImport adds a new pkginfo to the import set if
 // it is not already a member of that set.
 func (g *gg) addImport(p gotype.Pkg) *pkginfo {
+	if p.Path == g.info.Validator.Type.Pkg.Path {
+		// Don't add import if package is the same as
+		// the one in which we are generating the code.
+		return nil
+	}
 	if p.Name == "" {
 		p.Name = p.Path
 		if i := strings.LastIndexByte(p.Name, '/'); i > -1 {
@@ -211,4 +216,11 @@ func (b *bb) subBlock() {
 	sub := &GO.BlockStmt{}
 	b.add(sub)
 	b.use(sub)
+}
+
+func pkgQualIdent(p *pkginfo, name string) GO.IdentNode {
+	if p != nil {
+		return GO.QualifiedIdent{p.name, name}
+	}
+	return GO.Ident{Name: name}
 }

@@ -1,6 +1,6 @@
 package testdata
 
-type Validator struct {
+type T01Validator struct {
 	F1 int
 	F2 int `is:"gt:.F1"`
 

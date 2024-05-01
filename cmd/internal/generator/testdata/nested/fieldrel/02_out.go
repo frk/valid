@@ -9,7 +9,7 @@ import (
 	"github.com/frk/valid/cmd/internal/generator/testdata/mypkg"
 )
 
-func (v V1Validator) Validate() error {
+func (v T02Validator) Validate() error {
 	if !mypkg.HasUniqueInts(v.F1) {
 		return errors.New("F1 is not valid")
 	}

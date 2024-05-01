@@ -35,7 +35,7 @@ func initAST(g *gg) GO.FuncDecl {
 	for _, r := range g.init {
 		pkg := g.addImport(r.Spec.FType.Pkg)
 		args := g.argmap[r]
-		call := GO.CallExpr{Fun: GO.QualifiedIdent{pkg.name, "RegisterRegexp"}}
+		call := GO.CallExpr{Fun: pkgQualIdent(pkg, "RegisterRegexp")}
 		call.Args.List = args[0]
 		init.Body.Add(GO.ExprStmt{call})
 	}

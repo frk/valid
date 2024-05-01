@@ -216,8 +216,11 @@ func TestGenerator(t *testing.T) {
 		"nested/basic/v",
 		"nested/complex/v",
 		"nested/fieldabs/v",
-		"nested/fieldrel/v",
-		"nested/fieldrel/v1",
+		"nested/fieldrel/01",
+		"nested/fieldrel/02",
+
+		// imports
+		"imports/01",
 
 		// error
 		"error/error_returning_rule_func/v",
