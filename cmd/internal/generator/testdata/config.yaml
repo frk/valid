@@ -21,3 +21,13 @@ rules:
       args:
         - default: 3
         - default: 8
+  - func: github.com/frk/valid/cmd/internal/generator/testdata/mypkg.PreWithOpt
+    rule:
+      name: "pre:pre_with_opt"
+      args:
+        - default: !!nil
+  - func: github.com/frk/valid/cmd/internal/generator/testdata/mypkg.PreWithOpt2
+    rule:
+      name: "pre:pre_with_opt2"
+      args:
+        - default: ""

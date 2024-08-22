@@ -1,15 +1,11 @@
 package generator
 
 import (
-	"fmt"
-
 	"github.com/frk/valid/cmd/internal/gotype"
 	"github.com/frk/valid/cmd/internal/rules"
 
 	GO "github.com/frk/ast/golang"
 )
-
-var _ = fmt.Println
 
 func (b *bb) condExpr(n *rules.Node, r *rules.Rule) GO.ExprNode {
 	if len(r.Args) > 0 {

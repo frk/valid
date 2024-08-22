@@ -90,6 +90,7 @@ func TestGenerator(t *testing.T) {
 		"preproc/04_required",
 		"preproc/05_slice",
 		"preproc/06_map",
+		"preproc/07_pre_with_opt",
 
 		// global
 		"global/01_global_error_constructor",

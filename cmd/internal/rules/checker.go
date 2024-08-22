@@ -217,7 +217,9 @@ func (c *Checker) checkPreproc(n *Node) error {
 		}
 
 		// run spec specific rule-check
-		return c.preprocessorCheck(n, r)
+		if err := c.preprocessorCheck(n, r); err != nil {
+			return err
+		}
 	}
 	return nil
 }

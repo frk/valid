@@ -3,7 +3,7 @@ module benchmark
 go 1.20
 
 require (
-	github.com/frk/valid v1.3.1
+	github.com/frk/valid v1.5.2
 	github.com/go-playground/validator/v10 v10.11.1
 )
 

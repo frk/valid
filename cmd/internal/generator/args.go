@@ -57,11 +57,13 @@ func (b *bb) fieldArgSelector(a *rules.Arg) (x GO.ExprNode, leaf *gotype.StructF
 	s := b.g.info.KeyMap[a.Value].Selector
 
 	if len(b.elems) > 0 {
-		// resolve base expression
-		for i := len(b.elems) - 1; i >= 0; i-- {
-			if b.elems[i].n.Type.IsStructOrStructPointer() {
-				x = b.elems[i].x
-				break
+		if a.Type != rules.ARG_FIELD_ABS {
+			// resolve base expression
+			for i := len(b.elems) - 1; i >= 0; i-- {
+				if b.elems[i].n.Type.IsStructOrStructPointer() {
+					x = b.elems[i].x
+					break
+				}
 			}
 		}
 
@@ -91,7 +93,7 @@ func (b *bb) fieldArgSelector(a *rules.Arg) (x GO.ExprNode, leaf *gotype.StructF
 }
 
 func (b *bb) constArg(n *rules.Node, r *rules.Rule, a *rules.Arg, t *gotype.Type) (x GO.ExprNode) {
-	if t.IsEmptyInterface() && a.Type != rules.ARG_STRING {
+	if t.IsEmptyInterface() && a.Type != rules.ARG_STRING && a.Value != "" {
 		return GO.ValueLit(a.Value)
 	}
 	if a.Type == rules.ARG_STRING && r.Spec.UseRawString {

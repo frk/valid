@@ -2,8 +2,8 @@ github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ3
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/frk/valid v1.3.1 h1:gI0JH3Ny20xwRKBDCmJU260ESt41ZCmVNAr1sIrACgw=
-github.com/frk/valid v1.3.1/go.mod h1:elralBX7udDgs/W6xnGyJM0Ro8Z7HLNijmPWC3t8qE4=
+github.com/frk/valid v1.5.2 h1:yPWnWN/tj3xi1Cnr9dOQX9FqxWRgrlCfG8MoK6CX6z4=
+github.com/frk/valid v1.5.2/go.mod h1:+n976OE9ikEk3pqP1AKrjHiuEZJw2KC2y5sjr+e6pRQ=
 github.com/go-playground/assert/v2 v2.0.1 h1:MsBgLAaY856+nPRTKrp3/OZK38U/wa0CcBYNjji3q3A=
 github.com/go-playground/assert/v2 v2.0.1/go.mod h1:VDjEfimB/XKnb+ZQfWdccd7VUvScMdVu0Titje2rxJ4=
 github.com/go-playground/locales v0.14.0 h1:u50s323jtVGugKlcYeyzC0etD1HifMjqmJqb8WugfUU=
