@@ -18,6 +18,10 @@ func (c *Checker) functionCheck(n *Node, r *Rule) error {
 		p = p.Elem
 	}
 	if p.CanAssign(n.Type) == gotype.ASSIGNMENT_INVALID {
+		// TODO(mkopriva): this fails if both the field is a pointer and
+		// the function's type is a pointer (because n.Type will already
+		// be dereferenced), although not common, it doesn't make sense...
+		// the tool should be able to handle such a scenario.
 		return &Error{C: ERR_FUNCTION_INTYPE, ty: n.Type, r: r}
 	}
 
