@@ -2549,8 +2549,15 @@ func Test(t *testing.T) {
 	}, {
 		Name: "Slug", Func: Slug, Cases: Cases{{
 			pass: vals{
+				"a",
+				"a-b",
+				"a-b-c",
 				"cs-cz",
 				"cscz",
+				"foo-bar-baz",
+				"f-bar-baz",
+				"foo-b-baz",
+				"foo-bar-b",
 			},
 			fail: vals{
 				"not-----------slug",

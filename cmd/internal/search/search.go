@@ -440,19 +440,19 @@ func FindObject(pkgpath, name string, a *AST) (obj types.Object, err error) {
 
 // FindIncludedFuncs
 //
-// TODO(mkopriva): make this not blow up if package can't be found
-//                 on the system, because of the following:
+// TODO(mkopriva): make this not blow up if package can't
+// be found on the system, because of the following:
 //
-// 	It is possible that the user of the cmd/validgen tool does not
-// 	have github.com/frk/valid source on the user's machine, which
-// 	is ok because the source would be downloaded automatically as
-// 	soon as the user attempts to run the generated code, or maybe
-// 	the user does not intend to use the included rules, or perhaps
-// 	the user has supplied a set of custom rules that override
-// 	the included ones anyway.
+//	It is possible that the user of the cmd/validgen tool does not
+//	have github.com/frk/valid source on the user's machine, which
+//	is ok because the source would be downloaded automatically as
+//	soon as the user attempts to run the generated code, or maybe
+//	the user does not intend to use the included rules, or perhaps
+//	the user has supplied a set of custom rules that override
+//	the included ones anyway.
 //
-// 	In case the error is genuine the code should keep working without
-// 	issues, it's just that the reporting of user errors will be poorer.
+//	In case the error is genuine the code should keep working without
+//	issues, it's just that the reporting of user errors will be poorer.
 func FindIncludedFuncs(a *AST, callback func(fn *types.Func, rawCfg []byte) error) error {
 	pkg, err := findpkg("github.com/frk/valid", "", a)
 	if err != nil {
@@ -515,7 +515,8 @@ func extractRuleYAML(doc *ast.CommentGroup) (out []byte) {
 
 		// the rest of the doc text after a directive is expected to be yaml
 		if hasdirective {
-			text = strings.TrimPrefix(text, "//\t") + "\n"
+			text = strings.TrimPrefix(text, "//")
+			text = strings.TrimPrefix(text, "\t") + "\n"
 			out = append(out, text...)
 		}
 	}

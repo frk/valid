@@ -31,6 +31,7 @@ var rxASCII = regexp.MustCompile(`^[[:ascii:]]*$`)
 // ASCII reports whether or not v is an ASCII string.
 //
 // valid:rule.yaml
+//
 //	name: ascii
 //	error: { text: "must contain only ASCII characters" }
 func ASCII(v string) bool {
@@ -40,6 +41,7 @@ func ASCII(v string) bool {
 // Alpha reports whether or not v is a valid alphabetic string.
 //
 // valid:rule.yaml
+//
 //	name: alpha
 //	args: [{ default: en }]
 //	error: { text: "must be an alphabetic string" }
@@ -58,6 +60,7 @@ func Alpha(v string, lang string) bool {
 // Alnum reports whether or not v is a valid alphanumeric string.
 //
 // valid:rule.yaml
+//
 //	name: alnum
 //	args: [{ default: en }]
 //	error: { text: "must be an alphanumeric string" }
@@ -78,6 +81,7 @@ var rxBIC = regexp.MustCompile(`^[A-z]{4}[A-z]{2}\w{2}(\w{3})?$`)
 // BIC reports whether or not v represents a valid Bank Identification Code or SWIFT code.
 //
 // valid:rule.yaml
+//
 //	name: bic
 //	error: { text: "must be a valid BIC or SWIFT code" }
 func BIC(v string) bool {
@@ -89,6 +93,7 @@ var rxBTC = regexp.MustCompile(`^(bc1|[13])[a-zA-HJ-NP-Z0-9]{25,39}$`)
 // BTC reports whether or not v represents a valid BTC address.
 //
 // valid:rule.yaml
+//
 //	name: btc
 //	error: { text: "must be a valid BTC address" }
 func BTC(v string) bool {
@@ -100,6 +105,7 @@ var rxBase32 = regexp.MustCompile(`^[A-Z2-7]+=*$`)
 // Base32 reports whether or not v is a valid base32 string.
 //
 // valid:rule.yaml
+//
 //	name: base32
 //	error: { text: "must be a valid base32 string" }
 func Base32(v string) bool {
@@ -111,6 +117,7 @@ var rxBase58 = regexp.MustCompile(`^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghij
 // Base58 reports whether or not v is a valid base58 string.
 //
 // valid:rule.yaml
+//
 //	name: base58
 //	error: { text: "must be a valid base58 string" }
 func Base58(v string) bool {
@@ -124,6 +131,7 @@ func Base58(v string) bool {
 // urlsafe=true RawURLEncoding is used.
 //
 // valid:rule.yaml
+//
 //	name: base64
 //	args:
 //	  - default: false
@@ -146,6 +154,7 @@ var rxBinary = regexp.MustCompile(`^(?:0[bB])?[0-1]+$`)
 // Binary reports whether or not v represents a valid binary integer.
 //
 // valid:rule.yaml
+//
 //	name: binary
 //	error: { text: "string content must match a binary number" }
 func Binary(v string) bool {
@@ -156,6 +165,7 @@ func Binary(v string) bool {
 // are considered valid boolean values: "true", "false", "TRUE", and "FALSE".
 //
 // valid:rule.yaml
+//
 //	name: bool
 //	error: { text: "string content must match a boolean value" }
 func Bool(v string) bool {
@@ -173,6 +183,7 @@ func Bool(v string) bool {
 // NOTE: CIDR uses "net".ParseCIDR to determine the validity of v.
 //
 // valid:rule.yaml
+//
 //	name: cidr
 //	error: { text: "must be a valid CIDR notation" }
 func CIDR(v string) bool {
@@ -185,6 +196,7 @@ var rxCVV = regexp.MustCompile(`^[0-9]{3,4}$`)
 // CVV reports whether or not v is a valid Card Verification Value.
 //
 // valid:rule.yaml
+//
 //	name: cvv
 //	error: { text: "must be a valid CVV" }
 func CVV(v string) bool {
@@ -202,6 +214,7 @@ var CurrencyOptsDefault = CurrencyOpts{
 // Currency reports whether or not v represents a valid Currency amount.
 //
 // valid:rule.yaml
+//
 //	name: ccy
 //	args:
 //	  - default: usd
@@ -343,6 +356,7 @@ var rxDataURIData = regexp.MustCompile(`^(?i)[a-z0-9!\$&'\(\)\*\+,;=\-\._~:@\/\?
 // DataURI reports whether or not v is a valid data URI.
 //
 // valid:rule.yaml
+//
 //	name: datauri
 //	error: { text: "must be a valid data URI" }
 func DataURI(v string) bool {
@@ -383,6 +397,7 @@ func DataURI(v string) bool {
 // Decimal reports whether or not v represents a valid decimal number.
 //
 // valid:rule.yaml
+//
 //	name: decimal
 //	args: [{ default: en }]
 //	error: { text: "string content must match a decimal number" }
@@ -468,6 +483,7 @@ var rxDigits = regexp.MustCompile(`^[0-9]+$`)
 // Digits reports whether or not v is a string of digits.
 //
 // valid:rule.yaml
+//
 //	name: digits
 //	error: { text: "must contain only digits" }
 func Digits(v string) bool {
@@ -477,6 +493,7 @@ func Digits(v string) bool {
 // EAN reports whether or not v is a valid European Article Number.
 //
 // valid:rule.yaml
+//
 //	name: ean
 //	error: { text: "must be a valid EAN" }
 func EAN(v string) bool {
@@ -514,6 +531,7 @@ func EAN(v string) bool {
 // EIN reports whether or not v is a valid Employer Identification Number.
 //
 // valid:rule.yaml
+//
 //	name: ein
 //	error: { text: "must be a valid EIN" }
 func todo_EIN(v string) bool {
@@ -526,6 +544,7 @@ var rxETH = regexp.MustCompile(`^0x[0-9a-fA-F]{40}$`)
 // ETH reports whether or not v is a valid ethereum address.
 //
 // valid:rule.yaml
+//
 //	name: eth
 //	error: { text: "must be a valid ethereum address" }
 func ETH(v string) bool {
@@ -537,6 +556,7 @@ func ETH(v string) bool {
 // NOTE: Email uses "net/mail".ParseAddress to determine the validity of v.
 //
 // valid:rule.yaml
+//
 //	name: email
 //	error: { text: "must be a valid email address" }
 func Email(v string) bool {
@@ -555,6 +575,7 @@ var rxFQDNPartIllegal = regexp.MustCompile(`[\x{ff01}-\x{ff5e}]`)
 // and underscores are forbidden.
 //
 // valid:rule.yaml
+//
 //	name: fqdn
 //	error: { text: "must be a valid FQDN" }
 func FQDN(v string) bool {
@@ -590,6 +611,7 @@ var rxFloat = regexp.MustCompile(`^[+-]?(?:[0-9]*)?(?:\.[0-9]*)?(?:[eE][+-]?[0-9
 // Float reports whether or not v represents a valid float.
 //
 // valid:rule.yaml
+//
 //	name: float
 //	error: { text: "string content must match a floating point number" }
 func Float(v string) bool {
@@ -605,6 +627,7 @@ var rxHSLSpace = regexp.MustCompile(`^(?i)(?:hsl)a?\(\s*(?:(?:\+|\-)?(?:[0-9]+(?
 // HSL reports whether or not v represents an HSL color value.
 //
 // valid:rule.yaml
+//
 //	name: hsl
 //	error: { text: "must be a valid HSL color" }
 func HSL(v string) bool {
@@ -616,6 +639,7 @@ var rxHash = regexp.MustCompile(`^[0-9A-Fa-f]+$`)
 // Hash reports whether or not v is a hash of the specified algorithm.
 //
 // valid:rule.yaml
+//
 //	name: hash
 //	error: { text: "must be a valid hash" }
 func Hash(v string, algo string) bool {
@@ -630,6 +654,7 @@ var rxHex = regexp.MustCompile(`^(?:0[xXhH])?[0-9A-Fa-f]+$`)
 // Hex reports whether or not v is a valid hexadecimal string.
 //
 // valid:rule.yaml
+//
 //	name: hex
 //	error: { text: "must be a valid hexadecimal string" }
 func Hex(v string) bool {
@@ -641,6 +666,7 @@ var rxHexColor = regexp.MustCompile(`^#?(?i:[0-9A-F]{3}|[0-9A-F]{4}|[0-9A-F]{6}|
 // HexColor reports whether or not v is a valid hexadecimal color code.
 //
 // valid:rule.yaml
+//
 //	name: hexcolor
 //	error: { text: "must represent a valid hexadecimal color code" }
 func HexColor(v string) bool {
@@ -650,6 +676,7 @@ func HexColor(v string) bool {
 // IBAN reports whether or not v is an International Bank Account Number.
 //
 // valid:rule.yaml
+//
 //	name: iban
 //	error: { text: "must be a valid IBAN" }
 func IBAN(v string) bool {
@@ -706,6 +733,7 @@ func IBAN(v string) bool {
 // IC reports whether or not v is an Identity Card number.
 //
 // valid:rule.yaml
+//
 //	name: ic
 //	error: { text: "must be a valid identity card number" }
 func todo_IC(v string) bool {
@@ -719,6 +747,7 @@ var rxIMEIHyphenated = regexp.MustCompile(`^\d{2}-\d{6}-\d{6}-\d{1}$`)
 // IMEI reports whether or not v is an IMEI number.
 //
 // valid:rule.yaml
+//
 //	name: imei
 //	error: { text: "must be a valid IMEI number" }
 func IMEI(v string) bool {
@@ -755,6 +784,7 @@ var rxIPv6Block = regexp.MustCompile(`^(?i)[0-9A-F]{1,4}$`)
 // IP reports whether or not v is a valid IP address. The ver argument specifies
 // the IP's expected version. The ver argument can be one of the following three
 // values:
+//
 //	0 accepts both IPv4 and IPv6
 //	4 accepts IPv4 only
 //	6 accepts IPv6 only
@@ -762,6 +792,7 @@ var rxIPv6Block = regexp.MustCompile(`^(?i)[0-9A-F]{1,4}$`)
 // ---
 //
 // valid:rule.yaml
+//
 //	name: ip
 //	args:
 //	  - default: 0
@@ -869,6 +900,7 @@ func IP(v string, ver int) bool {
 // IPRange reports whether or not v is a valid IP range (IPv4 only).
 //
 // valid:rule.yaml
+//
 //	name: iprange
 //	error: { text: "must be a valid IP range" }
 func IPRange(v string) bool {
@@ -895,6 +927,7 @@ var rxISBN10Maybe = regexp.MustCompile(`^(?:[0-9]{9}X|[0-9]{10})$`)
 // ISBN reports whether or not v is a valid International Standard Book Number.
 // The ver argument specifies the ISBN's expected version. The ver argument can
 // be one of the following three values:
+//
 //	0 accepts both 10 and 13
 //	10 accepts version 10 only
 //	13 accepts version 13 only
@@ -902,6 +935,7 @@ var rxISBN10Maybe = regexp.MustCompile(`^(?:[0-9]{9}X|[0-9]{10})$`)
 // ---
 //
 // valid:rule.yaml
+//
 //	name: isbn
 //	args: [{ default: 0 }]
 //	error: { text: "must be a valid ISBN" }
@@ -959,6 +993,7 @@ var rxISIN = regexp.MustCompile(`^[A-Z]{2}[0-9A-Z]{9}[0-9]$`)
 // ISIN reports whether or not v is a valid International Securities Identification Number.
 //
 // valid:rule.yaml
+//
 //	name: isin
 //	error: { text: "must be a valid ISIN" }
 func ISIN(v string) bool {
@@ -1010,6 +1045,7 @@ func ISIN(v string) bool {
 // ISO 639 set of standards. Currently only standards 639-1 & 639-2 are supported.
 // The num argument specifies which of the supported standards should be tested.
 // The num argument can be one of the following three values:
+//
 //	0 tests against both 639-1 & 639-2
 //	1 tests against 639-1 only
 //	2 tests against 639-2 only
@@ -1017,6 +1053,7 @@ func ISIN(v string) bool {
 // ---
 //
 // valid:rule.yaml
+//
 //	name: iso639
 //	args: [{ default: 0 }]
 //	error: { text: "must be a valid ISO 639 value" }
@@ -1050,6 +1087,7 @@ func ISO639(v string, num int) bool {
 // ISO 3166-1 Alpha standard. The num argument specifies which of the two alpha
 // sets of the standard should be tested. The num argument can be one of the
 // following three values:
+//
 //	0 tests against both Alpha-2 and Alpha-3
 //	2 tests against Alpha-2 only
 //	3 tests against Alpha-3 only
@@ -1057,6 +1095,7 @@ func ISO639(v string, num int) bool {
 // ---
 //
 // valid:rule.yaml
+//
 //	name: iso31661a
 //	args: [{ default: 0 }]
 //	error: { text: "must be a valid ISO 3166-1 Alpha value" }
@@ -1090,6 +1129,7 @@ func ISO31661A(v string, num int) bool {
 // as defined by the ISO 4217 standard.
 //
 // valid:rule.yaml
+//
 //	name: iso4217
 //	error: { text: "must be a valid ISO 4217 value" }
 func ISO4217(v string) bool {
@@ -1107,6 +1147,7 @@ var rxISRC = regexp.MustCompile(`^[A-Z]{2}[0-9A-Z]{3}\d{2}\d{5}$`)
 // ISRC reports whether or not v is a valid International Standard Recording Code.
 //
 // valid:rule.yaml
+//
 //	name: isrc
 //	error: { text: "must be a valid ISRC" }
 func ISRC(v string) bool {
@@ -1118,6 +1159,7 @@ var rxISSN = regexp.MustCompile(`^(?i)[0-9]{4}-?[0-9]{3}[0-9X]$`)
 // ISSN reports whether or not v is a valid International Standard Serial Number.
 //
 // valid:rule.yaml
+//
 //	name: issn
 //	error: { text: "must be a valid ISSN" }
 func ISSN(v string, requireHyphen, caseSensitive bool) bool {
@@ -1148,6 +1190,7 @@ func ISSN(v string, requireHyphen, caseSensitive bool) bool {
 // In reports whether or not v is in the provided list.
 //
 // valid:rule.yaml
+//
 //	name: in
 //	error: { text: "must be in the list" }
 func In(v any, list ...any) bool {
@@ -1164,6 +1207,7 @@ var rxInt = regexp.MustCompile(`^[+-]?[0-9]+$`)
 // Int reports whether or not v represents a valid integer.
 //
 // valid:rule.yaml
+//
 //	name: int
 //	error: { text: "string content must match an integer" }
 func Int(v string) bool {
@@ -1176,6 +1220,7 @@ func Int(v string) bool {
 // accepts primitive values as long as they are JSON values.
 //
 // valid:rule.yaml
+//
 //	name: json
 //	error: { text: "must be a valid JSON" }
 func JSON(v []byte) bool {
@@ -1186,6 +1231,7 @@ func JSON(v []byte) bool {
 // JWT reports whether or not v is a valid JSON Web Token.
 //
 // valid:rule.yaml
+//
 //	name: jwt
 //	error: { text: "must be a valid JWT" }
 func JWT(v string) bool {
@@ -1211,6 +1257,7 @@ var rxLongDMS = regexp.MustCompile(`^\s*(?:[1-7]?\d{1,2}\D+(?:[1-5]?\d|60)\D+(?:
 // LatLong reports whether or not v is a valid latitude-longitude coordinate string.
 //
 // valid:rule.yaml
+//
 //	name: latlong
 //	args:
 //	  - default: false
@@ -1236,6 +1283,7 @@ var rxLocale = regexp.MustCompile(`^[A-z]{2,4}(?:[_-](?:[A-z]{4}|[\d]{3}))?(?:[_
 // Locale reports whether or not v is a valid locale.
 //
 // valid:rule.yaml
+//
 //	name: locale
 //	error: { text: "must be a valid locale" }
 func Locale(v string) bool {
@@ -1248,6 +1296,7 @@ func Locale(v string) bool {
 // LowerCase reports whether or not v is an all lower-case string.
 //
 // valid:rule.yaml
+//
 //	name: lower
 //	error: { text: "must contain only lower-case characters" }
 func LowerCase(v string) bool {
@@ -1265,11 +1314,13 @@ var rxMAC8Hyphen = regexp.MustCompile(`^(?:[0-9a-fA-F]{2}-){7}[0-9a-fA-F]{2}$`)
 // MAC reports whether or not v is a valid MAC address. The space argument specifies
 // the identifier's expected address space (in bytes). The space argument can be one
 // of the following three values:
+//
 //	0 accepts both EUI-48 and EUI-64
 //	6 accepts EUI-48 format only
 //	8 accepts EUI-64 format only
 //
 // The allowed formatting of the identifiers is as follows:
+//
 //	// EUI-48 format
 //	"08:00:2b:01:02:03"
 //	"08-00-2b-01-02-03"
@@ -1283,6 +1334,7 @@ var rxMAC8Hyphen = regexp.MustCompile(`^(?:[0-9a-fA-F]{2}-){7}[0-9a-fA-F]{2}$`)
 // ---
 //
 // valid:rule.yaml
+//
 //	name: mac
 //	args: [{ default: 0 }]
 //	error: { text: "must be a valid MAC" }
@@ -1309,6 +1361,7 @@ func MAC(v string, space int) bool {
 // MD5 reports whether or not v is a valid MD5 hash.
 //
 // valid:rule.yaml
+//
 //	name: md5
 //	error: { text: "must be a valid MD5 hash" }
 func MD5(v string) bool {
@@ -1329,14 +1382,15 @@ var rxMIMEMultipart = regexp.MustCompile(`^(?i)multipart\/[a-zA-Z0-9\.\-\+]{1,10
 // (https://www.iana.org/assignments/media-types/media-types.xhtml)
 //
 // More informations in the RFC specifications:
-//	- https://tools.ietf.org/html/rfc2045
-// 	- https://tools.ietf.org/html/rfc2046
-// 	- https://tools.ietf.org/html/rfc7231#section-3.1.1.1
-// 	- https://tools.ietf.org/html/rfc7231#section-3.1.1.5
+//   - https://tools.ietf.org/html/rfc2045
+//   - https://tools.ietf.org/html/rfc2046
+//   - https://tools.ietf.org/html/rfc7231#section-3.1.1.1
+//   - https://tools.ietf.org/html/rfc7231#section-3.1.1.5
 //
 // ---
 //
 // valid:rule.yaml
+//
 //	name: mime
 //	error: { text: "must be a valid media type" }
 func MIME(v string) bool {
@@ -1348,6 +1402,7 @@ var rxMagnetURI = regexp.MustCompile(`^(?i)magnet:\?xt=urn:[a-z0-9]+:[a-z0-9]{32
 // MagnetURI reports whether or not v is a valid magned URI.
 //
 // valid:rule.yaml
+//
 //	name: magneturi
 //	error: { text: "must be a valid magnet URI" }
 func MagnetURI(v string) bool {
@@ -1361,6 +1416,7 @@ func MagnetURI(v string) bool {
 // Match will return false even if v matches the regular expression.
 //
 // valid:rule.yaml
+//
 //	name: re
 //	error:
 //	  text: "must match the regular expression"
@@ -1375,6 +1431,7 @@ func Match(v string, expr string) bool {
 // MongoId reports whether or not v is a valid hex-encoded representation of a MongoDB ObjectId.
 //
 // valid:rule.yaml
+//
 //	name: mongoid
 //	error: { text: "must be a valid Mongo Object Id" }
 func MongoId(v string) bool {
@@ -1386,6 +1443,7 @@ var rxNumeric = regexp.MustCompile(`^[+-]?[0-9]*\.?[0-9]+$`)
 // Numeric reports whether or not v is a valid numeric string.
 //
 // valid:rule.yaml
+//
 //	name: numeric
 //	error: { text: "string content must match a numeric value" }
 func Numeric(v string) bool {
@@ -1397,6 +1455,7 @@ var rxOctal = regexp.MustCompile(`^(?:0[oO])?[0-7]+$`)
 // Octal reports whether or not v represents a valid octal integer.
 //
 // valid:rule.yaml
+//
 //	name: octal
 //	error: { text: "string content must match an octal number" }
 func Octal(v string) bool {
@@ -1408,6 +1467,7 @@ var rxPAN = regexp.MustCompile(`^(?:4[0-9]{12}(?:[0-9]{3,6})?|5[1-5][0-9]{14}|(?
 // PAN reports whether or not v is a valid Primary Account Number or Credit Card number.
 //
 // valid:rule.yaml
+//
 //	name: pan
 //	error: { text: "must be a valid PAN" }
 func PAN(v string) bool {
@@ -1422,6 +1482,7 @@ func PAN(v string) bool {
 // PassportNumber reports whether or not v is a valid passport number.
 //
 // valid:rule.yaml
+//
 //	name: passport
 //	error: { text: "must be a valid passport number" }
 func todo_PassportNumber(v string) bool {
@@ -1433,6 +1494,7 @@ func todo_PassportNumber(v string) bool {
 // identified by the given country code cc.
 //
 // valid:rule.yaml
+//
 //	name: phone
 //	args: [{ default: us }]
 //	error: { text: "must be a valid phone number" }
@@ -1446,6 +1508,7 @@ func Phone(v string, cc string) bool {
 // Port reports whether or not v is a valid port number.
 //
 // valid:rule.yaml
+//
 //	name: port
 //	error: { text: "must be a valid port number" }
 func Port(v string) bool {
@@ -1461,6 +1524,7 @@ var rxRGBAPercent = regexp.MustCompile(`^rgba\((?:(?:[0-9]%|[1-9][0-9]%|100%),){
 // RGB reports whether or not v is a valid RGB color.
 //
 // valid:rule.yaml
+//
 //	name: rgb
 //	error: { text: "must be a valid RGB color" }
 func RGB(v string) bool {
@@ -1486,6 +1550,7 @@ func RGB(v string) bool {
 // SSN reports whether or not v has a valid Social Security Number format.
 //
 // valid:rule.yaml
+//
 //	name: ssn
 //	error: { text: "must be a valid SSN" }
 func SSN(v string) bool {
@@ -1527,17 +1592,19 @@ var rxSemVer = regexp.MustCompile(`^(?i)(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-
 // For reference: https://semver.org/
 //
 // valid:rule.yaml
+//
 //	name: semver
 //	error: { text: "must be a valid semver number" }
 func SemVer(v string) bool {
 	return rxSemVer.MatchString(v)
 }
 
-var rxSlug = regexp.MustCompile(`^(?:(?:[a-z0-9]+)(?:-[a-z0-9]+)?)+$`)
+var rxSlug = regexp.MustCompile(`^(?:[a-z0-9]+)(?:-[a-z0-9]+)*$`)
 
 // Slug reports whether or not v is a valid slug.
 //
 // valid:rule.yaml
+//
 //	name: slug
 //	error: { text: "must be a valid slug" }
 func Slug(v string) bool {
@@ -1563,6 +1630,7 @@ var StrongPasswordOptsDefault = StrongPasswordOpts{
 // StrongPassword reports whether or not v is a strong password.
 //
 // valid:rule.yaml
+//
 //	name: strongpass
 //	args: [{ default: null }]
 //	error: { text: "must be a strong password" }
@@ -1597,6 +1665,7 @@ func StrongPassword(v string, opts *StrongPasswordOpts) bool {
 // URL reports whether or not v is a valid Uniform Resource Locator.
 //
 // valid:rule.yaml
+//
 //	name: url
 //	error: { text: "must be a valid URL" }
 func todo_URL(v string) bool {
@@ -1612,6 +1681,7 @@ var rxUUIDv5 = regexp.MustCompile(`^(?i)[0-9A-F]{8}-[0-9A-F]{4}-5[0-9A-F]{3}-[89
 // NOTE: only versions 3, 4, and 5 are currently supported.
 //
 // valid:rule.yaml
+//
 //	name: uuid
 //	args:
 //	  - default: 4
@@ -1638,6 +1708,7 @@ var rxUint = regexp.MustCompile(`^\+?[0-9]+$`)
 // Uint reports whether or not v represents a valid unsigned integer.
 //
 // valid:rule.yaml
+//
 //	name: uint
 //	error: { text: "string content must match an unsigned integer" }
 func Uint(v string) bool {
@@ -1647,6 +1718,7 @@ func Uint(v string) bool {
 // UpperCase reports whether or not v is an all upper-case string.
 //
 // valid:rule.yaml
+//
 //	name: upper
 //	error: { text: "must contain only upper-case characters" }
 func UpperCase(v string) bool {
@@ -1656,6 +1728,7 @@ func UpperCase(v string) bool {
 // VAT reports whether or not v is a valid Value Added Tax number.
 //
 // valid:rule.yaml
+//
 //	name: vat
 //	args: [{ default: us }]
 //	error: { text: "must be a valid VAT number" }
@@ -1670,6 +1743,7 @@ func VAT(v string, cc string) bool {
 // identified by the given country code cc.
 //
 // valid:rule.yaml
+//
 //	name: zip
 //	args: [{ default: us }]
 //	error: { text: "must be a valid zip code" }
