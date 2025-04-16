@@ -42,10 +42,14 @@ func test_type(name string) types.Type {
 		}
 
 		named, ok := typeName.Type().(*types.Named)
-		if !ok {
-			continue
+		if ok {
+			return named
 		}
-		return named
+		alias, ok := typeName.Type().(*types.Alias)
+		if ok {
+			return alias
+		}
+		continue
 	}
 	return nil
 }

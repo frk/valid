@@ -21,9 +21,15 @@ const loadMode = packages.NeedName |
 	packages.NeedCompiledGoFiles |
 	packages.NeedImports |
 	packages.NeedDeps |
+	packages.NeedExportFile |
 	packages.NeedTypes |
 	packages.NeedSyntax |
-	packages.NeedTypesInfo
+	packages.NeedTypesInfo |
+	packages.NeedTypesSizes |
+	packages.NeedModule |
+	packages.NeedEmbedFiles |
+	packages.NeedEmbedPatterns |
+	packages.NeedTarget
 
 // AST is used to hold the packages that were loaded during a call to Search.
 type AST struct {

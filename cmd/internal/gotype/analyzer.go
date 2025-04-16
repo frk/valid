@@ -47,6 +47,15 @@ func (a *Analyzer) Object(obj types.Object) (u *Type) {
 // Analyze runs the analysis of the given types.Type t
 // and returns the resulting gotype.Type representation.
 func (a *Analyzer) Analyze(t types.Type) (u *Type) {
+	// resolve the aliased type, if any
+	for {
+		a, ok := t.(*types.Alias)
+		if !ok {
+			break
+		}
+		t = a.Rhs()
+	}
+
 	u = new(Type)
 	if named, ok := t.(*types.Named); ok {
 		// check first if we've done this one before
